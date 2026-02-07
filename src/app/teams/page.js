@@ -11,8 +11,12 @@ export default function TeamsPage() {
     useEffect(() => {
         async function fetchTeams() {
             try {
-                // Fetch real constructor standings
-                const standings = await getConstructorStandings();
+                // Fetch real constructor standings (try current year first, fallback to previous)
+                let standings = await getConstructorStandings(getCurrentYear());
+
+                if (standings.length === 0) {
+                    standings = await getConstructorStandings(getCurrentYear() - 1);
+                }
 
                 if (standings.length > 0) {
                     // Map Ergast data to our format
