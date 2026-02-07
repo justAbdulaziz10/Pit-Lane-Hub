@@ -1,6 +1,7 @@
 'use client';
 
 import { getTeamColor } from '@/lib/f1api';
+import Link from 'next/link';
 import styles from './DriverCard.module.css';
 
 export default function DriverCard({ driver }) {
@@ -9,7 +10,6 @@ export default function DriverCard({ driver }) {
     // Try to get higher quality photo URL
     const getHighQualityPhoto = (url) => {
         if (!url) return null;
-        // OpenF1 sometimes provides low-res, try to modify URL for higher quality
         return url.replace('_small', '_large').replace('1col', '2col');
     };
 
@@ -30,45 +30,52 @@ export default function DriverCard({ driver }) {
     };
 
     return (
-        <div
-            className={styles.card}
-            style={{ '--team-color': teamColor }}
-        >
-            {/* Team Color Bar */}
-            <div className={styles.colorBar}></div>
+        <Link href={`/driver/${driver.driver_number}`} className={styles.cardLink}>
+            <div
+                className={styles.card}
+                style={{ '--team-color': teamColor }}
+            >
+                {/* Team Color Bar */}
+                <div className={styles.colorBar}></div>
 
-            {/* Driver Photo */}
-            <div className={styles.photoContainer}>
-                {photoUrl && (
-                    <img
-                        src={photoUrl}
-                        alt={`${driver.first_name} ${driver.last_name}`}
-                        className={styles.photo}
-                        loading="lazy"
-                        onError={handleImageError}
-                    />
-                )}
-                <div
-                    className={styles.photoPlaceholder}
-                    data-placeholder
-                    style={{ display: photoUrl ? 'none' : 'flex' }}
-                >
-                    <span className={styles.photoNumber}>{driver.driver_number}</span>
+                {/* Driver Photo */}
+                <div className={styles.photoContainer}>
+                    {photoUrl && (
+                        <img
+                            src={photoUrl}
+                            alt={`${driver.first_name} ${driver.last_name}`}
+                            className={styles.photo}
+                            loading="lazy"
+                            onError={handleImageError}
+                        />
+                    )}
+                    <div
+                        className={styles.photoPlaceholder}
+                        data-placeholder
+                        style={{ display: photoUrl ? 'none' : 'flex' }}
+                    >
+                        <span className={styles.photoNumber}>{driver.driver_number}</span>
+                    </div>
+                </div>
+
+                {/* Driver Info */}
+                <div className={styles.info}>
+                    <div className={styles.number}>{driver.driver_number}</div>
+                    <div className={styles.name}>
+                        <span className={styles.firstName}>{driver.first_name}</span>
+                        <span className={styles.lastName}>{driver.last_name}</span>
+                    </div>
+                    <div className={styles.team}>{driver.team_name}</div>
+                    <div className={styles.country}>
+                        <span className={styles.countryCode}>{driver.country_code}</span>
+                    </div>
+                </div>
+
+                {/* View Profile Hint */}
+                <div className={styles.viewHint}>
+                    View Profile →
                 </div>
             </div>
-
-            {/* Driver Info */}
-            <div className={styles.info}>
-                <div className={styles.number}>{driver.driver_number}</div>
-                <div className={styles.name}>
-                    <span className={styles.firstName}>{driver.first_name}</span>
-                    <span className={styles.lastName}>{driver.last_name}</span>
-                </div>
-                <div className={styles.team}>{driver.team_name}</div>
-                <div className={styles.country}>
-                    <span className={styles.countryCode}>{driver.country_code}</span>
-                </div>
-            </div>
-        </div>
+        </Link>
     );
 }
