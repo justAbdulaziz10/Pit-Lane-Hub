@@ -29,8 +29,8 @@ export const getTrackInfo = (raceName, circuitKey) => {
     if (!raceName && !circuitKey) return null;
 
     // Normalize inputs
-    const name = raceName ? raceName.toLowerCase() : '';
-    const key = circuitKey ? circuitKey.toLowerCase() : '';
+    const name = raceName ? String(raceName).toLowerCase() : '';
+    const key = circuitKey ? String(circuitKey).toLowerCase() : '';
 
     for (const [coordKey, value] of Object.entries(TRACK_COORDS)) {
         // Check if circuit key matches the coordinate key directly
