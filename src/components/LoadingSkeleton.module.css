@@ -1,0 +1,155 @@
+/* Shimmer Animation */
+@keyframes shimmer {
+    0% {
+        transform: translateX(-100%);
+    }
+
+    100% {
+        transform: translateX(100%);
+    }
+}
+
+.shimmer {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg,
+            transparent 0%,
+            rgba(255, 255, 255, 0.08) 50%,
+            transparent 100%);
+    animation: shimmer 1.5s infinite;
+}
+
+/* Card Skeleton */
+.skeletonGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: var(--space-lg);
+}
+
+.cardSkeleton {
+    position: relative;
+    background: var(--carbon-surface);
+    border: 1px solid var(--carbon-border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+}
+
+.skeletonImage {
+    height: 180px;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.skeletonContent {
+    padding: var(--space-lg);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+}
+
+.skeletonTitle {
+    height: 24px;
+    width: 70%;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+}
+
+.skeletonText {
+    height: 16px;
+    width: 100%;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+}
+
+.skeletonTextShort {
+    height: 16px;
+    width: 50%;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+}
+
+/* Table Skeleton */
+.tableSkeleton {
+    background: var(--carbon-surface);
+    border: 1px solid var(--carbon-border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+}
+
+.tableHeaderSkeleton {
+    position: relative;
+    height: 48px;
+    background: var(--carbon-dark);
+    overflow: hidden;
+}
+
+.tableRowSkeleton {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    padding: var(--space-md) var(--space-lg);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    overflow: hidden;
+}
+
+.skeletonCell {
+    height: 20px;
+    width: 80px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 4px;
+}
+
+.skeletonCellWide {
+    height: 20px;
+    flex: 1;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+}
+
+/* Text Skeleton */
+.textSkeleton {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+}
+
+.skeletonLine {
+    position: relative;
+    height: 18px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+/* Stat Skeleton */
+.statSkeleton {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: var(--space-md);
+}
+
+.statCard {
+    position: relative;
+    padding: var(--space-lg);
+    background: var(--carbon-surface);
+    border: 1px solid var(--carbon-border);
+    border-radius: var(--radius-lg);
+    text-align: center;
+    overflow: hidden;
+}
+
+.skeletonStatValue {
+    height: 36px;
+    width: 60%;
+    margin: 0 auto var(--space-xs);
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+}
+
+.skeletonStatLabel {
+    height: 14px;
+    width: 80%;
+    margin: 0 auto;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+}

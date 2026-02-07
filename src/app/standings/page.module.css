@@ -30,6 +30,41 @@
     font-size: 1.1rem;
 }
 
+/* Tabs */
+.tabs {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: var(--space-md);
+    margin-top: var(--space-lg);
+}
+
+.tab {
+    padding: var(--space-sm) var(--space-lg);
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.6);
+    font-family: var(--font-display);
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition-fast);
+    text-decoration: none;
+}
+
+.tab:hover {
+    color: var(--checkered-white);
+}
+
+.tab.active {
+    color: var(--racing-red);
+    border-bottom: 2px solid var(--racing-red);
+}
+
+.tabDivider {
+    color: rgba(255, 255, 255, 0.2);
+}
+
 /* Content */
 .content {
     padding: var(--space-2xl) 0 var(--space-3xl);
@@ -50,6 +85,18 @@
     padding: var(--space-xl);
     text-align: center;
     transition: var(--transition-base);
+    position: relative;
+    overflow: hidden;
+}
+
+.podiumCard::before {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: var(--team-color, var(--racing-red));
 }
 
 .podiumCard:hover {
@@ -84,6 +131,18 @@
     margin-bottom: var(--space-sm);
 }
 
+.podiumCode {
+    display: inline-block;
+    padding: var(--space-xs) var(--space-sm);
+    background: var(--team-color, var(--racing-red));
+    border-radius: var(--radius-sm);
+    font-family: var(--font-display);
+    font-size: 1rem;
+    font-weight: 800;
+    color: var(--checkered-white);
+    margin-bottom: var(--space-sm);
+}
+
 .podiumNumber {
     font-family: var(--font-display);
     font-size: 1.25rem;
@@ -108,21 +167,35 @@
     margin-bottom: var(--space-lg);
 }
 
-.podiumPoints {
+.podiumStats {
+    display: flex;
+    justify-content: center;
+    gap: var(--space-xl);
+}
+
+.podiumPoints,
+.podiumWins {
     display: flex;
     flex-direction: column;
     align-items: center;
 }
 
-.pointsValue {
+.pointsValue,
+.winsValue {
     font-family: var(--font-display);
     font-size: 2rem;
     font-weight: 900;
     color: var(--checkered-white);
 }
 
-.pointsLabel {
-    font-size: 0.75rem;
+.winsValue {
+    font-size: 1.5rem;
+    color: var(--racing-red);
+}
+
+.pointsLabel,
+.winsLabel {
+    font-size: 0.7rem;
     color: rgba(255, 255, 255, 0.5);
     text-transform: uppercase;
     letter-spacing: 0.1em;
@@ -138,7 +211,7 @@
 
 .tableHeader {
     display: grid;
-    grid-template-columns: 60px 1fr 1fr 100px;
+    grid-template-columns: 60px 1fr 1fr 80px 100px;
     gap: var(--space-md);
     padding: var(--space-md) var(--space-lg);
     background: var(--carbon-dark);
@@ -152,15 +225,32 @@
 
 .tableRow {
     display: grid;
-    grid-template-columns: 60px 1fr 1fr 100px;
+    grid-template-columns: 60px 1fr 1fr 80px 100px;
     gap: var(--space-md);
     padding: var(--space-md) var(--space-lg);
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    transition: var(--transition-fast);
+    position: relative;
+}
+
+.tableRow::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: var(--team-color, transparent);
+    opacity: 0;
     transition: var(--transition-fast);
 }
 
 .tableRow:hover {
     background: rgba(255, 255, 255, 0.03);
+}
+
+.tableRow:hover::before {
+    opacity: 1;
 }
 
 .tableRow:last-child {
@@ -171,6 +261,8 @@
     font-family: var(--font-display);
     font-weight: 700;
     color: rgba(255, 255, 255, 0.7);
+    display: flex;
+    align-items: center;
 }
 
 .colDriver {
@@ -184,6 +276,20 @@
     font-weight: 700;
 }
 
+.driverCode {
+    display: inline-block;
+    padding: 2px 6px;
+    background: var(--team-color, rgba(255, 255, 255, 0.1));
+    border-radius: 4px;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 0.75rem;
+}
+
+.driverName {
+    font-size: 0.9rem;
+}
+
 .driverNum {
     font-family: var(--font-display);
     font-weight: 700;
@@ -193,12 +299,90 @@
 
 .colTeam {
     color: rgba(255, 255, 255, 0.6);
+    display: flex;
+    align-items: center;
+}
+
+.colWins {
+    font-family: var(--font-display);
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.7);
+    display: flex;
+    align-items: center;
 }
 
 .colPoints {
     font-family: var(--font-display);
     font-weight: 700;
     text-align: right;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+/* Constructor Preview */
+.constructorPreview {
+    padding: var(--space-2xl) 0;
+    background: var(--carbon-dark);
+}
+
+.constructorPreview h2 {
+    margin-bottom: var(--space-lg);
+    text-align: center;
+}
+
+.constructorGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--space-md);
+    margin-bottom: var(--space-lg);
+}
+
+.constructorCard {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    padding: var(--space-md) var(--space-lg);
+    background: var(--carbon-surface);
+    border: 1px solid var(--carbon-border);
+    border-left: 4px solid var(--team-color, var(--racing-red));
+    border-radius: var(--radius-md);
+    transition: var(--transition-fast);
+}
+
+.constructorCard:hover {
+    border-color: var(--team-color, var(--racing-red));
+}
+
+.constructorPos {
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.constructorName {
+    flex: 1;
+    font-weight: 600;
+}
+
+.constructorPoints {
+    font-family: var(--font-display);
+    font-weight: 700;
+    color: var(--racing-red);
+}
+
+.viewAllBtn {
+    display: block;
+    text-align: center;
+    color: var(--racing-red);
+    text-decoration: none;
+    font-weight: 600;
+    transition: var(--transition-fast);
+}
+
+.viewAllBtn:hover {
+    text-decoration: underline;
 }
 
 /* Loading */
@@ -250,6 +434,21 @@
 
 .error p {
     color: rgba(255, 255, 255, 0.5);
+    margin-bottom: var(--space-lg);
+}
+
+.fallbackLink {
+    padding: var(--space-md) var(--space-xl);
+    background: var(--racing-red);
+    border-radius: var(--radius-md);
+    color: white;
+    text-decoration: none;
+    font-weight: 600;
+    transition: var(--transition-fast);
+}
+
+.fallbackLink:hover {
+    background: #c10500;
 }
 
 /* Note */
@@ -286,7 +485,12 @@
         grid-template-columns: 50px 1fr 80px;
     }
 
-    .colTeam {
+    .colTeam,
+    .colWins {
         display: none;
+    }
+
+    .constructorGrid {
+        grid-template-columns: 1fr;
     }
 }

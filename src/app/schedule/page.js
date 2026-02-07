@@ -2,7 +2,12 @@ import { getCurrentYear, getMeetings } from '@/lib/f1api';
 import Link from 'next/link';
 import styles from './page.module.css';
 
-export const revalidate = 3600;
+export const revalidate = 3600; // Revalidate every hour
+
+export const metadata = {
+    title: 'F1 Schedule 2026 | Race Calendar',
+    description: 'Full Formula 1 2026 race calendar, dates, times, and circuit information. Don\'t miss a race.',
+};
 
 export default async function SchedulePage() {
     let meetings = [];
