@@ -1,0 +1,286 @@
+.backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 1100;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+    opacity: 0;
+    visibility: hidden;
+    transition: var(--transition-base);
+}
+
+.backdropOpen {
+    opacity: 1;
+    visibility: visible;
+}
+
+.cart {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1200;
+    width: 100%;
+    max-width: 420px;
+    background: var(--carbon-dark);
+    border-left: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    flex-direction: column;
+    transform: translateX(100%);
+    transition: transform var(--transition-base);
+}
+
+.cartOpen {
+    transform: translateX(0);
+}
+
+/* Header */
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-lg);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.title {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    font-weight: 700;
+}
+
+.titleIcon {
+    font-size: 1.5rem;
+}
+
+.closeButton {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    border-radius: var(--radius-md);
+    color: var(--checkered-white);
+    cursor: pointer;
+    transition: var(--transition-fast);
+}
+
+.closeButton:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* Items */
+.items {
+    flex: 1;
+    overflow-y: auto;
+    padding: var(--space-lg);
+}
+
+/* Empty State */
+.empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    text-align: center;
+}
+
+.emptyIcon {
+    font-size: 4rem;
+    margin-bottom: var(--space-lg);
+    opacity: 0.5;
+}
+
+.emptyText {
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--checkered-white);
+}
+
+.emptySubtext {
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.5);
+    margin-top: var(--space-xs);
+}
+
+/* Item */
+.item {
+    display: flex;
+    gap: var(--space-md);
+    padding: var(--space-md);
+    background: var(--carbon-surface);
+    border-radius: var(--radius-md);
+    margin-bottom: var(--space-md);
+}
+
+.itemImage {
+    width: 80px;
+    height: 80px;
+    background: linear-gradient(135deg, rgba(225, 6, 0, 0.2) 0%, transparent 100%);
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    flex-shrink: 0;
+}
+
+.itemContent {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+}
+
+.itemName {
+    font-family: var(--font-display);
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--checkered-white);
+    line-height: 1.3;
+}
+
+.itemPrice {
+    font-family: var(--font-display);
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--racing-red);
+}
+
+.itemActions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: auto;
+}
+
+.quantity {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    background: var(--carbon-dark);
+    border-radius: var(--radius-sm);
+    padding: var(--space-xs);
+}
+
+.quantity button {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    color: var(--checkered-white);
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: var(--transition-fast);
+    border-radius: var(--radius-sm);
+}
+
+.quantity button:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.quantity button:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+.quantity span {
+    min-width: 30px;
+    text-align: center;
+    font-weight: 600;
+}
+
+.removeButton {
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: var(--transition-fast);
+}
+
+.removeButton:hover {
+    color: var(--racing-red);
+}
+
+/* Footer */
+.footer {
+    padding: var(--space-lg);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    background: var(--carbon-black);
+}
+
+.totalRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-xs);
+}
+
+.totalRow span:first-child {
+    font-size: 1rem;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.totalPrice {
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--checkered-white);
+}
+
+.shipping {
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.5);
+    margin-bottom: var(--space-lg);
+}
+
+.checkoutButton {
+    width: 100%;
+    padding: var(--space-md);
+    font-family: var(--font-display);
+    font-size: 1rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    background: var(--gradient-racing);
+    color: var(--checkered-white);
+    border: none;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: var(--transition-fast);
+    box-shadow: var(--shadow-glow);
+}
+
+.checkoutButton:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0 40px var(--racing-red-glow);
+}
+
+.clearButton {
+    width: 100%;
+    padding: var(--space-sm);
+    margin-top: var(--space-sm);
+    font-family: var(--font-display);
+    font-size: 0.85rem;
+    font-weight: 600;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.5);
+    border: none;
+    cursor: pointer;
+    transition: var(--transition-fast);
+}
+
+.clearButton:hover {
+    color: var(--racing-red);
+}
