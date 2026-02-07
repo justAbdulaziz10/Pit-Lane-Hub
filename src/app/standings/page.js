@@ -16,10 +16,18 @@ export default async function StandingsPage() {
 
     try {
         // Fetch real standings from Ergast API
-        [driverStandings, constructorStandings] = await Promise.all([
+        const [driversRes, constructorsRes] = await Promise.allSettled([
             getDriverStandings(),
             getConstructorStandings()
         ]);
+
+        if (driversRes.status === 'fulfilled' && driversRes.value.length > 0) {
+            driverStandings = driversRes.value;
+        }
+
+        if (constructorsRes.status === 'fulfilled' && constructorsRes.value.length > 0) {
+            constructorStandings = constructorsRes.value;
+        }
     } catch (e) {
         error = 'Failed to load standings data';
         console.error(e);

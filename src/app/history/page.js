@@ -30,6 +30,16 @@ export default function HistoryPage() {
                 } else {
                     const response = await fetch(`https://api.openf1.org/v1/meetings?year=${selectedYear}`);
                     result = await response.json();
+
+                    // Filter invalid races (Tests, null names, short names, specific bad data)
+                    result = result.filter(m =>
+                        m.meeting_name &&
+                        m.meeting_name.length > 5 &&
+                        m.date_start && // Must have a date
+                        !m.meeting_name.toLowerCase().includes('test') &&
+                        !m.meeting_name.toLowerCase().includes('pre-season') &&
+                        !m.meeting_name.toLowerCase().includes('shakedown')
+                    ).sort((a, b) => new Date(a.date_start) - new Date(b.date_start));
                 }
                 setData(result);
             } catch (e) {

@@ -25,11 +25,20 @@ export const TRACK_COORDS = {
     'yas marina': { lat: 24.4672, lng: 54.6031, country: 'UAE', title: 'Yas Marina Circuit', image: '/tracks/uae.png' },
 };
 
-export const getTrackInfo = (raceName) => {
-    if (!raceName) return null;
-    const name = raceName.toLowerCase();
-    for (const [key, value] of Object.entries(TRACK_COORDS)) {
-        if (name.includes(key)) {
+export const getTrackInfo = (raceName, circuitKey) => {
+    if (!raceName && !circuitKey) return null;
+
+    // Normalize inputs
+    const name = raceName ? raceName.toLowerCase() : '';
+    const key = circuitKey ? circuitKey.toLowerCase() : '';
+
+    for (const [coordKey, value] of Object.entries(TRACK_COORDS)) {
+        // Check if circuit key matches the coordinate key directly
+        if (key && (key === coordKey || key.includes(coordKey) || coordKey.includes(key))) {
+            return value;
+        }
+        // Check if race name contains the coordinate key
+        if (name && name.includes(coordKey)) {
             return value;
         }
     }

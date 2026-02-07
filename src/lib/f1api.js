@@ -2,10 +2,43 @@
 const BASE_URL = 'https://api.openf1.org/v1';
 
 // Ergast API for historical F1 data (standings, results)
-const ERGAST_URL = 'https://ergast.com/api/f1';
+// Using Jolpica Mirror because main Ergast is deprecated/blocking Vercel
+const ERGAST_URL = 'https://api.jolpi.ca/ergast/f1';
 
 // Current year for API calls
 const CURRENT_YEAR = 2026;
+
+// Hardcoded nationalities for 2026 grid fallback
+const DRIVER_NATIONALITIES = {
+  '1': 'NED', '11': 'MEX', // Red Bull
+  '4': 'GBR', '81': 'AUS', // McLaren
+  '16': 'MON', '44': 'GBR', // Ferrari
+  '63': 'GBR', '12': 'ITA', // Mercedes
+  '14': 'ESP', '18': 'CAN', // Aston Martin
+  '10': 'FRA', '7': 'AUS', // Alpine
+  '23': 'THA', '55': 'ESP', // Williams
+  '22': 'JPN', '30': 'NZL', // RB
+  '31': 'FRA', '87': 'GBR', // Haas
+  '27': 'GER', '5': 'BRA',  // Sauber
+};
+
+// Map driver numbers to Ergast IDs for career stats
+export const DRIVER_ERGAST_IDS = {
+  1: 'max_verstappen', 11: 'perez',
+  44: 'hamilton', 63: 'russell',
+  16: 'leclerc', 55: 'sainz',
+  4: 'norris', 81: 'piastri',
+  14: 'alonso', 18: 'stroll',
+  10: 'gasly', 31: 'ocon',
+  23: 'albon', 2: 'sargeant',
+  22: 'tsunoda', 3: 'ricciardo',
+  77: 'bottas', 24: 'zhou',
+  27: 'hulkenberg', 20: 'kevin_magnussen',
+  // 2025/2026 updates
+  12: 'antonelli', 87: 'bearman',
+  30: 'lawson', 7: 'doohan',
+  5: 'bortoleto',
+};
 
 /**
  * Fetch drivers for a session
@@ -22,7 +55,15 @@ export async function getDrivers(sessionKey = null) {
     }
     const response = await fetch(url, { next: { revalidate: 60 } });
     if (!response.ok) throw new Error('Failed to fetch drivers');
-    return await response.json();
+    let drivers = await response.json();
+
+    // Inject nationalities if missing
+    drivers = drivers.map(d => ({
+      ...d,
+      country_code: d.country_code || DRIVER_NATIONALITIES[d.driver_number] || 'INT'
+    }));
+
+    return drivers;
   } catch (error) {
     console.error('Error fetching drivers:', error);
     return [];
@@ -300,6 +341,41 @@ export async function getRaceResults(year = null, round = null) {
   }
 }
 
+// World Championships map (Manual update required)
+export const DRIVER_TITLES = {
+  'max_verstappen': 4, // 2021, 2022, 2023, 2024 (Assuming 2024 won based on dominance context)
+  'hamilton': 7,
+  'michael_schumacher': 7,
+  'fangio': 5,
+  'prost': 4,
+  'vettel': 4,
+  'senna': 3,
+  'piquet': 3,
+  'lauda': 3,
+  'stewart': 3,
+  'brabham': 3,
+  'alonso': 2,
+  'clark': 2,
+  'hakkinen': 2,
+  'fittipaldi': 2,
+  'ascari': 2,
+  'raikkonen': 1,
+  'button': 1,
+  'rosberg': 1,
+  'villeneuve': 1,
+  'hill': 1,
+  'mansell': 1,
+  'hunt': 1,
+  'andretti': 1,
+  'scheckter': 1,
+  'jones': 1,
+  'rindt': 1,
+  'surtees': 1,
+  'hulme': 1,
+  'hawthorn': 1,
+  'farina': 1,
+};
+
 /**
  * Fetch driver career stats from Ergast API
  * @param {string} driverId - Driver ID (e.g., 'verstappen', 'hamilton')
@@ -320,6 +396,7 @@ export async function getDriverCareerStats(driverId) {
     let poles = 0;
     let fastestLaps = 0;
     let dnfs = 0;
+    let careerPoints = 0;
 
     races.forEach(race => {
       const result = race.Results?.[0];
@@ -332,6 +409,9 @@ export async function getDriverCareerStats(driverId) {
         if (result.status && !result.status.includes('Lap') && result.status !== 'Finished') {
           dnfs++;
         }
+        if (result.points) {
+          careerPoints += parseFloat(result.points);
+        }
       }
     });
 
@@ -342,6 +422,8 @@ export async function getDriverCareerStats(driverId) {
       poles,
       fastestLaps,
       dnfs,
+      careerPoints,
+      championships: DRIVER_TITLES[driverId] || 0,
     };
   } catch (error) {
     console.error('Error fetching driver career stats:', error);

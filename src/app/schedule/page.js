@@ -1,4 +1,5 @@
 import { getMeetings } from '@/lib/f1api';
+import { SCHEDULE_2026 } from '@/lib/schedule2026';
 import Link from 'next/link';
 import styles from './page.module.css';
 
@@ -17,13 +18,15 @@ export default async function SchedulePage() {
     try {
         meetings = await getMeetings(year);
         if (meetings.length === 0) {
-            // Fallback to 2025 if 2026 is not yet available
-            year = 2025;
-            meetings = await getMeetings(year);
+            // Fallback to hardcoded 2026 schedule if API is empty
+            meetings = SCHEDULE_2026;
         }
     } catch (e) {
         error = 'Failed to load schedule data';
         console.error(e);
+        // Fallback on error too
+        meetings = SCHEDULE_2026;
+        error = null; // Clear error since we have fallback
     }
 
     const formatDate = (dateString) => {

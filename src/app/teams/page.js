@@ -25,19 +25,18 @@ export default function TeamsPage() {
                         position: s.position,
                         points: s.points,
                         color: getTeamColor(s.team.name),
-                        drivers: [] // We'll need to fetch drivers separately if we want photos
-                        // Actually, let's keep it simple first or try to match drivers
+                        drivers: []
                     }));
 
-                    // Fetch drivers to populate the team (optional but nice)
-                    // For now, let's stick to the standings data, but we lose driver photos if we don't merge.
-                    // Let's fetch drivers too.
+                    // Fetch drivers to populate the team
+                    // Dynamic import to avoid circular dep issues if any
                     const driversData = await import('@/lib/f1api').then(m => m.getDrivers());
+
                     // Helper to find drivers for a team
                     formattedTeams.forEach(team => {
                         team.drivers = driversData.filter(d =>
                             d.team_name && team.name.toLowerCase().includes(d.team_name.toLowerCase()) ||
-                            (team.name === 'Ferrari' && d.team_name === 'Ferrari') || // Explicit matches if needed
+                            (team.name === 'Ferrari' && d.team_name === 'Ferrari') ||
                             d.team_name === team.name
                         );
                         // Remove duplicates in drivers
@@ -51,11 +50,11 @@ export default function TeamsPage() {
 
                     setTeams(formattedTeams);
                 } else {
-                    // Fallback if no standings (start of season)
                     setTeams([]);
                 }
             } catch (e) {
                 console.error('Error fetching teams:', e);
+                setTeams([]);
             }
             setLoading(false);
         }

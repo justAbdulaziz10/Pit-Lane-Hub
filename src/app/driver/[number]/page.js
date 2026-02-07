@@ -1,6 +1,6 @@
 'use client';
 
-import { getTeamColor } from '@/lib/f1api';
+import { getDrivers, getTeamColor } from '@/lib/f1api';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -18,11 +18,19 @@ export default function DriverDetailPage() {
     useEffect(() => {
         async function fetchDriverData() {
             try {
-                // Fetch driver info
-                const driverRes = await fetch(`https://api.openf1.org/v1/drivers?driver_number=${driverNumber}&session_key=latest`);
-                const driverData = await driverRes.json();
-                if (driverData.length > 0) {
-                    setDriver(driverData[0]);
+                // Fetch driver info using helper to get nationality fallbacks
+                const drivers = await getDrivers(); // Fetch all drivers first to get the map
+                const driverInfo = drivers.find(d => d.driver_number == driverNumber);
+
+                if (driverInfo) {
+                    setDriver(driverInfo);
+                } else {
+                    // Fallback fetch if not found in list (e.g. older driver)
+                    const driverRes = await fetch(`https://api.openf1.org/v1/drivers?driver_number=${driverNumber}&session_key=latest`);
+                    const driverData = await driverRes.json();
+                    if (driverData.length > 0) {
+                        setDriver(driverData[0]);
+                    }
                 }
 
                 // Fetch recent sessions with positions
@@ -118,7 +126,7 @@ export default function DriverDetailPage() {
                                 {driver.team_name}
                             </div>
                             <div className={styles.countryInfo}>
-                                🏳️ {driver.country_code} • {driver.name_acronym}
+                                🏳️ {driver.country_code || 'INT'} • {driver.name_acronym}
                             </div>
                         </div>
                     </div>
