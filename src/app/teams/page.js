@@ -1,48 +1,63 @@
+'use client';
+
 import { getCurrentYear, getDrivers, getTeamColor } from '@/lib/f1api';
+import { useEffect, useState } from 'react';
 import styles from './page.module.css';
 
-export const revalidate = 3600;
+export default function TeamsPage() {
+    const [teams, setTeams] = useState([]);
+    const [loading, setLoading] = useState(true);
 
-export default async function TeamsPage() {
-    let drivers = [];
-    let teams = {};
+    useEffect(() => {
+        async function fetchTeams() {
+            try {
+                const drivers = await getDrivers();
 
-    try {
-        drivers = await getDrivers();
+                // Remove duplicates
+                const seen = new Set();
+                const uniqueDrivers = drivers.filter((driver) => {
+                    if (seen.has(driver.driver_number)) return false;
+                    seen.add(driver.driver_number);
+                    return true;
+                });
 
-        // Remove duplicates and group by team
-        const seen = new Set();
-        drivers = drivers.filter((driver) => {
-            if (seen.has(driver.driver_number)) return false;
-            seen.add(driver.driver_number);
-            return true;
-        });
+                // Group drivers by team
+                const teamsMap = {};
+                uniqueDrivers.forEach(driver => {
+                    const teamName = driver.team_name || 'Unknown';
+                    if (!teamsMap[teamName]) {
+                        teamsMap[teamName] = {
+                            name: teamName,
+                            color: getTeamColor(teamName),
+                            drivers: [],
+                            points: 0
+                        };
+                    }
+                    teamsMap[teamName].drivers.push(driver);
+                });
 
-        // Group drivers by team
-        drivers.forEach(driver => {
-            const teamName = driver.team_name || 'Unknown';
-            if (!teams[teamName]) {
-                teams[teamName] = {
-                    name: teamName,
-                    color: getTeamColor(teamName),
-                    drivers: [],
-                    // Mock points for display
-                    points: 0
-                };
+                // Convert to array and assign mock points
+                const teamsArray = Object.values(teamsMap).map((team, index) => ({
+                    ...team,
+                    position: index + 1,
+                    points: Math.max(0, 800 - (index * 80) + Math.floor(Math.random() * 30))
+                })).sort((a, b) => b.points - a.points);
+
+                setTeams(teamsArray);
+            } catch (e) {
+                console.error('Error fetching teams:', e);
             }
-            teams[teamName].drivers.push(driver);
-        });
+            setLoading(false);
+        }
 
-        // Convert to array and assign mock points based on index
-        teams = Object.values(teams).map((team, index) => ({
-            ...team,
-            position: index + 1,
-            points: Math.max(0, 800 - (index * 80) + Math.floor(Math.random() * 30))
-        })).sort((a, b) => b.points - a.points);
+        fetchTeams();
+    }, []);
 
-    } catch (e) {
-        console.error('Error fetching teams:', e);
-    }
+    // Helper to get higher quality photo
+    const getHighQualityPhoto = (url) => {
+        if (!url) return null;
+        return url.replace('_small', '_large').replace('1col', '2col');
+    };
 
     return (
         <div className={styles.teams}>
@@ -58,7 +73,12 @@ export default async function TeamsPage() {
             {/* Teams Grid */}
             <div className={styles.content}>
                 <div className="container">
-                    {teams.length > 0 ? (
+                    {loading ? (
+                        <div className={styles.loading}>
+                            <div className={styles.spinner}></div>
+                            <p>Loading teams...</p>
+                        </div>
+                    ) : teams.length > 0 ? (
                         <div className={styles.teamsGrid}>
                             {teams.map((team) => (
                                 <div
@@ -79,35 +99,43 @@ export default async function TeamsPage() {
                                     <h2 className={styles.teamName}>{team.name}</h2>
 
                                     <div className={styles.driversList}>
-                                        {team.drivers.map(driver => (
-                                            <div key={driver.driver_number} className={styles.driverRow}>
-                                                {driver.headshot_url ? (
-                                                    <img
-                                                        src={driver.headshot_url}
-                                                        alt={driver.last_name}
-                                                        className={styles.driverPhoto}
-                                                    />
-                                                ) : (
-                                                    <div className={styles.driverPhotoPlaceholder}>
-                                                        {driver.driver_number}
+                                        {team.drivers.map(driver => {
+                                            const photoUrl = getHighQualityPhoto(driver.headshot_url);
+                                            return (
+                                                <div key={driver.driver_number} className={styles.driverRow}>
+                                                    {photoUrl ? (
+                                                        <img
+                                                            src={photoUrl}
+                                                            alt={driver.last_name}
+                                                            className={styles.driverPhoto}
+                                                            loading="lazy"
+                                                            onError={(e) => {
+                                                                if (driver.headshot_url && e.target.src !== driver.headshot_url) {
+                                                                    e.target.src = driver.headshot_url;
+                                                                }
+                                                            }}
+                                                        />
+                                                    ) : (
+                                                        <div className={styles.driverPhotoPlaceholder}>
+                                                            {driver.driver_number}
+                                                        </div>
+                                                    )}
+                                                    <div className={styles.driverDetails}>
+                                                        <span className={styles.driverName}>
+                                                            {driver.first_name} <strong>{driver.last_name}</strong>
+                                                        </span>
+                                                        <span className={styles.driverNumber}>#{driver.driver_number}</span>
                                                     </div>
-                                                )}
-                                                <div className={styles.driverDetails}>
-                                                    <span className={styles.driverName}>
-                                                        {driver.first_name} <strong>{driver.last_name}</strong>
-                                                    </span>
-                                                    <span className={styles.driverNumber}>#{driver.driver_number}</span>
                                                 </div>
-                                            </div>
-                                        ))}
+                                            );
+                                        })}
                                     </div>
                                 </div>
                             ))}
                         </div>
                     ) : (
                         <div className={styles.loading}>
-                            <div className={styles.spinner}></div>
-                            <p>Loading teams...</p>
+                            <p>No teams data available</p>
                         </div>
                     )}
                 </div>

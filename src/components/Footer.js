@@ -19,14 +19,14 @@ export default function Footer() {
                             </span>
                         </div>
                         <p className={styles.tagline}>
-                            Your ultimate destination for live F1 racing data. Free and open source.
+                            Your ultimate destination for live F1, F2 & F3 racing data. Free and open source.
                         </p>
                     </div>
 
                     {/* Links */}
                     <div className={styles.links}>
                         <div className={styles.linkGroup}>
-                            <h4 className={styles.linkTitle}>Data</h4>
+                            <h4 className={styles.linkTitle}>F1 Data</h4>
                             <Link href="/drivers">Drivers</Link>
                             <Link href="/teams">Teams</Link>
                             <Link href="/standings">Standings</Link>
@@ -36,10 +36,12 @@ export default function Footer() {
                             <h4 className={styles.linkTitle}>Features</h4>
                             <Link href="/live">Live Timing</Link>
                             <Link href="/compare">Compare</Link>
-                            <Link href="/support">Support Us</Link>
+                            <Link href="/history">History</Link>
+                            <Link href="/junior">F2 & F3</Link>
                         </div>
                         <div className={styles.linkGroup}>
                             <h4 className={styles.linkTitle}>Resources</h4>
+                            <Link href="/support">Support Us</Link>
                             <a href="https://openf1.org" target="_blank" rel="noopener noreferrer">
                                 OpenF1 API ↗
                             </a>

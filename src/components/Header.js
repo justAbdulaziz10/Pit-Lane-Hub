@@ -26,7 +26,8 @@ export default function Header() {
         { href: '/teams', label: 'Teams' },
         { href: '/standings', label: 'Standings' },
         { href: '/schedule', label: 'Calendar' },
-        { href: '/compare', label: 'Compare' },
+        { href: '/history', label: 'History' },
+        { href: '/junior', label: 'F2/F3' },
         { href: '/live', label: 'Live', badge: true },
     ];
 

@@ -6,6 +6,29 @@ import styles from './DriverCard.module.css';
 export default function DriverCard({ driver }) {
     const teamColor = getTeamColor(driver.team_name);
 
+    // Try to get higher quality photo URL
+    const getHighQualityPhoto = (url) => {
+        if (!url) return null;
+        // OpenF1 sometimes provides low-res, try to modify URL for higher quality
+        return url.replace('_small', '_large').replace('1col', '2col');
+    };
+
+    const photoUrl = getHighQualityPhoto(driver.headshot_url);
+
+    const handleImageError = (e) => {
+        // Fallback to original URL if high-quality fails
+        if (driver.headshot_url && e.target.src !== driver.headshot_url) {
+            e.target.src = driver.headshot_url;
+        } else {
+            // Hide broken image and show placeholder
+            e.target.style.display = 'none';
+            const placeholder = e.target.parentNode.querySelector('[data-placeholder]');
+            if (placeholder) {
+                placeholder.style.display = 'flex';
+            }
+        }
+    };
+
     return (
         <div
             className={styles.card}
@@ -16,17 +39,22 @@ export default function DriverCard({ driver }) {
 
             {/* Driver Photo */}
             <div className={styles.photoContainer}>
-                {driver.headshot_url ? (
+                {photoUrl && (
                     <img
-                        src={driver.headshot_url}
+                        src={photoUrl}
                         alt={`${driver.first_name} ${driver.last_name}`}
                         className={styles.photo}
+                        loading="lazy"
+                        onError={handleImageError}
                     />
-                ) : (
-                    <div className={styles.photoPlaceholder}>
-                        <span className={styles.photoNumber}>{driver.driver_number}</span>
-                    </div>
                 )}
+                <div
+                    className={styles.photoPlaceholder}
+                    data-placeholder
+                    style={{ display: photoUrl ? 'none' : 'flex' }}
+                >
+                    <span className={styles.photoNumber}>{driver.driver_number}</span>
+                </div>
             </div>
 
             {/* Driver Info */}
