@@ -1,37 +1,10 @@
 'use client';
 
+import { getTrackInfo } from '@/lib/tracks';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import styles from './page.module.css';
-
-// Track coordinates for visualization (approximate)
-const TRACK_COORDS = {
-    'bahrain': { lat: 26.0325, lng: 50.5106, country: 'Bahrain', title: 'Bahrain International Circuit' },
-    'jeddah': { lat: 21.6319, lng: 39.1044, country: 'Saudi Arabia', title: 'Jeddah Corniche Circuit' },
-    'melbourne': { lat: -37.8497, lng: 144.968, country: 'Australia', title: 'Albert Park Circuit' },
-    'suzuka': { lat: 34.8432, lng: 136.5409, country: 'Japan', title: 'Suzuka Circuit' },
-    'shanghai': { lat: 31.3389, lng: 121.2197, country: 'China', title: 'Shanghai International Circuit' },
-    'miami': { lat: 25.9581, lng: -80.2389, country: 'USA', title: 'Miami International Autodrome' },
-    'imola': { lat: 44.3439, lng: 11.7133, country: 'Italy', title: 'Autodromo Enzo e Dino Ferrari' },
-    'monaco': { lat: 43.7347, lng: 7.4206, country: 'Monaco', title: 'Circuit de Monaco' },
-    'montreal': { lat: 45.5048, lng: -73.5262, country: 'Canada', title: 'Circuit Gilles Villeneuve' },
-    'barcelona': { lat: 41.57, lng: 2.2611, country: 'Spain', title: 'Circuit de Barcelona-Catalunya' },
-    'spielberg': { lat: 47.2197, lng: 14.7647, country: 'Austria', title: 'Red Bull Ring' },
-    'silverstone': { lat: 52.0733, lng: -1.0147, country: 'UK', title: 'Silverstone Circuit' },
-    'budapest': { lat: 47.5789, lng: 19.2486, country: 'Hungary', title: 'Hungaroring' },
-    'spa': { lat: 50.4372, lng: 5.9714, country: 'Belgium', title: 'Circuit de Spa-Francorchamps' },
-    'zandvoort': { lat: 52.3888, lng: 4.5409, country: 'Netherlands', title: 'Circuit Zandvoort' },
-    'monza': { lat: 45.6156, lng: 9.2811, country: 'Italy', title: 'Autodromo Nazionale Monza' },
-    'baku': { lat: 40.3725, lng: 49.8533, country: 'Azerbaijan', title: 'Baku City Circuit' },
-    'singapore': { lat: 1.2914, lng: 103.8644, country: 'Singapore', title: 'Marina Bay Street Circuit' },
-    'austin': { lat: 30.1328, lng: -97.6411, country: 'USA', title: 'Circuit of the Americas' },
-    'mexico': { lat: 19.4042, lng: -99.0907, country: 'Mexico', title: 'Autódromo Hermanos Rodríguez' },
-    'sao paulo': { lat: -23.7036, lng: -46.6997, country: 'Brazil', title: 'Interlagos Circuit' },
-    'las vegas': { lat: 36.1147, lng: -115.173, country: 'USA', title: 'Las Vegas Strip Circuit' },
-    'lusail': { lat: 25.49, lng: 51.4542, country: 'Qatar', title: 'Lusail International Circuit' },
-    'yas marina': { lat: 24.4672, lng: 54.6031, country: 'UAE', title: 'Yas Marina Circuit' },
-};
 
 // F1 Official YouTube channel race highlights (generic search link)
 const getYouTubeSearchUrl = (raceName, year) => {
@@ -74,17 +47,7 @@ export default function RaceDetailPage() {
         }
     }, [meetingKey]);
 
-    // Find track coordinates
-    const getTrackInfo = (raceName) => {
-        if (!raceName) return null;
-        const name = raceName.toLowerCase();
-        for (const [key, value] of Object.entries(TRACK_COORDS)) {
-            if (name.includes(key)) {
-                return value;
-            }
-        }
-        return null;
-    };
+    // getTrackInfo is imported from lib/tracks now
 
     if (loading) {
         return (

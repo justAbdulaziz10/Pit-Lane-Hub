@@ -27,6 +27,7 @@ export default function Header() {
         { href: '/standings', label: 'Standings' },
         { href: '/schedule', label: 'Calendar' },
         { href: '/history', label: 'History' },
+        { href: '/tracks', label: 'Tracks' },
         { href: '/junior', label: 'F2/F3' },
         { href: '/live', label: 'Live', badge: true },
     ];

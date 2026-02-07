@@ -1,4 +1,4 @@
-import { getCurrentYear, getMeetings } from '@/lib/f1api';
+import { getMeetings } from '@/lib/f1api';
 import Link from 'next/link';
 import styles from './page.module.css';
 
@@ -12,9 +12,15 @@ export const metadata = {
 export default async function SchedulePage() {
     let meetings = [];
     let error = null;
+    let year = 2026;
 
     try {
-        meetings = await getMeetings();
+        meetings = await getMeetings(year);
+        if (meetings.length === 0) {
+            // Fallback to 2025 if 2026 is not yet available
+            year = 2025;
+            meetings = await getMeetings(year);
+        }
     } catch (e) {
         error = 'Failed to load schedule data';
         console.error(e);
@@ -55,7 +61,7 @@ export default async function SchedulePage() {
             <div className={styles.header}>
                 <div className="container">
                     <span className={styles.badge}>📅 RACE CALENDAR</span>
-                    <h1>{getCurrentYear()} Schedule</h1>
+                    <h1>{year} Schedule</h1>
                     <p>Click any race for details, videos & track map</p>
                 </div>
             </div>
