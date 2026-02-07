@@ -52,10 +52,12 @@ export default function Footer() {
                     </div>
                 </div>
 
-                {/* Bottom Bar */}
                 <div className={styles.bottom}>
                     <p className={styles.copyright}>
-                        © {currentYear} Pit Lane Hub by <strong>Abdulaziz</strong>. Free & Open Source.
+                        © {currentYear} Pit Lane Hub by{' '}
+                        <a href="https://github.com/justAbdulaziz10" target="_blank" rel="noopener noreferrer" className={styles.creatorLink}>
+                            Abdulaziz
+                        </a>. Free & Open Source.
                     </p>
                     <div className={styles.powered}>
                         <span>Powered by</span>

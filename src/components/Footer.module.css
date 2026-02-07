@@ -114,6 +114,17 @@
     color: rgba(255, 255, 255, 0.5);
 }
 
+.creatorLink {
+    color: var(--racing-red);
+    text-decoration: none;
+    font-weight: 600;
+    transition: var(--transition-fast);
+}
+
+.creatorLink:hover {
+    text-decoration: underline;
+}
+
 .copyright strong {
     color: var(--racing-red);
 }

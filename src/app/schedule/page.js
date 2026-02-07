@@ -1,4 +1,5 @@
 import { getCurrentYear, getMeetings } from '@/lib/f1api';
+import Link from 'next/link';
 import styles from './page.module.css';
 
 export const revalidate = 3600;
@@ -50,7 +51,7 @@ export default async function SchedulePage() {
                 <div className="container">
                     <span className={styles.badge}>📅 RACE CALENDAR</span>
                     <h1>{getCurrentYear()} Schedule</h1>
-                    <p>All race weekends in the F1 calendar</p>
+                    <p>Click any race for details, videos & track map</p>
                 </div>
             </div>
 
@@ -66,8 +67,9 @@ export default async function SchedulePage() {
                     ) : meetings.length > 0 ? (
                         <div className={styles.grid}>
                             {meetings.map((meeting, index) => (
-                                <div
+                                <Link
                                     key={meeting.meeting_key || index}
+                                    href={`/race/${meeting.meeting_key}`}
                                     className={`${styles.raceCard} ${isPast(meeting.date_start) ? styles.past : ''} ${isUpcoming(meeting.date_start) ? styles.upcoming : ''}`}
                                 >
                                     {isUpcoming(meeting.date_start) && (
@@ -89,7 +91,8 @@ export default async function SchedulePage() {
                                     {isPast(meeting.date_start) && (
                                         <div className={styles.completed}>✓ Completed</div>
                                     )}
-                                </div>
+                                    <div className={styles.viewDetails}>View Details →</div>
+                                </Link>
                             ))}
                         </div>
                     ) : (
@@ -109,7 +112,7 @@ export default async function SchedulePage() {
                         <a href="https://openf1.org" target="_blank" rel="noopener noreferrer">
                             OpenF1 API
                         </a>
-                        {' '}— Free and open source
+                        {' '}— Updates automatically every hour
                     </p>
                 </div>
             </div>
