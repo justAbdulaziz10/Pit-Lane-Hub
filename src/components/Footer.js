@@ -19,26 +19,32 @@ export default function Footer() {
                             </span>
                         </div>
                         <p className={styles.tagline}>
-                            Your ultimate destination for live F1 racing data, powered by the community.
+                            Your ultimate destination for live F1 racing data. Free and open source.
                         </p>
                     </div>
 
                     {/* Links */}
                     <div className={styles.links}>
                         <div className={styles.linkGroup}>
-                            <h4 className={styles.linkTitle}>Live Data</h4>
+                            <h4 className={styles.linkTitle}>Data</h4>
                             <Link href="/drivers">Drivers</Link>
-                            <Link href="/schedule">Race Calendar</Link>
+                            <Link href="/teams">Teams</Link>
                             <Link href="/standings">Standings</Link>
+                            <Link href="/schedule">Calendar</Link>
+                        </div>
+                        <div className={styles.linkGroup}>
+                            <h4 className={styles.linkTitle}>Features</h4>
                             <Link href="/live">Live Timing</Link>
+                            <Link href="/compare">Compare</Link>
+                            <Link href="/support">Support Us</Link>
                         </div>
                         <div className={styles.linkGroup}>
                             <h4 className={styles.linkTitle}>Resources</h4>
-                            <a href="https://www.formula1.com/en/store" target="_blank" rel="noopener noreferrer">
-                                Official F1 Store ↗
-                            </a>
                             <a href="https://openf1.org" target="_blank" rel="noopener noreferrer">
                                 OpenF1 API ↗
+                            </a>
+                            <a href="https://www.formula1.com" target="_blank" rel="noopener noreferrer">
+                                Formula 1 ↗
                             </a>
                         </div>
                     </div>
@@ -47,7 +53,7 @@ export default function Footer() {
                 {/* Bottom Bar */}
                 <div className={styles.bottom}>
                     <p className={styles.copyright}>
-                        © {currentYear} Pit Lane Hub. Free & Open Source.
+                        © {currentYear} Pit Lane Hub by <strong>Abdulaziz</strong>. Free & Open Source.
                     </p>
                     <div className={styles.powered}>
                         <span>Powered by</span>

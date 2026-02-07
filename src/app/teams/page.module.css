@@ -1,0 +1,225 @@
+.teams {
+    min-height: 100vh;
+}
+
+/* Header */
+.header {
+    padding: var(--space-3xl) 0 var(--space-2xl);
+    text-align: center;
+    background: linear-gradient(to bottom, rgba(225, 6, 0, 0.1) 0%, transparent 100%);
+}
+
+.badge {
+    display: inline-block;
+    padding: var(--space-xs) var(--space-md);
+    background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+    color: var(--carbon-black);
+    border-radius: var(--radius-full);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    margin-bottom: var(--space-lg);
+}
+
+.header h1 {
+    margin-bottom: var(--space-sm);
+}
+
+.header p {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 1.1rem;
+}
+
+/* Content */
+.content {
+    padding: var(--space-2xl) 0 var(--space-3xl);
+}
+
+/* Teams Grid */
+.teamsGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: var(--space-xl);
+}
+
+/* Team Card */
+.teamCard {
+    position: relative;
+    background: var(--carbon-surface);
+    border: 1px solid var(--carbon-border);
+    border-radius: var(--radius-xl);
+    padding: var(--space-xl);
+    overflow: hidden;
+    transition: var(--transition-base);
+}
+
+.teamCard:hover {
+    transform: translateY(-4px);
+    border-color: var(--team-color, var(--racing-red));
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+}
+
+.teamColorBar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: var(--team-color, var(--racing-red));
+}
+
+.teamHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-md);
+}
+
+.teamPosition {
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    font-weight: 900;
+    color: var(--team-color, var(--racing-red));
+}
+
+.teamPoints {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+}
+
+.pointsValue {
+    font-family: var(--font-display);
+    font-size: 2rem;
+    font-weight: 900;
+    color: var(--checkered-white);
+    line-height: 1;
+}
+
+.pointsLabel {
+    font-size: 0.7rem;
+    color: rgba(255, 255, 255, 0.5);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+
+.teamName {
+    font-size: 1.5rem;
+    margin-bottom: var(--space-lg);
+    color: var(--checkered-white);
+}
+
+/* Drivers List */
+.driversList {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+}
+
+.driverRow {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    padding: var(--space-sm);
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: var(--radius-md);
+    transition: var(--transition-fast);
+}
+
+.driverRow:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.driverPhoto {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--team-color, var(--racing-red));
+}
+
+.driverPhotoPlaceholder {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: var(--team-color, var(--racing-red));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 0.9rem;
+    color: var(--checkered-white);
+}
+
+.driverDetails {
+    display: flex;
+    flex-direction: column;
+}
+
+.driverName {
+    color: var(--checkered-white);
+    font-size: 0.95rem;
+}
+
+.driverName strong {
+    text-transform: uppercase;
+    font-weight: 700;
+}
+
+.driverNumber {
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+/* Loading */
+.loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-3xl);
+    gap: var(--space-lg);
+}
+
+.spinner {
+    width: 50px;
+    height: 50px;
+    border: 4px solid rgba(255, 255, 255, 0.1);
+    border-top-color: var(--racing-red);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.loading p {
+    color: rgba(255, 255, 255, 0.5);
+}
+
+/* Note */
+.note {
+    padding: var(--space-lg) 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    text-align: center;
+}
+
+.note p {
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.4);
+}
+
+.note a {
+    color: var(--racing-red);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .teamsGrid {
+        grid-template-columns: 1fr;
+    }
+}

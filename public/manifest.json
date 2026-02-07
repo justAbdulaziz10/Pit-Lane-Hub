@@ -1,0 +1,21 @@
+{
+  "name": "Pit Lane Hub",
+  "short_name": "Pit Lane",
+  "description": "Live F1 racing data, driver standings, and real-time timing",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0D0D0D",
+  "theme_color": "#E10600",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

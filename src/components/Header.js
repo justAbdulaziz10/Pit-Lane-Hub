@@ -23,8 +23,10 @@ export default function Header() {
     const navLinks = [
         { href: '/', label: 'Home' },
         { href: '/drivers', label: 'Drivers' },
+        { href: '/teams', label: 'Teams' },
         { href: '/standings', label: 'Standings' },
         { href: '/schedule', label: 'Calendar' },
+        { href: '/compare', label: 'Compare' },
         { href: '/live', label: 'Live', badge: true },
     ];
 
@@ -52,14 +54,9 @@ export default function Header() {
 
                 {/* Actions */}
                 <div className={styles.actions}>
-                    <a
-                        href="https://www.formula1.com/en/store"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className={styles.shopButton}
-                    >
-                        Official Store ↗
-                    </a>
+                    <Link href="/support" className={styles.supportButton}>
+                        ❤️ Support
+                    </Link>
 
                     {/* Mobile Menu Toggle */}
                     <button
@@ -89,14 +86,13 @@ export default function Header() {
                         {link.badge && <span className={styles.liveBadge}>●</span>}
                     </Link>
                 ))}
-                <a
-                    href="https://www.formula1.com/en/store"
-                    target="_blank"
-                    rel="noopener noreferrer"
+                <Link
+                    href="/support"
                     className={styles.mobileNavLink}
+                    onClick={() => setIsMobileMenuOpen(false)}
                 >
-                    Official F1 Store ↗
-                </a>
+                    ❤️ Support Us
+                </Link>
             </div>
         </header>
     );
