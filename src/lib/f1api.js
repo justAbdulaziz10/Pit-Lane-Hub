@@ -1,6 +1,9 @@
 // OpenF1 API wrapper - Free, no signup required
 const BASE_URL = 'https://api.openf1.org/v1';
 
+// Current year for API calls
+const CURRENT_YEAR = 2026;
+
 /**
  * Fetch drivers for a session
  * @param {number} sessionKey - Optional session key
@@ -28,8 +31,8 @@ export async function getDrivers(sessionKey = null) {
  */
 export async function getCurrentSession() {
   try {
-    const response = await fetch(`${BASE_URL}/sessions?session_key=latest`, { 
-      next: { revalidate: 60 } 
+    const response = await fetch(`${BASE_URL}/sessions?session_key=latest`, {
+      next: { revalidate: 60 }
     });
     if (!response.ok) throw new Error('Failed to fetch session');
     const data = await response.json();
@@ -44,10 +47,10 @@ export async function getCurrentSession() {
  * Fetch all sessions for a year
  * @param {number} year 
  */
-export async function getSessions(year = new Date().getFullYear()) {
+export async function getSessions(year = CURRENT_YEAR) {
   try {
-    const response = await fetch(`${BASE_URL}/sessions?year=${year}`, { 
-      next: { revalidate: 3600 } 
+    const response = await fetch(`${BASE_URL}/sessions?year=${year}`, {
+      next: { revalidate: 3600 }
     });
     if (!response.ok) throw new Error('Failed to fetch sessions');
     return await response.json();
@@ -61,10 +64,10 @@ export async function getSessions(year = new Date().getFullYear()) {
  * Fetch meetings (race weekends) for a year
  * @param {number} year 
  */
-export async function getMeetings(year = new Date().getFullYear()) {
+export async function getMeetings(year = CURRENT_YEAR) {
   try {
-    const response = await fetch(`${BASE_URL}/meetings?year=${year}`, { 
-      next: { revalidate: 3600 } 
+    const response = await fetch(`${BASE_URL}/meetings?year=${year}`, {
+      next: { revalidate: 3600 }
     });
     if (!response.ok) throw new Error('Failed to fetch meetings');
     return await response.json();
@@ -80,8 +83,8 @@ export async function getMeetings(year = new Date().getFullYear()) {
  */
 export async function getPositions(sessionKey = 'latest') {
   try {
-    const response = await fetch(`${BASE_URL}/position?session_key=${sessionKey}`, { 
-      next: { revalidate: 10 } 
+    const response = await fetch(`${BASE_URL}/position?session_key=${sessionKey}`, {
+      next: { revalidate: 10 }
     });
     if (!response.ok) throw new Error('Failed to fetch positions');
     return await response.json();
@@ -117,8 +120,8 @@ export async function getLapTimes(sessionKey = 'latest', driverNumber = null) {
  */
 export async function getWeather(sessionKey = 'latest') {
   try {
-    const response = await fetch(`${BASE_URL}/weather?session_key=${sessionKey}`, { 
-      next: { revalidate: 60 } 
+    const response = await fetch(`${BASE_URL}/weather?session_key=${sessionKey}`, {
+      next: { revalidate: 60 }
     });
     if (!response.ok) throw new Error('Failed to fetch weather');
     const data = await response.json();
@@ -126,6 +129,40 @@ export async function getWeather(sessionKey = 'latest') {
   } catch (error) {
     console.error('Error fetching weather:', error);
     return null;
+  }
+}
+
+/**
+ * Fetch stints data (tire strategies)
+ * @param {number} sessionKey 
+ */
+export async function getStints(sessionKey = 'latest') {
+  try {
+    const response = await fetch(`${BASE_URL}/stints?session_key=${sessionKey}`, {
+      next: { revalidate: 30 }
+    });
+    if (!response.ok) throw new Error('Failed to fetch stints');
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching stints:', error);
+    return [];
+  }
+}
+
+/**
+ * Fetch pit stop data
+ * @param {number} sessionKey 
+ */
+export async function getPitStops(sessionKey = 'latest') {
+  try {
+    const response = await fetch(`${BASE_URL}/pit?session_key=${sessionKey}`, {
+      next: { revalidate: 30 }
+    });
+    if (!response.ok) throw new Error('Failed to fetch pit stops');
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching pit stops:', error);
+    return [];
   }
 }
 
@@ -148,12 +185,20 @@ export function getTeamColor(teamName) {
     'Haas F1 Team': '#B6BABD',
     'Kick Sauber': '#52E252',
     'Sauber': '#52E252',
+    'Cadillac': '#1E3A5F',
   };
-  
+
   for (const [team, color] of Object.entries(colors)) {
     if (teamName?.toLowerCase().includes(team.toLowerCase())) {
       return color;
     }
   }
   return '#FFFFFF';
+}
+
+/**
+ * Get current year
+ */
+export function getCurrentYear() {
+  return CURRENT_YEAR;
 }

@@ -1,7 +1,7 @@
-import { getMeetings } from '@/lib/f1api';
+import { getCurrentYear, getMeetings } from '@/lib/f1api';
 import styles from './page.module.css';
 
-export const revalidate = 3600; // Revalidate every hour
+export const revalidate = 3600;
 
 export default async function SchedulePage() {
     let meetings = [];
@@ -40,7 +40,7 @@ export default async function SchedulePage() {
         const raceDate = new Date(dateString);
         const now = new Date();
         const diff = raceDate - now;
-        return diff > 0 && diff < 14 * 24 * 60 * 60 * 1000; // Within 14 days
+        return diff > 0 && diff < 14 * 24 * 60 * 60 * 1000;
     };
 
     return (
@@ -49,7 +49,7 @@ export default async function SchedulePage() {
             <div className={styles.header}>
                 <div className="container">
                     <span className={styles.badge}>📅 RACE CALENDAR</span>
-                    <h1>2024 Schedule</h1>
+                    <h1>{getCurrentYear()} Schedule</h1>
                     <p>All race weekends in the F1 calendar</p>
                 </div>
             </div>
@@ -74,7 +74,7 @@ export default async function SchedulePage() {
                                         <span className={styles.upcomingBadge}>UPCOMING</span>
                                     )}
                                     <div className={styles.round}>
-                                        Round {meeting.meeting_key || index + 1}
+                                        Round {index + 1}
                                     </div>
                                     <h3 className={styles.raceName}>
                                         {meeting.meeting_name || meeting.meeting_official_name}

@@ -1,26 +1,14 @@
 'use client';
 
-import { getCartCount } from '@/lib/cart';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import styles from './Header.module.css';
 
-export default function Header({ onCartClick }) {
-    const [cartCount, setCartCount] = useState(0);
+export default function Header() {
     const [isScrolled, setIsScrolled] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
     useEffect(() => {
-        // Update cart count
-        const updateCartCount = () => {
-            setCartCount(getCartCount());
-        };
-
-        updateCartCount();
-        window.addEventListener('storage', updateCartCount);
-        window.addEventListener('cartUpdated', updateCartCount);
-
-        // Scroll effect
         const handleScroll = () => {
             setIsScrolled(window.scrollY > 50);
         };
@@ -28,17 +16,16 @@ export default function Header({ onCartClick }) {
         window.addEventListener('scroll', handleScroll);
 
         return () => {
-            window.removeEventListener('storage', updateCartCount);
-            window.removeEventListener('cartUpdated', updateCartCount);
             window.removeEventListener('scroll', handleScroll);
         };
     }, []);
 
     const navLinks = [
         { href: '/', label: 'Home' },
-        { href: '/store', label: 'Store' },
         { href: '/drivers', label: 'Drivers' },
-        { href: '/schedule', label: 'Schedule' },
+        { href: '/standings', label: 'Standings' },
+        { href: '/schedule', label: 'Calendar' },
+        { href: '/live', label: 'Live', badge: true },
     ];
 
     return (
@@ -49,7 +36,7 @@ export default function Header({ onCartClick }) {
                     <span className={styles.logoIcon}>🏎️</span>
                     <span className={styles.logoText}>
                         <span className={styles.logoPrimary}>PIT LANE</span>
-                        <span className={styles.logoSecondary}>STORE</span>
+                        <span className={styles.logoSecondary}>HUB</span>
                     </span>
                 </Link>
 
@@ -58,26 +45,21 @@ export default function Header({ onCartClick }) {
                     {navLinks.map((link) => (
                         <Link key={link.href} href={link.href} className={styles.navLink}>
                             {link.label}
+                            {link.badge && <span className={styles.liveBadge}>●</span>}
                         </Link>
                     ))}
                 </nav>
 
                 {/* Actions */}
                 <div className={styles.actions}>
-                    <button
-                        className={styles.cartButton}
-                        onClick={onCartClick}
-                        aria-label="Open cart"
+                    <a
+                        href="https://www.formula1.com/en/store"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={styles.shopButton}
                     >
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <circle cx="9" cy="21" r="1" />
-                            <circle cx="20" cy="21" r="1" />
-                            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
-                        </svg>
-                        {cartCount > 0 && (
-                            <span className={styles.cartBadge}>{cartCount}</span>
-                        )}
-                    </button>
+                        Official Store ↗
+                    </a>
 
                     {/* Mobile Menu Toggle */}
                     <button
@@ -104,8 +86,17 @@ export default function Header({ onCartClick }) {
                         onClick={() => setIsMobileMenuOpen(false)}
                     >
                         {link.label}
+                        {link.badge && <span className={styles.liveBadge}>●</span>}
                     </Link>
                 ))}
+                <a
+                    href="https://www.formula1.com/en/store"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={styles.mobileNavLink}
+                >
+                    Official F1 Store ↗
+                </a>
             </div>
         </header>
     );

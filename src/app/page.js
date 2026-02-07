@@ -1,10 +1,47 @@
-import ProductCard from '@/components/ProductCard';
-import { getFeaturedProducts } from '@/data/products';
+import { getCurrentYear, getDrivers, getMeetings } from '@/lib/f1api';
 import Link from 'next/link';
 import styles from './page.module.css';
 
-export default function Home() {
-  const featuredProducts = getFeaturedProducts().slice(0, 4);
+export const revalidate = 60;
+
+export default async function Home() {
+  let drivers = [];
+  let meetings = [];
+
+  try {
+    [drivers, meetings] = await Promise.all([
+      getDrivers(),
+      getMeetings()
+    ]);
+
+    // Remove duplicate drivers
+    const seen = new Set();
+    drivers = drivers.filter((driver) => {
+      if (seen.has(driver.driver_number)) return false;
+      seen.add(driver.driver_number);
+      return true;
+    }).slice(0, 6);
+
+  } catch (e) {
+    console.error('Error fetching data:', e);
+  }
+
+  // Find next upcoming race
+  const now = new Date();
+  const upcomingRaces = meetings.filter(m => new Date(m.date_start) > now);
+  const nextRace = upcomingRaces[0];
+
+  // Calculate countdown
+  const getCountdown = () => {
+    if (!nextRace) return null;
+    const raceDate = new Date(nextRace.date_start);
+    const diff = raceDate - now;
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    return { days, hours };
+  };
+
+  const countdown = getCountdown();
 
   return (
     <div className={styles.home}>
@@ -15,121 +52,151 @@ export default function Home() {
           <div className={styles.heroGrid}></div>
         </div>
         <div className={styles.heroContent}>
-          <span className={styles.heroBadge}>🏎️ THE ULTIMATE F1 EXPERIENCE</span>
+          <span className={styles.heroBadge}>🏎️ LIVE F1 DATA • FREE • OPEN SOURCE</span>
           <h1 className={styles.heroTitle}>
-            Welcome to the<br />
-            <span className={styles.heroHighlight}>Pit Lane</span>
+            Your F1<br />
+            <span className={styles.heroHighlight}>Command Center</span>
           </h1>
           <p className={styles.heroDescription}>
-            Premium F1 merchandise, live racing data, and exclusive experiences.
-            Fuel your passion for Formula 1.
+            Real-time driver data, race schedules, and live timing.
+            Powered by OpenF1 API - completely free.
           </p>
           <div className={styles.heroActions}>
-            <Link href="/store" className="btn btn-primary">
-              Shop Now
+            <Link href="/live" className="btn btn-primary">
+              Live Timing
             </Link>
             <Link href="/drivers" className="btn btn-secondary">
               View Drivers
             </Link>
           </div>
         </div>
+
+        {/* Stats */}
         <div className={styles.heroStats}>
           <div className={styles.stat}>
-            <span className={styles.statValue}>16</span>
-            <span className={styles.statLabel}>Products</span>
-          </div>
-          <div className={styles.stat}>
-            <span className={styles.statValue}>20</span>
+            <span className={styles.statValue}>{drivers.length > 0 ? '20' : '--'}</span>
             <span className={styles.statLabel}>Drivers</span>
           </div>
           <div className={styles.stat}>
-            <span className={styles.statValue}>24</span>
+            <span className={styles.statValue}>10</span>
+            <span className={styles.statLabel}>Teams</span>
+          </div>
+          <div className={styles.stat}>
+            <span className={styles.statValue}>{meetings.length || '--'}</span>
             <span className={styles.statLabel}>Races</span>
           </div>
         </div>
       </section>
 
-      {/* Featured Products */}
-      <section className={styles.featured}>
-        <div className="container">
-          <div className={styles.sectionHeader}>
-            <h2>Featured Products</h2>
-            <Link href="/store" className={styles.viewAll}>
-              View All →
-            </Link>
-          </div>
-          <div className="grid grid-4">
-            {featuredProducts.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Categories */}
-      <section className={styles.categories}>
-        <div className="container">
-          <h2 className={styles.sectionTitle}>Shop by Category</h2>
-          <div className={styles.categoryGrid}>
-            <Link href="/store?category=apparel" className={styles.categoryCard}>
-              <span className={styles.categoryIcon}>👕</span>
-              <h3>Apparel</h3>
-              <p>T-shirts, hoodies, caps & more</p>
-            </Link>
-            <Link href="/store?category=accessories" className={styles.categoryCard}>
-              <span className={styles.categoryIcon}>⌚</span>
-              <h3>Accessories</h3>
-              <p>Watches, bags, sunglasses</p>
-            </Link>
-            <Link href="/store?category=collectibles" className={styles.categoryCard}>
-              <span className={styles.categoryIcon}>🏆</span>
-              <h3>Collectibles</h3>
-              <p>Models, replicas, memorabilia</p>
-            </Link>
-            <Link href="/store?category=experiences" className={styles.categoryCard}>
-              <span className={styles.categoryIcon}>🎫</span>
-              <h3>Experiences</h3>
-              <p>VIP access, driving days</p>
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* Live Data Banner */}
-      <section className={styles.liveBanner}>
-        <div className="container">
-          <div className={styles.liveContent}>
-            <span className={styles.liveBadge}>🔴 LIVE DATA</span>
-            <h2>Real-Time F1 Updates</h2>
-            <p>Powered by OpenF1 API - Free and open source</p>
-            <div className={styles.liveLinks}>
-              <Link href="/drivers" className="btn btn-ghost">
-                👨‍✈️ Drivers
-              </Link>
-              <Link href="/schedule" className="btn btn-ghost">
-                📅 Schedule
+      {/* Next Race Countdown */}
+      {nextRace && countdown && (
+        <section className={styles.countdown}>
+          <div className="container">
+            <div className={styles.countdownCard}>
+              <div className={styles.countdownBadge}>NEXT RACE</div>
+              <h2 className={styles.countdownTitle}>{nextRace.meeting_name}</h2>
+              <p className={styles.countdownLocation}>
+                {nextRace.circuit_short_name} • {nextRace.country_name}
+              </p>
+              <div className={styles.countdownTimer}>
+                <div className={styles.timerBlock}>
+                  <span className={styles.timerValue}>{countdown.days}</span>
+                  <span className={styles.timerLabel}>Days</span>
+                </div>
+                <span className={styles.timerSeparator}>:</span>
+                <div className={styles.timerBlock}>
+                  <span className={styles.timerValue}>{countdown.hours}</span>
+                  <span className={styles.timerLabel}>Hours</span>
+                </div>
+              </div>
+              <Link href="/schedule" className={styles.countdownLink}>
+                View Full Calendar →
               </Link>
             </div>
           </div>
+        </section>
+      )}
+
+      {/* Quick Access Cards */}
+      <section className={styles.quickAccess}>
+        <div className="container">
+          <h2 className={styles.sectionTitle}>Quick Access</h2>
+          <div className={styles.cardGrid}>
+            <Link href="/drivers" className={styles.accessCard}>
+              <div className={styles.accessIcon}>👨‍✈️</div>
+              <h3>Drivers</h3>
+              <p>Current grid with team info and stats</p>
+              <span className={styles.accessArrow}>→</span>
+            </Link>
+            <Link href="/standings" className={styles.accessCard}>
+              <div className={styles.accessIcon}>🏆</div>
+              <h3>Standings</h3>
+              <p>Championship points and positions</p>
+              <span className={styles.accessArrow}>→</span>
+            </Link>
+            <Link href="/schedule" className={styles.accessCard}>
+              <div className={styles.accessIcon}>📅</div>
+              <h3>Calendar</h3>
+              <p>Full {getCurrentYear()} race schedule</p>
+              <span className={styles.accessArrow}>→</span>
+            </Link>
+            <Link href="/live" className={styles.accessCard}>
+              <div className={styles.accessIcon}>⚡</div>
+              <h3>Live Timing</h3>
+              <p>Real-time session data</p>
+              <span className={styles.accessLive}>● LIVE</span>
+            </Link>
+          </div>
         </div>
       </section>
 
-      {/* Newsletter */}
-      <section className={styles.newsletter}>
+      {/* Featured Drivers */}
+      {drivers.length > 0 && (
+        <section className={styles.featuredDrivers}>
+          <div className="container">
+            <div className={styles.sectionHeader}>
+              <h2>Current Drivers</h2>
+              <Link href="/drivers" className={styles.viewAll}>
+                View All →
+              </Link>
+            </div>
+            <div className={styles.driversGrid}>
+              {drivers.map((driver) => (
+                <div key={driver.driver_number} className={styles.driverMini}>
+                  <span className={styles.driverNumber}>#{driver.driver_number}</span>
+                  <div className={styles.driverInfo}>
+                    <span className={styles.driverName}>
+                      {driver.first_name} <strong>{driver.last_name}</strong>
+                    </span>
+                    <span className={styles.driverTeam}>{driver.team_name}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* About / Data Source */}
+      <section className={styles.about}>
         <div className="container">
-          <div className={styles.newsletterContent}>
-            <h2>Join the Grid</h2>
-            <p>Get exclusive deals, race alerts, and F1 news straight to your inbox.</p>
-            <form className={styles.newsletterForm}>
-              <input
-                type="email"
-                placeholder="Your email address"
-                className={styles.newsletterInput}
-              />
-              <button type="submit" className="btn btn-primary">
-                Subscribe
-              </button>
-            </form>
+          <div className={styles.aboutContent}>
+            <h2>100% Free F1 Data</h2>
+            <p>
+              Pit Lane Hub is powered by the <a href="https://openf1.org" target="_blank" rel="noopener noreferrer">OpenF1 API</a> -
+              a free, open-source, community-driven project providing real-time and historical Formula 1 data.
+            </p>
+            <p>
+              No accounts required. No subscriptions. Just pure racing data.
+            </p>
+            <div className={styles.aboutLinks}>
+              <a href="https://openf1.org" target="_blank" rel="noopener noreferrer" className="btn btn-ghost">
+                Learn More →
+              </a>
+              <a href="https://www.formula1.com/en/store" target="_blank" rel="noopener noreferrer" className="btn btn-ghost">
+                Official F1 Store ↗
+              </a>
+            </div>
           </div>
         </div>
       </section>

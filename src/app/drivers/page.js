@@ -1,8 +1,8 @@
 import DriverCard from '@/components/DriverCard';
-import { getDrivers } from '@/lib/f1api';
+import { getCurrentYear, getDrivers } from '@/lib/f1api';
 import styles from './page.module.css';
 
-export const revalidate = 60; // Revalidate every 60 seconds
+export const revalidate = 60;
 
 export default async function DriversPage() {
     let drivers = [];
@@ -28,7 +28,7 @@ export default async function DriversPage() {
             <div className={styles.header}>
                 <div className="container">
                     <span className={styles.badge}>🏎️ LIVE DATA</span>
-                    <h1>2024 Drivers</h1>
+                    <h1>{getCurrentYear()} Drivers</h1>
                     <p>Real-time driver data powered by OpenF1 API</p>
                 </div>
             </div>

@@ -65,6 +65,9 @@
 }
 
 .navLink {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
     font-family: var(--font-display);
     font-weight: 600;
     font-size: 0.875rem;
@@ -95,6 +98,24 @@
     width: 100%;
 }
 
+.liveBadge {
+    color: var(--racing-red);
+    font-size: 0.6rem;
+    animation: pulse 1.5s ease infinite;
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.4;
+    }
+}
+
 /* Actions */
 .actions {
     display: flex;
@@ -102,41 +123,24 @@
     gap: var(--space-md);
 }
 
-.cartButton {
-    position: relative;
+.shopButton {
     display: flex;
     align-items: center;
-    justify-content: center;
-    width: 44px;
-    height: 44px;
+    gap: var(--space-xs);
+    padding: var(--space-sm) var(--space-md);
+    font-family: var(--font-display);
+    font-size: 0.8rem;
+    font-weight: 600;
     background: rgba(255, 255, 255, 0.1);
-    border: none;
-    border-radius: var(--radius-md);
     color: var(--checkered-white);
-    cursor: pointer;
+    border-radius: var(--radius-md);
+    text-decoration: none;
     transition: var(--transition-fast);
 }
 
-.cartButton:hover {
-    background: rgba(255, 255, 255, 0.2);
-    transform: scale(1.05);
-}
-
-.cartBadge {
-    position: absolute;
-    top: -4px;
-    right: -4px;
-    min-width: 20px;
-    height: 20px;
-    padding: 0 6px;
-    font-size: 0.75rem;
-    font-weight: 700;
-    color: var(--checkered-white);
+.shopButton:hover {
     background: var(--racing-red);
-    border-radius: var(--radius-full);
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    color: var(--checkered-white);
 }
 
 /* Mobile Toggle */
@@ -193,10 +197,13 @@
 }
 
 .mobileMenuOpen {
-    max-height: 300px;
+    max-height: 400px;
 }
 
 .mobileNavLink {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
     padding: var(--space-md) var(--space-lg);
     font-family: var(--font-display);
     font-weight: 600;
@@ -204,6 +211,7 @@
     color: var(--checkered-white);
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     transition: var(--transition-fast);
+    text-decoration: none;
 }
 
 .mobileNavLink:hover {
@@ -214,6 +222,10 @@
 /* Responsive */
 @media (max-width: 768px) {
     .nav {
+        display: none;
+    }
+
+    .shopButton {
         display: none;
     }
 
