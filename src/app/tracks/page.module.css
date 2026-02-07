@@ -241,6 +241,13 @@
     }
 }
 
+/* Video Wrapper */
+.videoWrapper {
+    width: 100%;
+    height: 100%;
+    background: black;
+}
+
 @media (max-width: 768px) {
     .modalContent {
         height: 400px;

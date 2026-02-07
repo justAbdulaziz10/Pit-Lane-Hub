@@ -1,6 +1,6 @@
 'use client';
 
-import { getCurrentYear, getDrivers, getTeamColor } from '@/lib/f1api';
+import { getConstructorStandings, getCurrentYear, getTeamColor } from '@/lib/f1api';
 import { useEffect, useState } from 'react';
 import styles from './page.module.css';
 
@@ -11,39 +11,45 @@ export default function TeamsPage() {
     useEffect(() => {
         async function fetchTeams() {
             try {
-                const drivers = await getDrivers();
+                // Fetch real constructor standings
+                const standings = await getConstructorStandings();
 
-                // Remove duplicates
-                const seen = new Set();
-                const uniqueDrivers = drivers.filter((driver) => {
-                    if (seen.has(driver.driver_number)) return false;
-                    seen.add(driver.driver_number);
-                    return true;
-                });
+                if (standings.length > 0) {
+                    // Map Ergast data to our format
+                    const formattedTeams = standings.map(s => ({
+                        name: s.team.name,
+                        position: s.position,
+                        points: s.points,
+                        color: getTeamColor(s.team.name),
+                        drivers: [] // We'll need to fetch drivers separately if we want photos
+                        // Actually, let's keep it simple first or try to match drivers
+                    }));
 
-                // Group drivers by team
-                const teamsMap = {};
-                uniqueDrivers.forEach(driver => {
-                    const teamName = driver.team_name || 'Unknown';
-                    if (!teamsMap[teamName]) {
-                        teamsMap[teamName] = {
-                            name: teamName,
-                            color: getTeamColor(teamName),
-                            drivers: [],
-                            points: 0
-                        };
-                    }
-                    teamsMap[teamName].drivers.push(driver);
-                });
+                    // Fetch drivers to populate the team (optional but nice)
+                    // For now, let's stick to the standings data, but we lose driver photos if we don't merge.
+                    // Let's fetch drivers too.
+                    const driversData = await import('@/lib/f1api').then(m => m.getDrivers());
+                    // Helper to find drivers for a team
+                    formattedTeams.forEach(team => {
+                        team.drivers = driversData.filter(d =>
+                            d.team_name && team.name.toLowerCase().includes(d.team_name.toLowerCase()) ||
+                            (team.name === 'Ferrari' && d.team_name === 'Ferrari') || // Explicit matches if needed
+                            d.team_name === team.name
+                        );
+                        // Remove duplicates in drivers
+                        const seen = new Set();
+                        team.drivers = team.drivers.filter(d => {
+                            if (seen.has(d.driver_number)) return false;
+                            seen.add(d.driver_number);
+                            return true;
+                        });
+                    });
 
-                // Convert to array and assign mock points
-                const teamsArray = Object.values(teamsMap).map((team, index) => ({
-                    ...team,
-                    position: index + 1,
-                    points: Math.max(0, 800 - (index * 80) + Math.floor(Math.random() * 30))
-                })).sort((a, b) => b.points - a.points);
-
-                setTeams(teamsArray);
+                    setTeams(formattedTeams);
+                } else {
+                    // Fallback if no standings (start of season)
+                    setTeams([]);
+                }
             } catch (e) {
                 console.error('Error fetching teams:', e);
             }

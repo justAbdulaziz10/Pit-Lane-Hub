@@ -7,7 +7,7 @@ import styles from './page.module.css';
 const AVAILABLE_YEARS = [2023, 2024, 2025, 2026];
 
 export default function HistoryPage() {
-    const [selectedYear, setSelectedYear] = useState(2025);
+    const [selectedYear, setSelectedYear] = useState(2024);
     const [dataType, setDataType] = useState('drivers');
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(true);

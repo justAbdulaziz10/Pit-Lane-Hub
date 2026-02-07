@@ -9,11 +9,31 @@ export default async function LivePage() {
     let weather = null;
 
     try {
+        // Try to get live session first
         [drivers, session, weather] = await Promise.all([
             getDrivers(),
             getCurrentSession(),
             getWeather()
         ]);
+
+        // If no live session, fetch the latest completed session
+        if (!session) {
+            const response = await fetch('https://api.openf1.org/v1/sessions?session_key=latest');
+            const data = await response.json();
+            if (data && data.length > 0) {
+                session = data[0];
+                // Fetch results for this session
+                // We can use getDrivers but with specific session key if needed, 
+                // but OpenF1 /drivers endpoint might filtered by session.
+                // However, without a live session, /drivers might return nothing or latest.
+                // Let's try fetching positions for this session.
+                const posResponse = await fetch(`https://api.openf1.org/v1/position?session_key=${session.session_key}&date>=${session.date_end}`);
+                // Actually, position endpoint is heavy. 
+                // Let's just use /drivers?session_key=latest or similar.
+                const driversRes = await fetch(`https://api.openf1.org/v1/drivers?session_key=${session.session_key}`);
+                drivers = await driversRes.json();
+            }
+        }
 
         // Remove duplicates
         const seen = new Set();
@@ -86,9 +106,9 @@ export default async function LivePage() {
                             </>
                         ) : (
                             <div className={styles.noSession}>
-                                <span className={styles.noSessionIcon}>📡</span>
-                                <h3>No Active Session</h3>
-                                <p>Live timing will appear here during race weekends</p>
+                                <span className={styles.noSessionIcon}>🏁</span>
+                                <h3>Session Completed</h3>
+                                <p>Showing results from the latest session</p>
                             </div>
                         )}
                     </div>
