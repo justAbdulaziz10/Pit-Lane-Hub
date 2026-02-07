@@ -16,6 +16,11 @@ export default function SupportPage() {
         window.open('https://buymeacoffee.com/justAbdulaziz10', '_blank');
     };
 
+    const handleSubscribe = () => {
+        // Redirect to Buy Me a Coffee Membership
+        window.open('https://buymeacoffee.com/justAbdulaziz10/membership', '_blank');
+    };
+
     return (
         <div className={styles.support}>
             {/* Hero */}
@@ -123,7 +128,7 @@ export default function SupportPage() {
                     {/* Premium Tier */}
                     <div className={styles.premiumSection}>
                         <div className={styles.premiumCard}>
-                            <div className={styles.premiumBadge}>COMING SOON</div>
+                            <div className={styles.premiumBadge}>MEMBERSHIP</div>
                             <h2>🏎️ Pit Lane Pro</h2>
                             <div className={styles.premiumPrice}>
                                 <span className={styles.price}>$4.99</span>
@@ -136,12 +141,13 @@ export default function SupportPage() {
                                 <li>✓ Custom driver alerts</li>
                                 <li>✓ Ad-free experience</li>
                                 <li>✓ Early access to new features</li>
+                                <li>✓ Supporter badge on profile</li>
                             </ul>
-                            <button className={styles.premiumBtn} disabled>
-                                Coming Soon
+                            <button className={styles.premiumBtn} onClick={handleSubscribe}>
+                                Subscribe Now
                             </button>
                             <p className={styles.premiumNote}>
-                                Join the waitlist for early access
+                                Cancel anytime • Billed monthly via Buy Me a Coffee
                             </p>
                         </div>
                     </div>
