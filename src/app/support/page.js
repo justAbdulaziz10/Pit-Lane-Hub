@@ -12,9 +12,8 @@ export default function SupportPage() {
 
     const handleDonate = (e) => {
         e.preventDefault();
-        const amount = customAmount || selectedAmount;
-        // In production, this would redirect to Stripe Payment Link
-        alert(`Thank you for your support of $${amount}! Payment integration coming soon.`);
+        // Redirect to Buy Me a Coffee
+        window.open('https://buymeacoffee.com/justAbdulaziz10', '_blank');
     };
 
     return (
@@ -80,7 +79,7 @@ export default function SupportPage() {
                             </button>
 
                             <p className={styles.disclaimer}>
-                                Secure payment powered by Stripe. One-time donation.
+                                Secure payment via Buy Me a Coffee ☕
                             </p>
                         </div>
 
