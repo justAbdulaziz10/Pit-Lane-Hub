@@ -9,11 +9,35 @@ import styles from "./page.module.css"
 export default function LoginPage() {
     const router = useRouter()
     const [error, setError] = useState("")
+    const [success, setSuccess] = useState("")
     const [isLoading, setIsLoading] = useState(false)
+
+    const handleMagicLink = async (e) => {
+        e.preventDefault()
+        setError("")
+        setSuccess("")
+        setIsLoading(true)
+
+        const email = e.target.magicEmail.value
+
+        try {
+            await signIn("resend", { email, redirect: false })
+            // Whether it works or fails server-side, for security we usually say "Check your email"
+            // But with redirect: false, NextAuth might return a URL or just complete.
+            // For Magic Links, typically we receive an ok response.
+            setSuccess("Check your email! A magic link has been sent.")
+            setIsLoading(false)
+        } catch (err) {
+            console.error(err)
+            setError("Failed to send magic link. Please try again.")
+            setIsLoading(false)
+        }
+    }
 
     const handleSubmit = async (e) => {
         e.preventDefault()
         setError("")
+        setSuccess("")
         setIsLoading(true)
 
         const email = e.target.email.value
@@ -71,6 +95,70 @@ export default function LoginPage() {
                             {error}
                         </div>
                     )}
+
+                    {/* Magic Link Form */}
+                    <div className={styles.magicLinkSection}>
+                        <form action={async (formData) => {
+                            setIsLoading(true);
+                            await signIn("resend", formData);
+                        }}>
+                            <div className={styles['form-group']}>
+                                <label className={styles.label}>Sign in with Email (Magic Link)</label>
+                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                    <input
+                                        type="email"
+                                        name="email"
+                                        placeholder="name@example.com"
+                                        className={styles.input}
+                                        required
+                                    />
+                                    <button
+                                        type="submit"
+                                        className={styles['submit-btn']}
+                                        style={{ width: 'auto', padding: '0 1.5rem' }}
+                                    >
+                                        ✨ Send Link
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div className={styles.divider}>
+                        <span>OR USE PASSWORD</span>
+                    </div>
+
+                    <div className={styles.magicLinkSection}>
+                        <form
+                            action={async (formData) => {
+                                await signIn("resend", formData)
+                            }}
+                        >
+                            <div className={styles['form-group']}>
+                                <label className={styles.label}>Sign in with Email (Magic Link)</label>
+                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                    <input
+                                        type="email"
+                                        name="email"
+                                        placeholder="name@example.com"
+                                        className={styles.input}
+                                        required
+                                    />
+                                    <button
+                                        type="submit"
+                                        className={styles['submit-btn']}
+                                        style={{ width: 'auto', padding: '0 1.5rem', marginTop: 0 }}
+                                    >
+                                        ✨ Send Link
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div className={styles.divider}>
+                        <span>OR USE PASSWORD</span>
+                    </div>
 
                     <form onSubmit={handleSubmit}>
                         <div className={styles['form-group']}>

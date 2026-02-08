@@ -3,10 +3,15 @@ import { PrismaAdapter } from "@auth/prisma-adapter"
 import bcrypt from "bcryptjs"
 import NextAuth from "next-auth"
 import Credentials from "next-auth/providers/credentials"
+import Resend from "next-auth/providers/resend"
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
     adapter: PrismaAdapter(prisma),
     providers: [
+        Resend({
+            apiKey: process.env.AUTH_RESEND_KEY,
+            from: "onboarding@resend.dev" // Default Resend test domain
+        }),
         Credentials({
             name: "Credentials",
             credentials: {
