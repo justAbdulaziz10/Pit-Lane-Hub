@@ -214,8 +214,8 @@ export const SCHEDULE_2026 = [
         meeting_key: "lvg",
         circuit_short_name: "Las Vegas",
         country_name: "USA",
-        date_start: "2026-11-19T00:00:00",
-        date_end: "2026-11-21T00:00:00",
+        date_start: "2026-11-19T12:00:00",
+        date_end: "2026-11-21T12:00:00",
         country_code: "USA",
         circuit_key: "las_vegas"
     },
