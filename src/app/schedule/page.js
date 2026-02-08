@@ -35,6 +35,7 @@ export default async function SchedulePage() {
         return date.toLocaleDateString('en-US', {
             month: 'short',
             day: 'numeric',
+            timeZone: 'UTC', // Ensure consistent date regardless of client timezone
         });
     };
 
