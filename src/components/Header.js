@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import styles from './Header.module.css';
 
-import { signOut, useSession } from "next-auth/react";
+import { useSession } from "next-auth/react";
 
 export default function Header() {
     const { data: session } = useSession()
@@ -73,17 +73,13 @@ export default function Header() {
                         </div>
                     ) : (
                         <div className="flex items-center gap-4">
-                            <span className="text-sm font-medium hidden md:block">
-                                {session.user.name || session.user.email}
-                            </span>
-                            <button
-                                onClick={() => signOut()}
-                                className="text-gray-400 hover:text-white text-sm"
-                            >
-                                Sign Out
-                            </button>
-                            <Link href="/support" className={styles.supportButton}>
-                                {session.user.isPro ? "Manage Sub" : "Upgrade"}
+                            <Link href="/profile" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+                                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#e10600] to-[#ff4d4d] flex items-center justify-center text-white font-bold text-sm border-2 border-white/20">
+                                    {session.user.name ? session.user.name[0].toUpperCase() : "U"}
+                                </div>
+                                <span className="text-sm font-medium hidden md:block">
+                                    {session.user.name?.split(' ')[0] || "Profile"}
+                                </span>
                             </Link>
                         </div>
                     )}

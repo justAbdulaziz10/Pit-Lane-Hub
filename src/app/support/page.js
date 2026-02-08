@@ -163,8 +163,19 @@ export default function SupportPage() {
                                 <li>✓ Early access to new features</li>
                                 <li>✓ Supporter badge on profile</li>
                             </ul>
-                            <button className={styles.premiumBtn} onClick={handleSubscribe}>
-                                Subscribe Now
+                            <button
+                                className={`${styles.premiumBtn} ${styles.proPulse}`}
+                                onClick={handleSubscribe}
+                                style={{
+                                    background: 'linear-gradient(45deg, #e10600, #ff4d4d)',
+                                    boxShadow: '0 0 20px rgba(225, 6, 0, 0.4)',
+                                    fontWeight: '800',
+                                    padding: '1rem 3rem',
+                                    fontSize: '1.2rem',
+                                    border: '1px solid rgba(255, 255, 255, 0.2)'
+                                }}
+                            >
+                                GET PRO ACCESS
                             </button>
                             <p className={styles.premiumNote}>
                                 Cancel anytime • Billed monthly via Buy Me a Coffee
