@@ -148,6 +148,7 @@ export default function HistoryPage() {
                                     <div className={styles.driverColorBar}></div>
                                     <div className={styles.driverPhoto}>
                                         {driver.headshot_url ? (
+                                            // eslint-disable-next-line @next/next/no-img-element
                                             <img src={driver.headshot_url} alt={driver.last_name} />
                                         ) : (
                                             <div className={styles.driverPhotoPlaceholder}>

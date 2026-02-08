@@ -11,10 +11,8 @@ export default function NotificationBanner() {
     useEffect(() => {
         // Check if notifications are supported
         if ('Notification' in window) {
-            // Only update if different to avoid strict mode double-invoke issues
-            if (Notification.permission !== permission) {
-                setPermission(Notification.permission);
-            }
+            // eslint-disable-next-line react-hooks/set-state-in-effect
+            setPermission(Notification.permission);
 
             // Show banner if permission not yet decided
             if (Notification.permission === 'default') {

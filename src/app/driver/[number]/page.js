@@ -109,6 +109,7 @@ export default function DriverDetailPage() {
                     <div className={styles.heroMain}>
                         <div className={styles.driverPhoto}>
                             {photoUrl ? (
+                                // eslint-disable-next-line @next/next/no-img-element
                                 <img src={photoUrl} alt={driver.last_name} />
                             ) : (
                                 <div className={styles.photoPlaceholder}>{driver.driver_number}</div>

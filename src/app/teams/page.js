@@ -113,17 +113,20 @@ export default function TeamsPage() {
                                             return (
                                                 <div key={driver.driver_number} className={styles.driverRow}>
                                                     {photoUrl ? (
-                                                        <img
-                                                            src={photoUrl}
-                                                            alt={driver.last_name}
-                                                            className={styles.driverPhoto}
-                                                            loading="lazy"
-                                                            onError={(e) => {
-                                                                if (driver.headshot_url && e.target.src !== driver.headshot_url) {
-                                                                    e.target.src = driver.headshot_url;
-                                                                }
-                                                            }}
-                                                        />
+                                                        <div className={styles.driverPhotoWrapper}>
+                                                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                                                            <img
+                                                                src={photoUrl}
+                                                                alt={driver.last_name}
+                                                                className={styles.driverPhoto}
+                                                                loading="lazy"
+                                                                onError={(e) => {
+                                                                    if (driver.headshot_url && e.target.src !== driver.headshot_url) {
+                                                                        e.target.src = driver.headshot_url;
+                                                                    }
+                                                                }}
+                                                            />
+                                                        </div>
                                                     ) : (
                                                         <div className={styles.driverPhotoPlaceholder}>
                                                             {driver.driver_number}

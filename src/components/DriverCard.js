@@ -41,6 +41,7 @@ export default function DriverCard({ driver }) {
                 {/* Driver Photo */}
                 <div className={styles.photoContainer}>
                     {photoUrl && (
+                        // eslint-disable-next-line @next/next/no-img-element
                         <img
                             src={photoUrl}
                             alt={`${driver.first_name} ${driver.last_name}`}

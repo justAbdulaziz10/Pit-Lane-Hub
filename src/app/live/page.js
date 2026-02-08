@@ -175,7 +175,7 @@ export default async function LivePage() {
                         <h3>📡 About Live Data</h3>
                         <p>
                             This page shows real-time data from the OpenF1 API. During active sessions,
-                            you'll see live lap times, positions, and sector data.
+                            you&apos;ll see live lap times, positions, and sector data.
                         </p>
                         <p>
                             Data refreshes automatically every 10 seconds. For the full live experience,
