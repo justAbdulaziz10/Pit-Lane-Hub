@@ -160,8 +160,9 @@ export default async function LivePage() {
                         </div>
                     ) : (
                         <div className={styles.loading}>
-                            <div className={styles.spinner}></div>
-                            <p>Loading timing data...</p>
+                            <p className="text-gray-400">
+                                We couldn&apos;t load the live timing data. Please check back later.
+                            </p>
                         </div>
                     )}
                 </div>

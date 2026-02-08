@@ -3,7 +3,7 @@
 import trackData from '@/lib/f1-circuits.json';
 import { OrbitControls, PerspectiveCamera, Stars } from '@react-three/drei';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useRef } from 'react';
 import * as THREE from 'three';
 
 function TrackLine({ coords }) {
@@ -35,10 +35,14 @@ function TrackLine({ coords }) {
         });
     }, [coords]);
 
-    if (points.length === 0) return null;
-
     // Create a smooth curve
-    const curve = useMemo(() => new THREE.CatmullRomCurve3(points, true), [points]);
+    // Always call hooks unconditionally
+    const curve = useMemo(() => {
+        if (points.length === 0) return null;
+        return new THREE.CatmullRomCurve3(points, true);
+    }, [points]);
+
+    if (points.length === 0 || !curve) return null;
 
     return (
         <group>
@@ -77,18 +81,9 @@ function AnimatedCamera() {
 }
 
 export default function Track3D({ trackKey }) {
-    const [coordinates, setCoordinates] = useState([]);
+    const coordinates = useMemo(() => {
+        if (!trackData || !trackData.features) return [];
 
-    useEffect(() => {
-        if (!trackData || !trackData.features) return;
-
-        // Find feature by name or ID
-        // The geojson likely has properties.Name or similar.
-        // We need to map our trackKey to the geojson name.
-        // For now, let's just find *any* match or defaulting.
-
-        // Let's console log properties to debug matching if needed, 
-        // but for now I'll implement a flexible finder.
         const feature = trackData.features.find(f => {
             const name = f.properties.Name?.toLowerCase() || '';
             const location = f.properties.Location?.toLowerCase() || '';
@@ -97,15 +92,12 @@ export default function Track3D({ trackKey }) {
         });
 
         if (feature && feature.geometry.type === 'LineString') {
-            setCoordinates(feature.geometry.coordinates);
+            return feature.geometry.coordinates;
         } else if (feature && feature.geometry.type === 'Polygon') {
-            // Polygons often wrap the line string in an extra array
-            setCoordinates(feature.geometry.coordinates[0]);
-        } else {
-            // Fallback: Use the first one (Bahrain usually) if not found
-            // Or clear it.
-            console.warn('Track not found in GeoJSON:', trackKey);
+            return feature.geometry.coordinates[0];
         }
+
+        return [];
     }, [trackKey]);
 
     return (

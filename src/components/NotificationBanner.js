@@ -11,7 +11,10 @@ export default function NotificationBanner() {
     useEffect(() => {
         // Check if notifications are supported
         if ('Notification' in window) {
-            setPermission(Notification.permission);
+            // Only update if different to avoid strict mode double-invoke issues
+            if (Notification.permission !== permission) {
+                setPermission(Notification.permission);
+            }
 
             // Show banner if permission not yet decided
             if (Notification.permission === 'default') {
