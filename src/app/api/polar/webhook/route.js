@@ -19,30 +19,35 @@ export async function POST(req) {
 
     // Documentation: https://docs.polar.sh/api-reference/webhooks
     // TODO: Use SDK or standard HMAC to verify `signature` using `webhookSecret`.
-    return new NextResponse("Invalid body", { status: 400 });
-}
 
-try {
-    if (event.type === "subscription.created" || event.type === "subscription.updated") {
-        const subscription = event.data;
-        const userId = subscription.metadata?.userId;
-
-        if (userId && subscription.status === "active") {
-            await prisma.user.update({
-                where: { id: userId },
-                data: { isPro: true },
-            });
-        } else if (userId && (subscription.status === "canceled" || subscription.status === "incomplete_expired")) {
-            await prisma.user.update({
-                where: { id: userId },
-                data: { isPro: false },
-            });
-        }
+    let event;
+    try {
+        event = JSON.parse(body);
+    } catch (err) {
+        return new NextResponse("Invalid body", { status: 400 });
     }
 
-    return new NextResponse("Webhook received", { status: 200 });
-} catch (error) {
-    console.error("Polar Webhook Error:", error);
-    return new NextResponse("Internal Error", { status: 500 });
-}
+    try {
+        if (event.type === "subscription.created" || event.type === "subscription.updated") {
+            const subscription = event.data;
+            const userId = subscription.metadata?.userId;
+
+            if (userId && subscription.status === "active") {
+                await prisma.user.update({
+                    where: { id: userId },
+                    data: { isPro: true },
+                });
+            } else if (userId && (subscription.status === "canceled" || subscription.status === "incomplete_expired")) {
+                await prisma.user.update({
+                    where: { id: userId },
+                    data: { isPro: false },
+                });
+            }
+        }
+
+        return new NextResponse("Webhook received", { status: 200 });
+    } catch (error) {
+        console.error("Polar Webhook Error:", error);
+        return new NextResponse("Internal Error", { status: 500 });
+    }
 }
