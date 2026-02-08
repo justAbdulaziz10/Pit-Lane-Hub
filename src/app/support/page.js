@@ -18,7 +18,8 @@ export default function SupportPage() {
 
     const handleSubscribe = async () => {
         try {
-            const response = await fetch('/api/stripe/checkout', {
+            // Updated to use Polar checkout
+            const response = await fetch('/api/polar/checkout', {
                 method: 'POST',
             });
 
