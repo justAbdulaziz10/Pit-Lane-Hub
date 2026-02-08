@@ -61,6 +61,11 @@ export default function Header() {
 
                 {/* Actions */}
                 <div className={styles.actions}>
+                    <Link href="/support" className={styles.coffeeButton} title="Buy us a coffee">
+                        <span>☕</span>
+                        <span className={styles.coffeeText}>Support</span>
+                    </Link>
+
                     {!session ? (
                         <div className="flex gap-4">
                             <Link href="/login" className={styles.navLink}>Log In</Link>

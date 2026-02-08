@@ -145,6 +145,42 @@
     box-shadow: var(--shadow-glow);
 }
 
+.coffeeButton {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    padding: var(--space-sm) var(--space-md);
+    background: rgba(255, 217, 0, 0.1);
+    border: 1px solid rgba(255, 217, 0, 0.3);
+    border-radius: var(--radius-md);
+    text-decoration: none;
+    transition: var(--transition-fast);
+}
+
+.coffeeButton:hover {
+    background: rgba(255, 217, 0, 0.2);
+    border-color: #FFD700;
+    transform: translateY(-2px);
+    box-shadow: 0 0 20px rgba(255, 217, 0, 0.2);
+}
+
+.coffeeText {
+    font-family: var(--font-display);
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #FFD700;
+}
+
+@media (max-width: 640px) {
+    .coffeeText {
+        display: none;
+    }
+
+    .coffeeButton {
+        padding: var(--space-sm);
+    }
+}
+
 /* Mobile Toggle */
 .mobileToggle {
     display: none;
