@@ -1,5 +1,6 @@
 import Footer from '@/components/Footer';
 import Header from '@/components/Header';
+import Providers from '@/components/Providers';
 import './globals.css';
 
 export const metadata = {
@@ -43,7 +44,7 @@ export const metadata = {
     apple: '/apple-touch-icon.png',
   },
   manifest: '/manifest.json',
-  themeColor: '#E10600',
+  manifest: '/manifest.json',
 };
 
 export const viewport = {
@@ -52,15 +53,18 @@ export const viewport = {
   themeColor: '#E10600',
 };
 
+
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body>
-        <Header />
-        <main style={{ paddingTop: '80px', minHeight: '100vh' }}>
-          {children}
-        </main>
-        <Footer />
+        <Providers>
+          <Header />
+          <main style={{ paddingTop: '80px', minHeight: '100vh' }}>
+            {children}
+          </main>
+          <Footer />
+        </Providers>
       </body>
     </html>
   );

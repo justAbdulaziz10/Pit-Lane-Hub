@@ -4,10 +4,12 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import styles from './Header.module.css';
 
+import { signOut, useSession } from "next-auth/react";
+
 export default function Header() {
+    const { data: session } = useSession()
     const [isScrolled, setIsScrolled] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
     useEffect(() => {
         const handleScroll = () => {
             setIsScrolled(window.scrollY > 50);
@@ -42,6 +44,9 @@ export default function Header() {
                         <span className={styles.logoPrimary}>PIT LANE</span>
                         <span className={styles.logoSecondary}>HUB</span>
                     </span>
+                    {session?.user?.isPro && (
+                        <span className="ml-2 bg-[#E10600] text-white text-[10px] font-bold px-1.5 py-0.5 rounded">PRO</span>
+                    )}
                 </Link>
 
                 {/* Desktop Navigation */}
@@ -56,9 +61,27 @@ export default function Header() {
 
                 {/* Actions */}
                 <div className={styles.actions}>
-                    <Link href="/support" className={styles.supportButton}>
-                        ❤️ Support
-                    </Link>
+                    {!session ? (
+                        <div className="flex gap-4">
+                            <Link href="/login" className={styles.navLink}>Log In</Link>
+                            <Link href="/signup" className={styles.supportButton}>Sign Up</Link>
+                        </div>
+                    ) : (
+                        <div className="flex items-center gap-4">
+                            <span className="text-sm font-medium hidden md:block">
+                                {session.user.name || session.user.email}
+                            </span>
+                            <button
+                                onClick={() => signOut()}
+                                className="text-gray-400 hover:text-white text-sm"
+                            >
+                                Sign Out
+                            </button>
+                            <Link href="/support" className={styles.supportButton}>
+                                {session.user.isPro ? "Manage Sub" : "Upgrade"}
+                            </Link>
+                        </div>
+                    )}
 
                     {/* Mobile Menu Toggle */}
                     <button

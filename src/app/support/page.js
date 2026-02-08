@@ -16,9 +16,28 @@ export default function SupportPage() {
         window.open('https://buymeacoffee.com/justAbdulaziz10', '_blank');
     };
 
-    const handleSubscribe = () => {
-        // Redirect to Buy Me a Coffee Membership
-        window.open('https://buymeacoffee.com/justAbdulaziz10/membership', '_blank');
+    const handleSubscribe = async () => {
+        try {
+            const response = await fetch('/api/stripe/checkout', {
+                method: 'POST',
+            });
+
+            if (response.status === 401) {
+                // Not logged in
+                window.location.href = '/login?redirect=/support';
+                return;
+            }
+
+            const data = await response.json();
+            if (data.url) {
+                window.location.href = data.url;
+            } else {
+                alert('Something went wrong initiating checkout.');
+            }
+        } catch (error) {
+            console.error('Subscription error:', error);
+            alert('Error starting subscription. Please try again.');
+        }
     };
 
     return (
