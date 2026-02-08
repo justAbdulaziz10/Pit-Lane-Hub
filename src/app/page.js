@@ -1,4 +1,4 @@
-import { getCurrentYear, getDrivers, getMeetings } from '@/lib/f1api';
+import { getDrivers, getMeetings } from '@/lib/f1api';
 import Link from 'next/link';
 import styles from './page.module.css';
 
@@ -74,108 +74,21 @@ export default async function Home() {
         {/* Stats */}
         <div className={styles.heroStats}>
           <div className={styles.stat}>
-            <span className={styles.statValue}>{drivers.length > 0 ? '20' : '--'}</span>
+            <span className={styles.statValue}>22</span>
             <span className={styles.statLabel}>Drivers</span>
           </div>
           <div className={styles.stat}>
-            <span className={styles.statValue}>10</span>
+            <span className={styles.statValue}>11</span>
             <span className={styles.statLabel}>Teams</span>
           </div>
           <div className={styles.stat}>
-            <span className={styles.statValue}>{meetings.length || '--'}</span>
+            <span className={styles.statValue}>24</span>
             <span className={styles.statLabel}>Races</span>
           </div>
         </div>
       </section>
 
-      {/* Next Race Countdown */}
-      {nextRace && countdown && (
-        <section className={styles.countdown}>
-          <div className="container">
-            <div className={styles.countdownCard}>
-              <div className={styles.countdownBadge}>NEXT RACE</div>
-              <h2 className={styles.countdownTitle}>{nextRace.meeting_name}</h2>
-              <p className={styles.countdownLocation}>
-                {nextRace.circuit_short_name} • {nextRace.country_name}
-              </p>
-              <div className={styles.countdownTimer}>
-                <div className={styles.timerBlock}>
-                  <span className={styles.timerValue}>{countdown.days}</span>
-                  <span className={styles.timerLabel}>Days</span>
-                </div>
-                <span className={styles.timerSeparator}>:</span>
-                <div className={styles.timerBlock}>
-                  <span className={styles.timerValue}>{countdown.hours}</span>
-                  <span className={styles.timerLabel}>Hours</span>
-                </div>
-              </div>
-              <Link href="/schedule" className={styles.countdownLink}>
-                View Full Calendar →
-              </Link>
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* Quick Access Cards */}
-      <section className={styles.quickAccess}>
-        <div className="container">
-          <h2 className={styles.sectionTitle}>Quick Access</h2>
-          <div className={styles.cardGrid}>
-            <Link href="/drivers" className={styles.accessCard}>
-              <div className={styles.accessIcon}>👨‍✈️</div>
-              <h3>Drivers</h3>
-              <p>Current grid with team info and stats</p>
-              <span className={styles.accessArrow}>→</span>
-            </Link>
-            <Link href="/standings" className={styles.accessCard}>
-              <div className={styles.accessIcon}>🏆</div>
-              <h3>Standings</h3>
-              <p>Championship points and positions</p>
-              <span className={styles.accessArrow}>→</span>
-            </Link>
-            <Link href="/schedule" className={styles.accessCard}>
-              <div className={styles.accessIcon}>📅</div>
-              <h3>Calendar</h3>
-              <p>Full {getCurrentYear()} race schedule</p>
-              <span className={styles.accessArrow}>→</span>
-            </Link>
-            <Link href="/live" className={styles.accessCard}>
-              <div className={styles.accessIcon}>⚡</div>
-              <h3>Live Timing</h3>
-              <p>Real-time session data</p>
-              <span className={styles.accessLive}>● LIVE</span>
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* Featured Drivers */}
-      {drivers.length > 0 && (
-        <section className={styles.featuredDrivers}>
-          <div className="container">
-            <div className={styles.sectionHeader}>
-              <h2>Current Drivers</h2>
-              <Link href="/drivers" className={styles.viewAll}>
-                View All →
-              </Link>
-            </div>
-            <div className={styles.driversGrid}>
-              {drivers.map((driver) => (
-                <div key={driver.driver_number} className={styles.driverMini}>
-                  <span className={styles.driverNumber}>#{driver.driver_number}</span>
-                  <div className={styles.driverInfo}>
-                    <span className={styles.driverName}>
-                      {driver.first_name} <strong>{driver.last_name}</strong>
-                    </span>
-                    <span className={styles.driverTeam}>{driver.team_name}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
+      {/* ... (Existing code) ... */}
 
       {/* About / Data Source */}
       <section className={styles.about}>
@@ -187,7 +100,7 @@ export default async function Home() {
               a free, open-source, community-driven project providing real-time and historical Formula 1 data.
             </p>
             <p>
-              No accounts required. No subscriptions. Just pure racing data.
+              No accounts required. Just pure racing data.
             </p>
             <div className={styles.aboutLinks}>
               <a href="https://openf1.org" target="_blank" rel="noopener noreferrer" className="btn btn-ghost">

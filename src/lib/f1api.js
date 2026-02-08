@@ -415,6 +415,21 @@ export async function getDriverCareerStats(driverId) {
       }
     });
 
+    // Hardcoded nationalities for 2026 grid fallback
+    const DRIVER_NATIONALITIES = {
+      '1': 'NED', '11': 'MEX', // Red Bull
+      '4': 'GBR', '81': 'AUS', // McLaren
+      '16': 'MON', '44': 'GBR', // Ferrari
+      '63': 'GBR', '12': 'ITA', // Mercedes
+      '14': 'ESP', '18': 'CAN', // Aston Martin
+      '10': 'FRA', '7': 'AUS', // Alpine
+      '23': 'THA', '55': 'ESP', // Williams
+      '22': 'JPN', '30': 'NZL', // RB
+      '31': 'FRA', '87': 'GBR', // Haas
+      '27': 'GER', '5': 'BRA',  // Sauber/Audi
+      '98': 'USA', '99': 'USA'  // Cadillac (Placeholder numbers)
+    };
+
     return {
       totalRaces: races.length,
       wins,
@@ -452,7 +467,9 @@ export function getTeamColor(teamName) {
     'Haas': '#B6BABD',
     'Kick Sauber': '#52E252',
     'Sauber': '#52E252',
-    'Cadillac': '#1E3A5F',
+    'Audi': '#1E1E1E', // Anticipating Audi black/silver
+    'Cadillac': '#FFD700', // Gold/Dark Blue
+    'General Motors': '#1E3A5F',
   };
 
   for (const [team, color] of Object.entries(colors)) {

@@ -166,7 +166,7 @@ export default async function StandingsPage() {
             <div className={styles.note}>
                 <div className="container">
                     <p>
-                        📊 Data from <a href="https://ergast.com/mrd/" target="_blank" rel="noopener noreferrer">Ergast F1 API</a> •
+                        📊 Data from <a href="https://jolpi.ca" target="_blank" rel="noopener noreferrer">Jolpica (Ergast Mirror)</a> •
                         Updates automatically every 5 minutes
                     </p>
                 </div>

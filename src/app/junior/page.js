@@ -4,10 +4,10 @@ import styles from './page.module.css';
 
 // Static F2/F3 data (OpenF1 API doesn't provide F2/F3 data)
 const F2_TEAMS_2026 = [
+    { name: 'AIX Racing', color: '#B2E351' },
     { name: 'ART Grand Prix', color: '#1E90FF' },
     { name: 'Campos Racing', color: '#FFD700' },
-    { name: 'Carlin', color: '#0000FF' },
-    { name: 'DAMS', color: '#00008B' },
+    { name: 'DAMS Lucas Oil', color: '#00008B' },
     { name: 'Hitech Pulse-Eight', color: '#808080' },
     { name: 'Invicta Racing', color: '#FF4500' },
     { name: 'MP Motorsport', color: '#FF6347' },
@@ -18,10 +18,11 @@ const F2_TEAMS_2026 = [
 ];
 
 const F3_TEAMS_2026 = [
+    { name: 'AIX Racing', color: '#B2E351' },
     { name: 'ART Grand Prix', color: '#1E90FF' },
     { name: 'Campos Racing', color: '#FFD700' },
+    { name: 'DAMS Lucas Oil', color: '#00008B' },
     { name: 'Hitech Pulse-Eight', color: '#808080' },
-    { name: 'Jenzer Motorsport', color: '#4169E1' },
     { name: 'MP Motorsport', color: '#FF6347' },
     { name: 'Prema Racing', color: '#FF0000' },
     { name: 'Trident', color: '#000080' },

@@ -80,34 +80,43 @@ export default async function SchedulePage() {
                         </div>
                     ) : meetings.length > 0 ? (
                         <div className={styles.grid}>
-                            {meetings.map((meeting, index) => (
-                                <Link
-                                    key={meeting.meeting_key || index}
-                                    href={`/race/${meeting.meeting_key}`}
-                                    className={`${styles.raceCard} ${isPast(meeting.date_start) ? styles.past : ''} ${isUpcoming(meeting.date_start) ? styles.upcoming : ''}`}
-                                >
-                                    {isUpcoming(meeting.date_start) && (
-                                        <span className={styles.upcomingBadge}>UPCOMING</span>
-                                    )}
-                                    <div className={styles.round}>
-                                        Round {index + 1}
-                                    </div>
-                                    <h3 className={styles.raceName}>
-                                        {meeting.meeting_name || meeting.meeting_official_name}
-                                    </h3>
-                                    <div className={styles.location}>
-                                        <span className={styles.country}>{meeting.country_name}</span>
-                                        <span className={styles.circuit}>{meeting.circuit_short_name}</span>
-                                    </div>
-                                    <div className={styles.dates}>
-                                        {formatDateRange(meeting.date_start, meeting.date_end)}
-                                    </div>
-                                    {isPast(meeting.date_start) && (
-                                        <div className={styles.completed}>✓ Completed</div>
-                                    )}
-                                    <div className={styles.viewDetails}>View Details →</div>
-                                </Link>
-                            ))}
+                            {meetings.map((meeting) => {
+                                const isTesting = meeting.meeting_name.toLowerCase().includes('testing');
+                                // Calculate round number: Count only non-testing events before this one
+                                const roundNum = meetings
+                                    .slice(0, meetings.indexOf(meeting))
+                                    .filter(m => !m.meeting_name.toLowerCase().includes('testing'))
+                                    .length + 1;
+
+                                return (
+                                    <Link
+                                        key={meeting.meeting_key || meeting.date_start}
+                                        href={`/race/${meeting.meeting_key}`}
+                                        className={`${styles.raceCard} ${isPast(meeting.date_start) ? styles.past : ''} ${isUpcoming(meeting.date_start) ? styles.upcoming : ''}`}
+                                    >
+                                        {isUpcoming(meeting.date_start) && (
+                                            <span className={styles.upcomingBadge}>UPCOMING</span>
+                                        )}
+                                        <div className={styles.round}>
+                                            {isTesting ? 'TESTING' : `Round ${roundNum}`}
+                                        </div>
+                                        <h3 className={styles.raceName}>
+                                            {meeting.meeting_name || meeting.meeting_official_name}
+                                        </h3>
+                                        <div className={styles.location}>
+                                            <span className={styles.country}>{meeting.country_name}</span>
+                                            <span className={styles.circuit}>{meeting.circuit_short_name}</span>
+                                        </div>
+                                        <div className={styles.dates}>
+                                            {formatDateRange(meeting.date_start, meeting.date_end)}
+                                        </div>
+                                        {isPast(meeting.date_start) && (
+                                            <div className={styles.completed}>✓ Completed</div>
+                                        )}
+                                        <div className={styles.viewDetails}>View Details →</div>
+                                    </Link>
+                                );
+                            })}
                         </div>
                     ) : (
                         <div className={styles.loading}>
