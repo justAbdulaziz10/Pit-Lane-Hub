@@ -1,9 +1,7 @@
 import { auth } from "@/auth"
+import { prisma } from "@/lib/prisma"
 import { stripe } from "@/lib/stripe"
-import { PrismaClient } from "@prisma/client"
 import { NextResponse } from "next/server"
-
-const prisma = new PrismaClient()
 
 export async function POST(req) {
     try {
