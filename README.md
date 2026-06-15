@@ -138,11 +138,12 @@ tests/                     # Vitest unit tests
 
 ## 🧪 Testing
 
-Unit tests cover the data-layer transforms, input validation, and webhook signature
-verification:
+Unit tests (Vitest) cover the data-layer transforms, input validation, and webhook
+signature verification. Playwright drives end-to-end smoke tests across the key pages:
 
 ```bash
-npm test
+npm test          # unit tests
+npm run test:e2e  # Playwright smoke tests (installs browsers on first run)
 ```
 
 ---
