@@ -3,7 +3,7 @@
 import styles from './page.module.css';
 
 // Static F2/F3 data (OpenF1 API doesn't provide F2/F3 data)
-const F2_TEAMS_2026 = [
+const F2_TEAMS = [
     { name: 'AIX Racing', color: '#B2E351' },
     { name: 'ART Grand Prix', color: '#1E90FF' },
     { name: 'Campos Racing', color: '#FFD700' },
@@ -17,7 +17,7 @@ const F2_TEAMS_2026 = [
     { name: 'Van Amersfoort Racing', color: '#FFA500' },
 ];
 
-const F3_TEAMS_2026 = [
+const F3_TEAMS = [
     { name: 'AIX Racing', color: '#B2E351' },
     { name: 'ART Grand Prix', color: '#1E90FF' },
     { name: 'Campos Racing', color: '#FFD700' },
@@ -70,7 +70,7 @@ export default function JuniorPage() {
                         </div>
 
                         <div className={styles.teamsGrid}>
-                            {F2_TEAMS_2026.map((team) => (
+                            {F2_TEAMS.map((team) => (
                                 <div
                                     key={team.name}
                                     className={styles.teamCard}
@@ -106,7 +106,7 @@ export default function JuniorPage() {
                         </div>
 
                         <div className={styles.teamsGrid}>
-                            {F3_TEAMS_2026.map((team) => (
+                            {F3_TEAMS.map((team) => (
                                 <div
                                     key={team.name}
                                     className={styles.teamCard}

@@ -19,6 +19,7 @@ export {
     getSessions,
     getStints,
     getWeather,
+    latestPositions,
 } from './f1/openf1';
 
 export {

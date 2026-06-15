@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { getDrivers, getWeather } from '@/lib/f1/openf1';
+import { getDrivers, getWeather, latestPositions } from '@/lib/f1/openf1';
 
 function mockFetchOnce(payload, ok = true) {
     vi.stubGlobal(
@@ -26,6 +26,27 @@ describe('getDrivers', () => {
     it('returns an empty array on fetch failure', async () => {
         mockFetchOnce(null, false);
         expect(await getDrivers()).toEqual([]);
+    });
+});
+
+describe('latestPositions', () => {
+    it('keeps the last position per driver from a time-series', () => {
+        const series = [
+            { driver_number: 1, position: 3, date: 't1' },
+            { driver_number: 4, position: 2, date: 't1' },
+            { driver_number: 1, position: 1, date: 't2' }, // 1 moved up to P1
+        ];
+        const latest = latestPositions(series);
+        expect(latest.get(1)).toBe(1);
+        expect(latest.get(4)).toBe(2);
+        expect(latest.size).toBe(2);
+    });
+
+    it('ignores rows missing driver_number or position, and handles empty input', () => {
+        expect(latestPositions([]).size).toBe(0);
+        expect(latestPositions().size).toBe(0);
+        const latest = latestPositions([{ position: 1 }, { driver_number: 5 }]);
+        expect(latest.size).toBe(0);
     });
 });
 

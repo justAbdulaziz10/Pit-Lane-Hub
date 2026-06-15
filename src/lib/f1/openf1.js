@@ -77,6 +77,22 @@ export async function getMeetings(year = CURRENT_YEAR) {
 }
 
 /**
+ * Reduce an OpenF1 position time-series to the latest position per driver.
+ * The endpoint returns one row per position change; the last row for a driver
+ * is their current position.
+ * @param {Array<{driver_number:number, position:number, date?:string}>} positions
+ * @returns {Map<number, number>} driver_number -> latest position
+ */
+export function latestPositions(positions = []) {
+    const latest = new Map();
+    for (const p of positions) {
+        if (p?.driver_number == null || p?.position == null) continue;
+        latest.set(p.driver_number, p.position);
+    }
+    return latest;
+}
+
+/**
  * Fetch position data for a session.
  * @param {number|string} sessionKey
  */
