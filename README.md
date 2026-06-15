@@ -28,7 +28,7 @@
   [Ergast/Jolpica API](https://api.jolpi.ca/ergast/f1) (historical standings & career stats)
 - **Auth**: [NextAuth v5](https://authjs.dev/) with the Prisma adapter (credentials + Resend magic links)
 - **Database**: PostgreSQL via [Prisma](https://www.prisma.io/)
-- **Payments**: [Polar](https://polar.sh/) (primary) with legacy [Stripe](https://stripe.com/) support
+- **Payments**: [Polar](https://polar.sh/) subscriptions
 - **3D**: [Three.js](https://threejs.org/) via React Three Fiber for circuit maps
 - **Styling**: CSS Modules with a custom design-token system
 - **Testing**: [Vitest](https://vitest.dev/)
@@ -65,8 +65,8 @@ Open [http://localhost:3000](http://localhost:3000) to view the site.
 ### Environment variables
 
 All required variables are documented in [`.env.example`](.env.example) — database URLs,
-NextAuth secret, Resend, and Polar/Stripe credentials. The webhook routes **require** their
-signing secrets (`POLAR_WEBHOOK_SECRET`, `STRIPE_WEBHOOK_SECRET`) and fail closed without them.
+NextAuth secret, Resend, and Polar credentials. The Polar webhook route **requires** its
+signing secret (`POLAR_WEBHOOK_SECRET`) and fails closed without it.
 
 ### Scripts
 
@@ -117,7 +117,7 @@ src/
 │   ├── history/           # Historical data browser
 │   ├── junior/            # F2 & F3 info
 │   └── support/           # Donation page
-│   ├── api/               # Route handlers (auth, Polar/Stripe webhooks)
+│   ├── api/               # Route handlers (auth, Polar checkout + webhook)
 │   ├── error.js           # App-level error boundary
 │   └── not-found.js       # 404 page
 ├── components/            # Reusable React components
