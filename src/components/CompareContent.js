@@ -185,7 +185,7 @@ export default function CompareContent({ initialDrivers = [] }) {
                             <div className={styles.driverProfile} style={{ borderColor: color1 }}>
                                 {selectedDriver1.headshot_url && (
                                     // eslint-disable-next-line @next/next/no-img-element
-                                    <img src={selectedDriver1.headshot_url} alt={`${selectedDriver1.first_name} ${selectedDriver1.last_name}`} />
+                                    <img src={selectedDriver1.headshot_url} alt={`${selectedDriver1.first_name} ${selectedDriver1.last_name}`} loading="lazy" decoding="async" />
                                 )}
                                 <h2>{selectedDriver1.first_name} <strong>{selectedDriver1.last_name}</strong></h2>
                                 <span className={styles.teamTag}>{selectedDriver1.team_name}</span>
@@ -193,7 +193,7 @@ export default function CompareContent({ initialDrivers = [] }) {
                             <div className={styles.driverProfile} style={{ borderColor: color2 }}>
                                 {selectedDriver2.headshot_url && (
                                     // eslint-disable-next-line @next/next/no-img-element
-                                    <img src={selectedDriver2.headshot_url} alt={`${selectedDriver2.first_name} ${selectedDriver2.last_name}`} />
+                                    <img src={selectedDriver2.headshot_url} alt={`${selectedDriver2.first_name} ${selectedDriver2.last_name}`} loading="lazy" decoding="async" />
                                 )}
                                 <h2>{selectedDriver2.first_name} <strong>{selectedDriver2.last_name}</strong></h2>
                                 <span className={styles.teamTag}>{selectedDriver2.team_name}</span>

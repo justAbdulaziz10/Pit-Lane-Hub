@@ -156,7 +156,7 @@ export default function HistoryPage() {
                                     <div className={styles.driverPhoto}>
                                         {driver.headshot_url ? (
                                             // eslint-disable-next-line @next/next/no-img-element
-                                            <img src={driver.headshot_url} alt={driver.last_name} />
+                                            <img src={driver.headshot_url} alt={driver.last_name} loading="lazy" decoding="async" />
                                         ) : (
                                             <div className={styles.driverPhotoPlaceholder}>
                                                 {driver.driver_number}

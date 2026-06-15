@@ -53,10 +53,27 @@ export const viewport = {
 };
 
 
+const websiteJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: 'Pit Lane Hub',
+  url: 'https://f1-xi-weld.vercel.app',
+  description: 'Live F1 racing data, driver standings, race calendar, and real-time timing.',
+  potentialAction: {
+    '@type': 'SearchAction',
+    target: 'https://f1-xi-weld.vercel.app/drivers?q={search_term_string}',
+    'query-input': 'required name=search_term_string',
+  },
+};
+
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
+        />
         <Providers>
           <a href="#main-content" className="skip-link">Skip to main content</a>
           <Header />

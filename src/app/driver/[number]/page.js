@@ -66,8 +66,22 @@ export default async function DriverDetailPage({ params }) {
         : [null, []];
     const recentResults = [...seasonResults].reverse().slice(0, 8);
 
+    const personJsonLd = {
+        '@context': 'https://schema.org',
+        '@type': 'Person',
+        name: driver.full_name || `${driver.first_name} ${driver.last_name}`,
+        jobTitle: 'Formula 1 Driver',
+        nationality: driver.country_code,
+        image: photoUrl || undefined,
+        worksFor: driver.team_name ? { '@type': 'Organization', name: driver.team_name } : undefined,
+    };
+
     return (
         <div className={styles.driverDetail} style={{ '--team-color': teamColor }}>
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{ __html: JSON.stringify(personJsonLd) }}
+            />
             {/* Hero Section */}
             <div className={styles.hero}>
                 <div className={styles.heroBackground}></div>
