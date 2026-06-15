@@ -1,6 +1,7 @@
 'use server'
 
 import { prisma } from "@/lib/prisma"
+import { isValidEmail, validatePassword } from "@/lib/validation"
 import bcrypt from "bcryptjs"
 
 export async function registerUser(formData) {
@@ -10,6 +11,15 @@ export async function registerUser(formData) {
 
     if (!email || !password) {
         return { error: "Missing required fields" }
+    }
+
+    if (!isValidEmail(email)) {
+        return { error: "Please enter a valid email address" }
+    }
+
+    const passwordCheck = validatePassword(password)
+    if (!passwordCheck.valid) {
+        return { error: passwordCheck.message }
     }
 
     try {

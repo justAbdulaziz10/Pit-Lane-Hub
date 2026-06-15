@@ -1,44 +1,45 @@
 import { prisma } from "@/lib/prisma";
+import { validateEvent, WebhookVerificationError } from "@polar-sh/sdk/webhooks.js";
 import { NextResponse } from "next/server";
 
 export async function POST(req) {
-    const signature = req.headers.get("polar-webhook-signature");
-    const body = await req.text();
-
-    if (!signature) {
-        return new NextResponse("Missing signature", { status: 400 });
-    }
-
-    // Verify the webhook signature
     const webhookSecret = process.env.POLAR_WEBHOOK_SECRET;
+
+    // Fail closed: never process unverified payment events.
     if (!webhookSecret) {
-        console.warn("POLAR_WEBHOOK_SECRET is not set. Skipping signature verification.");
+        console.error("POLAR_WEBHOOK_SECRET is not set. Rejecting webhook.");
+        return new NextResponse("Webhook secret not configured", { status: 500 });
     }
 
-    // Documentation: https://docs.polar.sh/api-reference/webhooks
-    // TODO: Use SDK or standard HMAC to verify `signature` using `webhookSecret`.
+    const body = await req.text();
+    const headers = Object.fromEntries(req.headers.entries());
 
     let event;
     try {
-        event = JSON.parse(body);
+        // Verifies the Polar (standard-webhooks) signature and parses the payload.
+        event = validateEvent(body, headers, webhookSecret);
     } catch (err) {
+        if (err instanceof WebhookVerificationError) {
+            return new NextResponse("Invalid signature", { status: 403 });
+        }
         return new NextResponse("Invalid body", { status: 400 });
     }
 
     try {
-        if (event.type === "subscription.created" || event.type === "subscription.updated") {
+        if (event.type.startsWith("subscription.")) {
             const subscription = event.data;
             const userId = subscription.metadata?.userId;
 
-            if (userId && subscription.status === "active") {
+            if (userId) {
+                // active subscription → Pro; anything else (canceled, revoked,
+                // expired, past_due) → not Pro.
+                const isActive =
+                    event.type === "subscription.active" ||
+                    subscription.status === "active";
+
                 await prisma.user.update({
                     where: { id: userId },
-                    data: { isPro: true },
-                });
-            } else if (userId && (subscription.status === "canceled" || subscription.status === "incomplete_expired")) {
-                await prisma.user.update({
-                    where: { id: userId },
-                    data: { isPro: false },
+                    data: { isPro: isActive },
                 });
             }
         }

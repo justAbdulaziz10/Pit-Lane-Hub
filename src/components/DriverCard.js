@@ -1,17 +1,12 @@
 'use client';
 
 import { getTeamColor } from '@/lib/f1api';
+import { getHighQualityPhoto } from '@/lib/photos';
 import Link from 'next/link';
 import styles from './DriverCard.module.css';
 
 export default function DriverCard({ driver }) {
     const teamColor = getTeamColor(driver.team_name);
-
-    // Try to get higher quality photo URL
-    const getHighQualityPhoto = (url) => {
-        if (!url) return null;
-        return url.replace('_small', '_large').replace('1col', '2col');
-    };
 
     const photoUrl = getHighQualityPhoto(driver.headshot_url);
 

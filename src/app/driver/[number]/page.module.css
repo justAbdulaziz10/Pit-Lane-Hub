@@ -362,6 +362,14 @@
     color: var(--racing-red);
 }
 
+/* No stats available */
+.noStats {
+    text-align: center;
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 1rem;
+    padding: var(--space-xl) 0;
+}
+
 /* Loading */
 .loading {
     display: flex;

@@ -5,8 +5,8 @@ const BASE_URL = 'https://api.openf1.org/v1';
 // Using Jolpica Mirror because main Ergast is deprecated/blocking Vercel
 const ERGAST_URL = 'https://api.jolpi.ca/ergast/f1';
 
-// Current year for API calls
-const CURRENT_YEAR = 2026;
+// Current season year for API calls, derived at runtime so it never goes stale.
+const CURRENT_YEAR = new Date().getFullYear();
 
 // Hardcoded nationalities for 2026 grid fallback
 const DRIVER_NATIONALITIES = {

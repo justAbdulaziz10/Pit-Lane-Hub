@@ -1,76 +1,48 @@
-'use client';
-
-import { getDrivers, getTeamColor } from '@/lib/f1api';
+import { DRIVER_ERGAST_IDS, getDriverCareerStats, getDrivers, getSessions, getTeamColor } from '@/lib/f1api';
+import { getHighQualityPhoto } from '@/lib/photos';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
 import styles from './page.module.css';
 
-export default function DriverDetailPage() {
-    const params = useParams();
-    const driverNumber = params.number;
+export const revalidate = 3600;
 
-    const [driver, setDriver] = useState(null);
-    const [sessions, setSessions] = useState([]);
-    const [recentResults, setRecentResults] = useState([]);
-    const [loading, setLoading] = useState(true);
+async function getDriver(driverNumber) {
+    const drivers = await getDrivers();
+    let driver = drivers.find((d) => d.driver_number == driverNumber);
 
-    useEffect(() => {
-        async function fetchDriverData() {
-            try {
-                // Fetch driver info using helper to get nationality fallbacks
-                const drivers = await getDrivers(); // Fetch all drivers first to get the map
-                const driverInfo = drivers.find(d => d.driver_number == driverNumber);
-
-                if (driverInfo) {
-                    setDriver(driverInfo);
-                } else {
-                    // Fallback fetch if not found in list (e.g. older driver)
-                    const driverRes = await fetch(`https://api.openf1.org/v1/drivers?driver_number=${driverNumber}&session_key=latest`);
-                    const driverData = await driverRes.json();
-                    if (driverData.length > 0) {
-                        setDriver(driverData[0]);
-                    }
-                }
-
-                // Fetch recent sessions with positions
-                const positionsRes = await fetch(`https://api.openf1.org/v1/position?driver_number=${driverNumber}&session_key=latest`);
-                const positionsData = await positionsRes.json();
-                if (positionsData.length > 0) {
-                    setRecentResults(positionsData.slice(-20));
-                }
-
-                // Fetch sessions
-                const sessionsRes = await fetch(`https://api.openf1.org/v1/sessions?year=2026`);
-                const sessionsData = await sessionsRes.json();
-                setSessions(sessionsData.slice(-10));
-
-            } catch (e) {
-                console.error('Error fetching driver data:', e);
-            }
-            setLoading(false);
+    if (!driver) {
+        // Fallback: query OpenF1 directly for drivers not in the latest session.
+        try {
+            const res = await fetch(
+                `https://api.openf1.org/v1/drivers?driver_number=${driverNumber}&session_key=latest`,
+                { next: { revalidate: 3600 } }
+            );
+            const data = await res.json();
+            driver = data[0] || null;
+        } catch {
+            driver = null;
         }
-
-        if (driverNumber) {
-            fetchDriverData();
-        }
-    }, [driverNumber]);
-
-    const getHighQualityPhoto = (url) => {
-        if (!url) return null;
-        return url.replace('_small', '_large').replace('1col', '2col');
-    };
-
-    if (loading) {
-        return (
-            <div className={styles.driverDetail}>
-                <div className={styles.loading}>
-                    <div className={styles.spinner}></div>
-                    <p>Loading driver data...</p>
-                </div>
-            </div>
-        );
     }
+    return driver;
+}
+
+export async function generateMetadata({ params }) {
+    const { number } = await params;
+    const driver = await getDriver(number);
+    if (!driver) return { title: 'Driver Not Found · Pit Lane Hub' };
+    const name = driver.full_name || `${driver.first_name} ${driver.last_name}`;
+    return {
+        title: `${name} · Pit Lane Hub`,
+        description: `Career statistics and profile for ${name}, #${driver.driver_number} (${driver.team_name}).`,
+    };
+}
+
+export default async function DriverDetailPage({ params }) {
+    const { number: driverNumber } = await params;
+
+    const [driver, allSessions] = await Promise.all([
+        getDriver(driverNumber),
+        getSessions(),
+    ]);
 
     if (!driver) {
         return (
@@ -86,17 +58,11 @@ export default function DriverDetailPage() {
 
     const teamColor = getTeamColor(driver.team_name);
     const photoUrl = getHighQualityPhoto(driver.headshot_url);
+    const sessions = allSessions.slice(-10);
 
-    // Mock career stats (OpenF1 doesn't provide career stats)
-    const careerStats = {
-        championships: driver.driver_number === 1 ? 4 : driver.driver_number === 44 ? 7 : 0,
-        wins: Math.max(0, 30 - (driver.driver_number % 10) * 3),
-        podiums: Math.max(0, 80 - (driver.driver_number % 10) * 7),
-        poles: Math.max(0, 25 - (driver.driver_number % 10) * 2),
-        fastestLaps: Math.max(0, 20 - (driver.driver_number % 10)),
-        raceStarts: 150 + Math.floor(driver.driver_number % 50),
-        points: 2000 - (driver.driver_number % 10) * 150,
-    };
+    // Real career stats from Ergast (when we can map the driver to an Ergast id).
+    const ergastId = DRIVER_ERGAST_IDS[driver.driver_number];
+    const careerStats = ergastId ? await getDriverCareerStats(ergastId) : null;
 
     return (
         <div className={styles.driverDetail} style={{ '--team-color': teamColor }}>
@@ -110,7 +76,7 @@ export default function DriverDetailPage() {
                         <div className={styles.driverPhoto}>
                             {photoUrl ? (
                                 // eslint-disable-next-line @next/next/no-img-element
-                                <img src={photoUrl} alt={driver.last_name} />
+                                <img src={photoUrl} alt={`${driver.first_name} ${driver.last_name}`} />
                             ) : (
                                 <div className={styles.photoPlaceholder}>{driver.driver_number}</div>
                             )}
@@ -134,38 +100,49 @@ export default function DriverDetailPage() {
                 </div>
             </div>
 
-            {/* Stats Grid */}
-            <div className={styles.statsSection}>
-                <div className="container">
-                    <h2 className={styles.sectionTitle}>Career Statistics</h2>
-                    <div className={styles.statsGrid}>
-                        <div className={styles.statCard}>
-                            <span className={styles.statValue}>{careerStats.championships}</span>
-                            <span className={styles.statLabel}>🏆 Championships</span>
-                        </div>
-                        <div className={styles.statCard}>
-                            <span className={styles.statValue}>{careerStats.wins}</span>
-                            <span className={styles.statLabel}>🏁 Race Wins</span>
-                        </div>
-                        <div className={styles.statCard}>
-                            <span className={styles.statValue}>{careerStats.podiums}</span>
-                            <span className={styles.statLabel}>🥇 Podiums</span>
-                        </div>
-                        <div className={styles.statCard}>
-                            <span className={styles.statValue}>{careerStats.poles}</span>
-                            <span className={styles.statLabel}>⚡ Pole Positions</span>
-                        </div>
-                        <div className={styles.statCard}>
-                            <span className={styles.statValue}>{careerStats.fastestLaps}</span>
-                            <span className={styles.statLabel}>⏱️ Fastest Laps</span>
-                        </div>
-                        <div className={styles.statCard}>
-                            <span className={styles.statValue}>{careerStats.raceStarts}</span>
-                            <span className={styles.statLabel}>🏎️ Race Starts</span>
+            {/* Stats Grid (real Ergast career data) */}
+            {careerStats ? (
+                <div className={styles.statsSection}>
+                    <div className="container">
+                        <h2 className={styles.sectionTitle}>Career Statistics</h2>
+                        <div className={styles.statsGrid}>
+                            <div className={styles.statCard}>
+                                <span className={styles.statValue}>{careerStats.championships}</span>
+                                <span className={styles.statLabel}>🏆 Championships</span>
+                            </div>
+                            <div className={styles.statCard}>
+                                <span className={styles.statValue}>{careerStats.wins}</span>
+                                <span className={styles.statLabel}>🏁 Race Wins</span>
+                            </div>
+                            <div className={styles.statCard}>
+                                <span className={styles.statValue}>{careerStats.podiums}</span>
+                                <span className={styles.statLabel}>🥇 Podiums</span>
+                            </div>
+                            <div className={styles.statCard}>
+                                <span className={styles.statValue}>{careerStats.poles}</span>
+                                <span className={styles.statLabel}>⚡ Pole Positions</span>
+                            </div>
+                            <div className={styles.statCard}>
+                                <span className={styles.statValue}>{careerStats.fastestLaps}</span>
+                                <span className={styles.statLabel}>⏱️ Fastest Laps</span>
+                            </div>
+                            <div className={styles.statCard}>
+                                <span className={styles.statValue}>{careerStats.totalRaces}</span>
+                                <span className={styles.statLabel}>🏎️ Race Starts</span>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            ) : (
+                <div className={styles.statsSection}>
+                    <div className="container">
+                        <h2 className={styles.sectionTitle}>Career Statistics</h2>
+                        <p className={styles.noStats}>
+                            Career statistics are not yet available for this driver.
+                        </p>
+                    </div>
+                </div>
+            )}
 
             {/* Driver Details */}
             <div className={styles.detailsSection}>
@@ -243,18 +220,6 @@ export default function DriverDetailPage() {
                             📊 Go to Compare
                         </Link>
                     </div>
-                </div>
-            </div>
-
-            {/* Data Note */}
-            <div className={styles.note}>
-                <div className="container">
-                    <p>
-                        ⓘ Career statistics are illustrative. For official stats, visit{' '}
-                        <a href={`https://www.formula1.com/en/drivers`} target="_blank" rel="noopener noreferrer">
-                            formula1.com
-                        </a>
-                    </p>
                 </div>
             </div>
         </div>
