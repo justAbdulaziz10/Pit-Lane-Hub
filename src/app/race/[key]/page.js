@@ -1,4 +1,5 @@
-import { getQualifyingResults, getRaceResults, getSchedule } from '@/lib/f1api';
+import { getDrivers, getPitStops, getQualifyingResults, getRaceResults, getSchedule, getStints } from '@/lib/f1api';
+import { getCompound, stintsByDriver } from '@/lib/f1/tyres';
 import { SCHEDULE_2026 } from '@/lib/schedule2026';
 import { getTrackInfo } from '@/lib/tracks';
 import Link from 'next/link';
@@ -145,6 +146,47 @@ export default async function RaceDetailPage({ params }) {
     // times. Never fabricate.
     const sessions = openF1Sessions.length ? openF1Sessions : sessionsFromSchedule(matched);
 
+    // Tyre strategy + pit stops for the Race session (when telemetry exists).
+    const raceSession = openF1Sessions.find(
+        (s) => s.session_name === 'Race' || s.session_type === 'Race'
+    );
+    let tyreGrid = [];
+    let pitStops = [];
+    if (raceSession?.session_key) {
+        const [stints, pits, sessionDrivers] = await Promise.all([
+            getStints(raceSession.session_key),
+            getPitStops(raceSession.session_key),
+            getDrivers(raceSession.session_key),
+        ]);
+        const nameByNumber = new Map(
+            sessionDrivers.map((d) => [d.driver_number, `${d.name_acronym || d.last_name || d.driver_number}`])
+        );
+        const grouped = stintsByDriver(stints);
+        const maxLap = Math.max(
+            1,
+            ...stints.map((s) => (Number.isFinite(s.lap_end) ? s.lap_end : 0))
+        );
+        tyreGrid = [...grouped.entries()]
+            .map(([driverNumber, driverStints]) => ({
+                driverNumber,
+                name: nameByNumber.get(driverNumber) || `#${driverNumber}`,
+                stints: driverStints,
+                totalLaps: driverStints.reduce((sum, s) => sum + s.laps, 0),
+            }))
+            .sort((a, b) => b.totalLaps - a.totalLaps);
+        // Carry the shared scale on each row for width math.
+        tyreGrid.forEach((row) => {
+            row.maxLap = maxLap;
+        });
+        pitStops = pits
+            .map((p) => ({
+                driver: nameByNumber.get(p.driver_number) || `#${p.driver_number}`,
+                lap: p.lap_number,
+                duration: p.pit_duration,
+            }))
+            .sort((a, b) => (a.lap || 0) - (b.lap || 0));
+    }
+
     return (
         <div className={styles.raceDetail}>
             {/* Hero */}
@@ -220,6 +262,71 @@ export default async function RaceDetailPage({ params }) {
                                     <span className={styles.qTime}>{q.q1 || '—'}</span>
                                     <span className={styles.qTime}>{q.q2 || '—'}</span>
                                     <span className={styles.qTime}>{q.q3 || '—'}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Tyre Strategy */}
+            {tyreGrid.length > 0 && (
+                <div className={styles.resultsBlock}>
+                    <div className="container">
+                        <h2>🛞 Tyre Strategy</h2>
+                        <div className={styles.tyreGrid}>
+                            {tyreGrid.map((row) => (
+                                <div key={row.driverNumber} className={styles.tyreRow}>
+                                    <span className={styles.tyreDriver}>{row.name}</span>
+                                    <div className={styles.tyreBar}>
+                                        {row.stints.map((s, i) => {
+                                            const c = getCompound(s.compound);
+                                            return (
+                                                <span
+                                                    key={i}
+                                                    className={styles.tyreStint}
+                                                    style={{ width: `${(s.laps / row.maxLap) * 100}%`, background: c.color }}
+                                                    title={`${c.label} — ${s.laps} laps`}
+                                                >
+                                                    {c.short}
+                                                </span>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                        <div className={styles.tyreLegend}>
+                            {['SOFT', 'MEDIUM', 'HARD', 'INTERMEDIATE', 'WET'].map((name) => {
+                                const c = getCompound(name);
+                                return (
+                                    <span key={name} className={styles.legendItem}>
+                                        <span className={styles.legendDot} style={{ background: c.color }}></span>
+                                        {c.label}
+                                    </span>
+                                );
+                            })}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Pit Stops */}
+            {pitStops.length > 0 && (
+                <div className={styles.resultsBlock}>
+                    <div className="container">
+                        <h2>🔧 Pit Stops</h2>
+                        <div className={styles.resultsTable}>
+                            <div className={`${styles.resultRow} ${styles.pitRow} ${styles.resultHead}`}>
+                                <span>Driver</span>
+                                <span>Lap</span>
+                                <span>Stop Time</span>
+                            </div>
+                            {pitStops.map((p, i) => (
+                                <div key={i} className={`${styles.resultRow} ${styles.pitRow}`}>
+                                    <span className={styles.resultDriver}>{p.driver}</span>
+                                    <span>{p.lap ?? '—'}</span>
+                                    <span className={styles.qTime}>{p.duration ? `${p.duration}s` : '—'}</span>
                                 </div>
                             ))}
                         </div>
