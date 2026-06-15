@@ -429,3 +429,77 @@
         justify-content: center;
     }
 }
+/* Results & qualifying tables */
+.resultsBlock {
+    padding: var(--space-2xl) 0;
+}
+
+.resultsBlock h2 {
+    margin-bottom: var(--space-lg);
+}
+
+.resultsTable {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    background: var(--carbon-border);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+}
+
+.resultRow {
+    display: grid;
+    grid-template-columns: 50px 1fr 1fr 60px 60px;
+    align-items: center;
+    gap: var(--space-md);
+    padding: var(--space-md) var(--space-lg);
+    background: var(--carbon-surface);
+    font-size: 0.9rem;
+}
+
+.qualiRow {
+    grid-template-columns: 50px 1fr 90px 90px 90px;
+}
+
+.resultHead {
+    background: var(--carbon-dark);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.resultPos {
+    font-family: var(--font-display);
+    font-weight: 700;
+    color: var(--racing-red);
+}
+
+.resultTeam {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.85rem;
+}
+
+.resultPts {
+    font-family: var(--font-display);
+    font-weight: 700;
+}
+
+.qTime {
+    font-variant-numeric: tabular-nums;
+    font-size: 0.85rem;
+}
+
+@media (max-width: 640px) {
+    .resultRow,
+    .qualiRow {
+        grid-template-columns: 36px 1fr 50px 50px;
+        gap: var(--space-sm);
+        padding: var(--space-sm) var(--space-md);
+        font-size: 0.8rem;
+    }
+    .resultRow > :nth-child(3),
+    .qualiRow > :nth-child(3) {
+        display: none;
+    }
+}

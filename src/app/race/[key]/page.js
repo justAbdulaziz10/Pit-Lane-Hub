@@ -1,147 +1,120 @@
-'use client';
-
+import { getQualifyingResults, getRaceResults, getSchedule } from '@/lib/f1api';
+import { SCHEDULE_2026 } from '@/lib/schedule2026';
 import { getTrackInfo } from '@/lib/tracks';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import RaceMap from './RaceMap';
 import styles from './page.module.css';
 
-import { SCHEDULE_2026 } from '@/lib/schedule2026';
+export const revalidate = 3600;
 
-// Safe date parsing helper
 const safelyFormatDate = (dateString, options) => {
     if (!dateString) return 'TBA';
-    try {
-        const date = new Date(dateString);
-        if (isNaN(date.getTime())) return 'TBA';
-        return date.toLocaleDateString('en-US', options);
-    } catch (e) {
-        return 'TBA';
-    }
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return 'TBA';
+    return date.toLocaleDateString('en-US', options);
 };
 
 const safelyFormatTime = (dateString, options) => {
     if (!dateString) return 'TBA';
-    try {
-        const date = new Date(dateString);
-        if (isNaN(date.getTime())) return 'TBA';
-        return date.toLocaleTimeString('en-US', options);
-    } catch (e) {
-        return 'TBA';
-    }
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return 'TBA';
+    return date.toLocaleTimeString('en-US', options);
 };
 
-// Safe year extractor
 const getYearFromDate = (dateString) => {
-    if (!dateString) return 2026;
-    try {
-        const date = new Date(dateString);
-        if (isNaN(date.getTime())) return 2026;
-        return date.getFullYear();
-    } catch (e) {
-        return 2026;
-    }
+    const date = new Date(dateString);
+    return isNaN(date.getTime()) ? new Date().getFullYear() : date.getFullYear();
 };
 
-// F1 Official YouTube channel race highlights (generic search link)
 const getYouTubeSearchUrl = (raceName, year) => {
-    const safeName = raceName || 'F1 Race';
-    const safeYear = year || 2026;
-    const query = encodeURIComponent(`F1 ${safeYear} ${safeName} Race Highlights`);
+    const query = encodeURIComponent(`F1 ${year} ${raceName || 'F1 Race'} Race Highlights`);
     return `https://www.youtube.com/results?search_query=${query}`;
 };
 
-export default function RaceDetailPage() {
-    const params = useParams();
-    const meetingKey = params?.key;
-
-    const [race, setRace] = useState(null);
-    const [sessions, setSessions] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const [is3DMode, setIs3DMode] = useState(false);
-
-    useEffect(() => {
-        let isMounted = true;
-
-        async function fetchRaceData() {
-            if (!meetingKey) {
-                if (isMounted) setLoading(false);
-                return;
-            }
-
-            try {
-                // Fetch meeting/race info
-                const meetingsRes = await fetch(`https://api.openf1.org/v1/meetings?meeting_key=${meetingKey}`);
-                if (!meetingsRes.ok) throw new Error('Failed to fetch meeting');
-                const meetingsData = await meetingsRes.json();
-
-                if (meetingsData.length > 0 && isMounted) {
-                    setRace(meetingsData[0]);
-
-                    // Fetch sessions for this race
-                    try {
-                        const sessionsRes = await fetch(`https://api.openf1.org/v1/sessions?meeting_key=${meetingKey}`);
-                        if (sessionsRes.ok) {
-                            const sessionsData = await sessionsRes.json();
-                            setSessions(sessionsData || []);
-                        }
-                    } catch (sessionError) {
-                        console.warn('Failed to fetch sessions:', sessionError);
-                        setSessions([]);
-                    }
-                } else if (isMounted) {
-                    // Fallback to 2026 data
-                    const race2026 = SCHEDULE_2026.find(r =>
-                        String(r.meeting_key) === String(meetingKey) ||
-                        String(r.circuit_key) === String(meetingKey)
-                    );
-
-                    if (race2026) {
-                        setRace({
-                            ...race2026,
-                            meeting_key: parseInt(race2026.meeting_key) || 999
-                        });
-
-                        // Generate mock sessions for 2026
-                        const startDate = new Date(race2026.date_start);
-                        if (!isNaN(startDate.getTime())) {
-                            const sessionsMock = [
-                                { session_name: 'Practice 1', session_type: 'Practice', date_start: new Date(startDate.getTime() + 10 * 3600000).toISOString() },
-                                { session_name: 'Practice 2', session_type: 'Practice', date_start: new Date(startDate.getTime() + 14 * 3600000).toISOString() },
-                                { session_name: 'Practice 3', session_type: 'Practice', date_start: new Date(startDate.getTime() + 24 * 3600000 + 11 * 3600000).toISOString() },
-                                { session_name: 'Qualifying', session_type: 'Qualifying', date_start: new Date(startDate.getTime() + 24 * 3600000 + 14 * 3600000).toISOString() },
-                                { session_name: 'Race', session_type: 'Race', date_start: new Date(startDate.getTime() + 48 * 3600000 + 13 * 3600000).toISOString() }
-                            ];
-                            setSessions(sessionsMock);
-                        }
-                    }
-                }
-
-            } catch (e) {
-                console.error('Error fetching race data:', e);
-                if (isMounted) setError(e.message);
-            }
-            if (isMounted) setLoading(false);
+async function getMeeting(meetingKey) {
+    try {
+        const res = await fetch(`https://api.openf1.org/v1/meetings?meeting_key=${meetingKey}`, {
+            next: { revalidate: 3600 },
+        });
+        if (res.ok) {
+            const data = await res.json();
+            if (data.length > 0) return data[0];
         }
-
-        fetchRaceData();
-
-        return () => {
-            isMounted = false;
-        };
-    }, [meetingKey]);
-
-    if (loading) {
-        return (
-            <div className={styles.raceDetail}>
-                <div className={styles.loading}>
-                    <div className={styles.spinner}></div>
-                    <p>Loading race details...</p>
-                </div>
-            </div>
-        );
+    } catch (e) {
+        console.error('Error fetching meeting:', e);
     }
+    // Last-resort fallback to the static calendar (future races not yet in OpenF1).
+    return (
+        SCHEDULE_2026.find(
+            (r) =>
+                String(r.meeting_key) === String(meetingKey) ||
+                String(r.circuit_key) === String(meetingKey)
+        ) || null
+    );
+}
+
+async function getMeetingSessions(meetingKey) {
+    try {
+        const res = await fetch(`https://api.openf1.org/v1/sessions?meeting_key=${meetingKey}`, {
+            next: { revalidate: 3600 },
+        });
+        if (res.ok) return await res.json();
+    } catch (e) {
+        console.error('Error fetching sessions:', e);
+    }
+    return [];
+}
+
+// Match an OpenF1 meeting to its Ergast round by country, then nearest date.
+function matchScheduleRound(schedule, meeting) {
+    if (!schedule.length) return null;
+    const country = (meeting.country_name || '').toLowerCase();
+    const target = new Date(meeting.date_start).getTime();
+    const byCountry = schedule.filter(
+        (r) => (r.circuit.country || '').toLowerCase() === country
+    );
+    const pool = byCountry.length ? byCountry : schedule;
+    if (!Number.isFinite(target)) return byCountry[0] || null;
+    return pool.reduce((best, r) => {
+        const diff = Math.abs(new Date(r.date).getTime() - target);
+        if (!best || diff < best.diff) return { race: r, diff };
+        return best;
+    }, null)?.race || null;
+}
+
+// Build a normalized weekend schedule from real Ergast session times.
+function sessionsFromSchedule(scheduleRace) {
+    if (!scheduleRace) return [];
+    const s = scheduleRace.sessions || {};
+    const toIso = (obj) => (obj?.date ? `${obj.date}T${obj.time || '00:00:00Z'}` : null);
+    return [
+        s.firstPractice && { session_name: 'Practice 1', session_type: 'Practice', date_start: toIso(s.firstPractice) },
+        s.secondPractice && { session_name: 'Practice 2', session_type: 'Practice', date_start: toIso(s.secondPractice) },
+        s.thirdPractice && { session_name: 'Practice 3', session_type: 'Practice', date_start: toIso(s.thirdPractice) },
+        s.sprintQualifying && { session_name: 'Sprint Qualifying', session_type: 'Qualifying', date_start: toIso(s.sprintQualifying) },
+        s.sprint && { session_name: 'Sprint', session_type: 'Race', date_start: toIso(s.sprint) },
+        s.qualifying && { session_name: 'Qualifying', session_type: 'Qualifying', date_start: toIso(s.qualifying) },
+        { session_name: 'Race', session_type: 'Race', date_start: toIso({ date: scheduleRace.date, time: scheduleRace.time }) },
+    ].filter(Boolean);
+}
+
+export async function generateMetadata({ params }) {
+    const { key } = await params;
+    const race = await getMeeting(key);
+    const name = race?.meeting_name || 'Race Weekend';
+    return {
+        title: `${name} · Pit Lane Hub`,
+        description: `Schedule, results and circuit details for the ${name}.`,
+    };
+}
+
+export default async function RaceDetailPage({ params }) {
+    const { key: meetingKey } = await params;
+
+    const [race, openF1Sessions] = await Promise.all([
+        getMeeting(meetingKey),
+        getMeetingSessions(meetingKey),
+    ]);
 
     if (!race) {
         return (
@@ -156,8 +129,21 @@ export default function RaceDetailPage() {
     }
 
     const trackInfo = getTrackInfo(race.meeting_name || race.circuit_short_name, race.circuit_key);
-    const year = getYearFromDate(race.date_start);
+    const year = race.year || getYearFromDate(race.date_start);
     const youtubeUrl = getYouTubeSearchUrl(race.meeting_name, year);
+
+    // Map the meeting to its Ergast round, then pull real results + qualifying.
+    const schedule = await getSchedule(year);
+    const matched = matchScheduleRound(schedule, race);
+    const round = matched?.round || null;
+
+    const [raceResults, qualifying] = round
+        ? await Promise.all([getRaceResults(year, round), getQualifyingResults(year, round)])
+        : [null, null];
+
+    // Prefer real OpenF1 session times; otherwise fall back to real Ergast schedule
+    // times. Never fabricate.
+    const sessions = openF1Sessions.length ? openF1Sessions : sessionsFromSchedule(matched);
 
     return (
         <div className={styles.raceDetail}>
@@ -166,71 +152,80 @@ export default function RaceDetailPage() {
                 <div className={styles.heroOverlay}></div>
                 <div className={styles.heroContent}>
                     <Link href="/schedule" className={styles.backLink}>← Back to Calendar</Link>
-                    <span className={styles.round}>ROUND {(race.meeting_key && !isNaN(race.meeting_key)) ? (race.meeting_key % 24 || 24) : 1}</span>
-                    <h1>{race.meeting_name || 'Race Weekend'}</h1>
-                    <p className={styles.circuit}>{race.circuit_short_name || 'Circuit'}</p>
-                    <p className={styles.location}>📍 {race.country_name || 'Unknown Location'}</p>
-                    <p className={styles.date} suppressHydrationWarning>
-                        {safelyFormatDate(race.date_start, {
+                    {round && <span className={styles.round}>ROUND {round}</span>}
+                    <h1>{race.meeting_name || matched?.raceName || 'Race Weekend'}</h1>
+                    <p className={styles.circuit}>{race.circuit_short_name || matched?.circuit?.name || 'Circuit'}</p>
+                    <p className={styles.location}>📍 {race.country_name || matched?.circuit?.country || 'Unknown Location'}</p>
+                    <p className={styles.date}>
+                        {safelyFormatDate(race.date_start || matched?.date, {
                             month: 'long',
                             day: 'numeric',
-                            year: 'numeric'
+                            year: 'numeric',
                         })}
                     </p>
                 </div>
             </div>
 
-            {/* Track Map */}
-            <div className={styles.mapSection}>
-                <div className="container">
-                    <div className={styles.mapHeader}>
-                        <h2>🗺️ Circuit Location</h2>
-                        <div className={styles.mapControls}>
-                            <button
-                                className={`${styles.mapControlBtn} ${!is3DMode ? styles.active : ''}`}
-                                onClick={() => setIs3DMode(false)}
-                            >
-                                2D Map
-                            </button>
-                            <button
-                                className={`${styles.mapControlBtn} ${is3DMode ? styles.active : ''}`}
-                                onClick={() => setIs3DMode(true)}
-                            >
-                                3D View
-                            </button>
+            {/* Track Map (client island for 2D/3D toggle) */}
+            <RaceMap trackInfo={trackInfo} />
+
+            {/* Race Results */}
+            {raceResults?.results?.length > 0 && (
+                <div className={styles.resultsBlock}>
+                    <div className="container">
+                        <h2>🏆 Race Results</h2>
+                        <div className={styles.resultsTable}>
+                            <div className={`${styles.resultRow} ${styles.resultHead}`}>
+                                <span>Pos</span>
+                                <span>Driver</span>
+                                <span>Team</span>
+                                <span>Grid</span>
+                                <span>Pts</span>
+                            </div>
+                            {raceResults.results.map((r) => (
+                                <div key={r.driver.id} className={styles.resultRow}>
+                                    <span className={styles.resultPos}>{r.position}</span>
+                                    <span className={styles.resultDriver}>
+                                        {r.driver.firstName} <strong>{r.driver.lastName}</strong>
+                                    </span>
+                                    <span className={styles.resultTeam}>{r.team}</span>
+                                    <span>{Number.isFinite(r.grid) ? r.grid : '—'}</span>
+                                    <span className={styles.resultPts}>{r.points}</span>
+                                </div>
+                            ))}
                         </div>
                     </div>
-                    {trackInfo ? (
-                        <div className={`${styles.mapContainer} ${is3DMode ? styles.is3D : ''}`}>
-                            <div className={styles.mapWrapper}>
-                                <iframe
-                                    src={`https://www.openstreetmap.org/export/embed.html?bbox=${trackInfo.lng - 0.02}%2C${trackInfo.lat - 0.015}%2C${trackInfo.lng + 0.02}%2C${trackInfo.lat + 0.015}&layer=mapnik&marker=${trackInfo.lat}%2C${trackInfo.lng}`}
-                                    className={styles.map}
-                                    loading="lazy"
-                                ></iframe>
-                            </div>
-                            {is3DMode && (
-                                <div className={styles.mapOverlay3D}>
-                                    <p>Interactive 3D Perspective</p>
-                                </div>
-                            )}
-                            <a
-                                href={`https://www.google.com/maps?q=${trackInfo.lat},${trackInfo.lng}&z=15&t=k`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className={styles.mapLink}
-                            >
-                                View Satellite 3D in Google Earth ↗
-                            </a>
-                        </div>
-                    ) : (
-                        <div className={styles.mapPlaceholder}>
-                            <span>🗺️</span>
-                            <p>Track map not available</p>
-                        </div>
-                    )}
                 </div>
-            </div>
+            )}
+
+            {/* Qualifying Results */}
+            {qualifying?.results?.length > 0 && (
+                <div className={styles.resultsBlock}>
+                    <div className="container">
+                        <h2>⏱️ Qualifying</h2>
+                        <div className={styles.resultsTable}>
+                            <div className={`${styles.resultRow} ${styles.qualiRow} ${styles.resultHead}`}>
+                                <span>Pos</span>
+                                <span>Driver</span>
+                                <span>Q1</span>
+                                <span>Q2</span>
+                                <span>Q3</span>
+                            </div>
+                            {qualifying.results.map((q) => (
+                                <div key={q.driver.id} className={`${styles.resultRow} ${styles.qualiRow}`}>
+                                    <span className={styles.resultPos}>{q.position}</span>
+                                    <span className={styles.resultDriver}>
+                                        {q.driver.firstName} <strong>{q.driver.lastName}</strong>
+                                    </span>
+                                    <span className={styles.qTime}>{q.q1 || '—'}</span>
+                                    <span className={styles.qTime}>{q.q2 || '—'}</span>
+                                    <span className={styles.qTime}>{q.q3 || '—'}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Sessions */}
             <div className={styles.sessionsSection}>
@@ -242,16 +237,16 @@ export default function RaceDetailPage() {
                                 <div key={session.session_key || index} className={styles.sessionCard}>
                                     <span className={styles.sessionType}>{session.session_type || 'Session'}</span>
                                     <h3>{session.session_name || 'Session'}</h3>
-                                    <p className={styles.sessionTime} suppressHydrationWarning>
+                                    <p className={styles.sessionTime}>
                                         {safelyFormatDate(session.date_start, {
                                             weekday: 'short',
                                             month: 'short',
-                                            day: 'numeric'
+                                            day: 'numeric',
                                         })}
                                         {' • '}
                                         {safelyFormatTime(session.date_start, {
                                             hour: '2-digit',
-                                            minute: '2-digit'
+                                            minute: '2-digit',
                                         })}
                                     </p>
                                 </div>
@@ -271,12 +266,7 @@ export default function RaceDetailPage() {
                         Watch official F1 race highlights and analysis on YouTube
                     </p>
                     <div className={styles.videoActions}>
-                        <a
-                            href={youtubeUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className={styles.youtubeBtn}
-                        >
+                        <a href={youtubeUrl} target="_blank" rel="noopener noreferrer" className={styles.youtubeBtn}>
                             <svg viewBox="0 0 24 24" className={styles.youtubeIcon}>
                                 <path fill="currentColor" d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
                             </svg>
@@ -312,7 +302,7 @@ export default function RaceDetailPage() {
                         <Link href="/drivers" className={styles.linkCard}>
                             <span>👤</span>
                             <h3>Drivers</h3>
-                            <p>View all 2026 drivers</p>
+                            <p>View all drivers</p>
                         </Link>
                     </div>
                 </div>
