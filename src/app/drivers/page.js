@@ -1,4 +1,4 @@
-import DriverCard from '@/components/DriverCard';
+import DriversGrid from '@/components/DriversGrid';
 import { getCurrentYear, getDrivers } from '@/lib/f1api';
 import styles from './page.module.css';
 
@@ -43,11 +43,7 @@ export default async function DriversPage() {
                             <p>{error}</p>
                         </div>
                     ) : drivers.length > 0 ? (
-                        <div className={styles.grid}>
-                            {drivers.map((driver) => (
-                                <DriverCard key={driver.driver_number} driver={driver} />
-                            ))}
-                        </div>
+                        <DriversGrid drivers={drivers} className={styles.grid} />
                     ) : (
                         <div className={styles.loading}>
                             <div className={styles.spinner}></div>

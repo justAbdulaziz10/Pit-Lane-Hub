@@ -1,0 +1,30 @@
+.fav {
+    position: absolute;
+    top: var(--space-sm);
+    right: var(--space-sm);
+    z-index: 3;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    line-height: 1;
+    color: rgba(255, 255, 255, 0.6);
+    background: rgba(0, 0, 0, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: var(--radius-full);
+    cursor: pointer;
+    transition: var(--transition-fast);
+}
+
+.fav:hover {
+    color: var(--gold-accent);
+    border-color: var(--gold-accent);
+    transform: scale(1.1);
+}
+
+.active {
+    color: var(--gold-accent);
+    border-color: var(--gold-accent);
+}

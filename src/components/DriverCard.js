@@ -4,6 +4,7 @@ import { getTeamColor } from '@/lib/f1api';
 import { getHighQualityPhoto } from '@/lib/photos';
 import Link from 'next/link';
 import styles from './DriverCard.module.css';
+import FavoriteButton from './FavoriteButton';
 
 export default function DriverCard({ driver }) {
     const teamColor = getTeamColor(driver.team_name);
@@ -32,6 +33,8 @@ export default function DriverCard({ driver }) {
             >
                 {/* Team Color Bar */}
                 <div className={styles.colorBar}></div>
+
+                <FavoriteButton driverNumber={driver.driver_number} />
 
                 {/* Driver Photo */}
                 <div className={styles.photoContainer}>
