@@ -1,6 +1,8 @@
 'use client';
 
 import { getConstructorStandings, getCurrentYear, getTeamColor } from '@/lib/f1api';
+import { getHighQualityPhoto } from '@/lib/photos';
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import styles from './page.module.css';
 
@@ -21,6 +23,7 @@ export default function TeamsPage() {
                 if (standings.length > 0) {
                     // Map Ergast data to our format
                     const formattedTeams = standings.map(s => ({
+                        id: s.team.id,
                         name: s.team.name,
                         position: s.position,
                         points: s.points,
@@ -62,12 +65,6 @@ export default function TeamsPage() {
         fetchTeams();
     }, []);
 
-    // Helper to get higher quality photo
-    const getHighQualityPhoto = (url) => {
-        if (!url) return null;
-        return url.replace('_small', '_large').replace('1col', '2col');
-    };
-
     return (
         <div className={styles.teams}>
             {/* Header */}
@@ -90,8 +87,9 @@ export default function TeamsPage() {
                     ) : teams.length > 0 ? (
                         <div className={styles.teamsGrid}>
                             {teams.map((team) => (
-                                <div
+                                <Link
                                     key={team.name}
+                                    href={team.id ? `/team/${team.id}` : '/teams'}
                                     className={styles.teamCard}
                                     style={{ '--team-color': team.color }}
                                 >
@@ -142,7 +140,7 @@ export default function TeamsPage() {
                                             );
                                         })}
                                     </div>
-                                </div>
+                                </Link>
                             ))}
                         </div>
                     ) : (

@@ -45,6 +45,9 @@
 /* Team Card */
 .teamCard {
     position: relative;
+    display: block;
+    text-decoration: none;
+    color: inherit;
     background: var(--carbon-surface);
     border: 1px solid var(--carbon-border);
     border-radius: var(--radius-xl);

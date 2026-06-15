@@ -286,6 +286,92 @@ export async function resolveErgastId(driverNumber, fallbackMap = {}) {
 }
 
 /**
+ * Fetch basic constructor (team) info.
+ * @param {string} constructorId - Ergast constructor id (e.g. 'ferrari').
+ */
+export async function getConstructorInfo(constructorId) {
+    try {
+        const response = await fetch(`${ERGAST_URL}/constructors/${constructorId}.json`, {
+            next: { revalidate: 86400 },
+        });
+        if (!response.ok) throw new Error('Failed to fetch constructor');
+        const data = await response.json();
+        const c = data?.MRData?.ConstructorTable?.Constructors?.[0];
+        if (!c) return null;
+        return { id: c.constructorId, name: c.name, nationality: c.nationality, url: c.url };
+    } catch (error) {
+        console.error('Error fetching constructor info:', error);
+        return null;
+    }
+}
+
+/**
+ * Fetch the drivers who raced for a constructor in a season.
+ * @param {string} constructorId
+ * @param {number|null} year - defaults to current.
+ */
+export async function getConstructorDrivers(constructorId, year = null) {
+    try {
+        const seasonYear = year || 'current';
+        const response = await fetch(
+            `${ERGAST_URL}/${seasonYear}/constructors/${constructorId}/drivers.json`,
+            { next: { revalidate: 86400 } }
+        );
+        if (!response.ok) throw new Error('Failed to fetch constructor drivers');
+        const data = await response.json();
+        const drivers = data?.MRData?.DriverTable?.Drivers || [];
+        return drivers.map((d) => ({
+            id: d.driverId,
+            code: d.code,
+            number: d.permanentNumber ? parseInt(d.permanentNumber) : null,
+            firstName: d.givenName,
+            lastName: d.familyName,
+            nationality: d.nationality,
+        }));
+    } catch (error) {
+        console.error('Error fetching constructor drivers:', error);
+        return [];
+    }
+}
+
+/**
+ * Fetch a constructor's race-by-race results for a season (both cars combined).
+ * @param {string} constructorId
+ * @param {number|null} year - defaults to current.
+ */
+export async function getConstructorSeasonResults(constructorId, year = null) {
+    try {
+        const seasonYear = year || 'current';
+        const response = await fetch(
+            `${ERGAST_URL}/${seasonYear}/constructors/${constructorId}/results.json?limit=100`,
+            { next: { revalidate: 3600 } }
+        );
+        if (!response.ok) throw new Error('Failed to fetch constructor results');
+        const data = await response.json();
+        const races = data?.MRData?.RaceTable?.Races || [];
+        return races.map((race) => {
+            const cars = (race.Results || []).map((r) => ({
+                code: r.Driver.code || r.Driver.familyName,
+                position: r.position ? parseInt(r.position) : null,
+                points: r.points ? parseFloat(r.points) : 0,
+                status: r.status || null,
+            }));
+            return {
+                round: parseInt(race.round),
+                raceName: race.raceName,
+                country: race.Circuit?.Location?.country,
+                date: race.date,
+                cars,
+                points: cars.reduce((sum, c) => sum + c.points, 0),
+            };
+        });
+    } catch (error) {
+        console.error('Error fetching constructor results:', error);
+        return [];
+    }
+}
+
+/**
  * Fetch a driver's career stats, computed from their full Ergast results.
  * @param {string} driverId - Ergast driver ID (e.g. 'max_verstappen').
  */

@@ -23,6 +23,9 @@ export {
 } from './f1/openf1';
 
 export {
+    getConstructorDrivers,
+    getConstructorInfo,
+    getConstructorSeasonResults,
     getConstructorStandings,
     getDriverCareerStats,
     getDriverSeasonResults,

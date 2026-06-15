@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
+    getConstructorInfo,
+    getConstructorSeasonResults,
     getDriverCareerStats,
     getDriverSeasonResults,
     getDriverStandings,
@@ -193,5 +195,46 @@ describe('getSeasonDrivers + resolveErgastId', () => {
     it('falls back to the static map when not in the live list', async () => {
         mockFetchOnce({ MRData: { DriverTable: { Drivers: [] } } });
         expect(await resolveErgastId(44, { 44: 'hamilton' })).toBe('hamilton');
+    });
+});
+
+describe('getConstructorInfo', () => {
+    it('maps the constructor payload', async () => {
+        mockFetchOnce({
+            MRData: { ConstructorTable: { Constructors: [{ constructorId: 'ferrari', name: 'Ferrari', nationality: 'Italian', url: 'http://x' }] } },
+        });
+        expect(await getConstructorInfo('ferrari')).toMatchObject({ id: 'ferrari', name: 'Ferrari', nationality: 'Italian' });
+    });
+
+    it('returns null when missing', async () => {
+        mockFetchOnce({ MRData: { ConstructorTable: { Constructors: [] } } });
+        expect(await getConstructorInfo('nope')).toBeNull();
+    });
+});
+
+describe('getConstructorSeasonResults', () => {
+    it('combines both cars and sums points per race', async () => {
+        mockFetchOnce({
+            MRData: {
+                RaceTable: {
+                    Races: [
+                        {
+                            round: '1',
+                            raceName: 'Bahrain GP',
+                            date: '2026-03-08',
+                            Circuit: { Location: { country: 'Bahrain' } },
+                            Results: [
+                                { position: '1', points: '25', status: 'Finished', Driver: { code: 'LEC' } },
+                                { position: '4', points: '12', status: 'Finished', Driver: { code: 'HAM' } },
+                            ],
+                        },
+                    ],
+                },
+            },
+        });
+        const results = await getConstructorSeasonResults('ferrari', 2026);
+        expect(results[0].points).toBe(37);
+        expect(results[0].cars).toHaveLength(2);
+        expect(results[0].cars[0]).toMatchObject({ code: 'LEC', position: 1 });
     });
 });
