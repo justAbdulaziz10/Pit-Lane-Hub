@@ -88,7 +88,107 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* ... (Existing code) ... */}
+      {/* Next Race Countdown */}
+      {nextRace && countdown && (
+        <section className={styles.countdown}>
+          <div className="container">
+            <div className={styles.countdownCard}>
+              <span className={styles.countdownBadge}>NEXT RACE</span>
+              <h2 className={styles.countdownTitle}>{nextRace.meeting_name}</h2>
+              <p className={styles.countdownLocation}>
+                {nextRace.location}{nextRace.country_name ? `, ${nextRace.country_name}` : ''}
+              </p>
+              <div className={styles.countdownTimer}>
+                <div className={styles.timerBlock}>
+                  <span className={styles.timerValue}>{countdown.days}</span>
+                  <span className={styles.timerLabel}>Days</span>
+                </div>
+                <span className={styles.timerSeparator}>:</span>
+                <div className={styles.timerBlock}>
+                  <span className={styles.timerValue}>{countdown.hours}</span>
+                  <span className={styles.timerLabel}>Hours</span>
+                </div>
+              </div>
+              <Link href="/schedule" className={styles.countdownLink}>View Full Calendar →</Link>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Quick Access */}
+      <section className={styles.quickAccess}>
+        <div className="container">
+          <h2 className={styles.sectionTitle}>Explore the Paddock</h2>
+          <div className={styles.cardGrid}>
+            <Link href="/live" className={styles.accessCard}>
+              <span className={styles.accessLive}>LIVE</span>
+              <div className={styles.accessIcon}>⏱️</div>
+              <h3>Live Timing</h3>
+              <p>Real-time positions, gaps and weather during every session.</p>
+              <span className={styles.accessArrow}>→</span>
+            </Link>
+            <Link href="/standings" className={styles.accessCard}>
+              <div className={styles.accessIcon}>🏆</div>
+              <h3>Standings</h3>
+              <p>Live driver and constructor championship tables.</p>
+              <span className={styles.accessArrow}>→</span>
+            </Link>
+            <Link href="/schedule" className={styles.accessCard}>
+              <div className={styles.accessIcon}>🗓️</div>
+              <h3>Race Calendar</h3>
+              <p>Every Grand Prix of the season with dates and locations.</p>
+              <span className={styles.accessArrow}>→</span>
+            </Link>
+            <Link href="/compare" className={styles.accessCard}>
+              <div className={styles.accessIcon}>📊</div>
+              <h3>Compare Drivers</h3>
+              <p>Head-to-head career stats between any two drivers.</p>
+              <span className={styles.accessArrow}>→</span>
+            </Link>
+            <Link href="/tracks" className={styles.accessCard}>
+              <div className={styles.accessIcon}>🏁</div>
+              <h3>Circuits</h3>
+              <p>Interactive 3D track layouts from around the world.</p>
+              <span className={styles.accessArrow}>→</span>
+            </Link>
+            <Link href="/history" className={styles.accessCard}>
+              <div className={styles.accessIcon}>📚</div>
+              <h3>History</h3>
+              <p>Browse past seasons, results and championship records.</p>
+              <span className={styles.accessArrow}>→</span>
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Featured Drivers */}
+      {drivers.length > 0 && (
+        <section className={styles.featuredDrivers}>
+          <div className="container">
+            <div className={styles.sectionHeader}>
+              <h2 className={styles.sectionTitle}>Featured Drivers</h2>
+              <Link href="/drivers" className={styles.viewAll}>View All →</Link>
+            </div>
+            <div className={styles.driversGrid}>
+              {drivers.map((driver) => (
+                <Link
+                  key={driver.driver_number}
+                  href={`/driver/${driver.driver_number}`}
+                  className={styles.driverMini}
+                >
+                  <span className={styles.driverNumber}>{driver.driver_number}</span>
+                  <div className={styles.driverInfo}>
+                    <span className={styles.driverName}>
+                      {driver.first_name} <strong>{driver.last_name}</strong>
+                    </span>
+                    <span className={styles.driverTeam}>{driver.team_name}</span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* About / Data Source */}
       <section className={styles.about}>

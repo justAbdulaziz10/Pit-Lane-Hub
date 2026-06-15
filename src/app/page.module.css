@@ -426,3 +426,7 @@
     grid-template-columns: 1fr;
   }
 }
+.sectionHeader .sectionTitle {
+  margin-bottom: 0;
+  text-align: left;
+}
