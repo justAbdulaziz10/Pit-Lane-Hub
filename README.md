@@ -23,36 +23,60 @@
 
 ## 🛠️ Tech Stack
 
-- **Framework**: [Next.js 16](https://nextjs.org/) with App Router
-- **Data Source**: [OpenF1 API](https://openf1.org/) - Free, open-source F1 data
-- **Hosting**: [Vercel](https://vercel.com/) - Free tier
-- **Styling**: CSS Modules with custom design system
+- **Framework**: [Next.js 16](https://nextjs.org/) (App Router) + React 19
+- **Data Sources**: [OpenF1 API](https://openf1.org/) (live timing) and the
+  [Ergast/Jolpica API](https://api.jolpi.ca/ergast/f1) (historical standings & career stats)
+- **Auth**: [NextAuth v5](https://authjs.dev/) with the Prisma adapter (credentials + Resend magic links)
+- **Database**: PostgreSQL via [Prisma](https://www.prisma.io/)
+- **Payments**: [Polar](https://polar.sh/) (primary) with legacy [Stripe](https://stripe.com/) support
+- **3D**: [Three.js](https://threejs.org/) via React Three Fiber for circuit maps
+- **Styling**: CSS Modules with a custom design-token system
+- **Testing**: [Vitest](https://vitest.dev/)
+- **Hosting**: [Vercel](https://vercel.com/)
 
 ---
 
 ## 🚀 Getting Started
 
 ### Prerequisites
-- Node.js 18+ 
-- npm or yarn
+- Node.js 18+
+- npm
+- A PostgreSQL database (for auth — the public F1 data works without it)
 
 ### Installation
 
 ```bash
-# Clone the repository
 git clone https://github.com/justAbdulaziz10/Pit-Lane-Hub.git
-
-# Navigate to the project
 cd Pit-Lane-Hub
-
-# Install dependencies
 npm install
 
-# Start development server
+# Configure environment variables
+cp .env.example .env.local   # then fill in the values
+
+# Apply the database schema (only needed for auth/subscriptions)
+npx prisma migrate dev
+
+# Start the dev server
 npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) to view the site.
+
+### Environment variables
+
+All required variables are documented in [`.env.example`](.env.example) — database URLs,
+NextAuth secret, Resend, and Polar/Stripe credentials. The webhook routes **require** their
+signing secrets (`POLAR_WEBHOOK_SECRET`, `STRIPE_WEBHOOK_SECRET`) and fail closed without them.
+
+### Scripts
+
+| Script | Description |
+|--------|-------------|
+| `npm run dev` | Start the dev server |
+| `npm run build` | Production build |
+| `npm run lint` | Run ESLint |
+| `npm test` | Run the Vitest suite |
+| `npm run test:watch` | Run tests in watch mode |
 
 ---
 
@@ -93,8 +117,31 @@ src/
 │   ├── history/           # Historical data browser
 │   ├── junior/            # F2 & F3 info
 │   └── support/           # Donation page
+│   ├── api/               # Route handlers (auth, Polar/Stripe webhooks)
+│   ├── error.js           # App-level error boundary
+│   └── not-found.js       # 404 page
 ├── components/            # Reusable React components
-└── lib/                   # API utilities and helpers
+└── lib/
+    ├── f1/                # F1 data layer
+    │   ├── constants.js   # Team colours, titles, nationalities, Ergast IDs
+    │   ├── openf1.js      # OpenF1 API wrappers (live data)
+    │   └── ergast.js      # Ergast API wrappers (standings, career stats)
+    ├── f1api.js           # Barrel re-export of the f1/ modules
+    ├── validation.js      # Email/password validation
+    └── photos.js          # Headshot URL helpers
+
+tests/                     # Vitest unit tests
+```
+
+---
+
+## 🧪 Testing
+
+Unit tests cover the data-layer transforms, input validation, and webhook signature
+verification:
+
+```bash
+npm test
 ```
 
 ---
