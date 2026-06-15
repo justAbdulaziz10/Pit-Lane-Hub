@@ -5,7 +5,7 @@ import styles from './page.module.css';
 export const revalidate = 300; // Refresh every 5 minutes
 
 export const metadata = {
-    title: 'F1 Standings 2026 | Drivers & Constructors',
+    title: 'F1 Standings | Drivers & Constructors',
     description: 'Current Formula 1 championship standings for drivers and teams. Real-time updates and points.',
 };
 

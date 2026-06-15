@@ -125,7 +125,8 @@ src/
     ├── f1/                # F1 data layer
     │   ├── constants.js   # Team colours, titles, nationalities, Ergast IDs
     │   ├── openf1.js      # OpenF1 API wrappers (live data)
-    │   └── ergast.js      # Ergast API wrappers (standings, career stats)
+    │   └── ergast.js      # Ergast API wrappers (standings, results, qualifying,
+    │                      #   schedule, career stats, season drivers)
     ├── f1api.js           # Barrel re-export of the f1/ modules
     ├── validation.js      # Email/password validation
     └── photos.js          # Headshot URL helpers

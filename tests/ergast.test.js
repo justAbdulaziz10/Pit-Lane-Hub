@@ -1,5 +1,13 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { getDriverCareerStats, getDriverStandings } from '@/lib/f1/ergast';
+import {
+    getDriverCareerStats,
+    getDriverSeasonResults,
+    getDriverStandings,
+    getQualifyingResults,
+    getSchedule,
+    getSeasonDrivers,
+    resolveErgastId,
+} from '@/lib/f1/ergast';
 
 function mockFetchOnce(payload, ok = true) {
     vi.stubGlobal(
@@ -86,5 +94,104 @@ describe('getDriverCareerStats', () => {
     it('returns null on failure', async () => {
         mockFetchOnce(null, false);
         expect(await getDriverCareerStats('nobody')).toBeNull();
+    });
+});
+
+describe('getSchedule', () => {
+    it('maps races and flags sprint weekends', async () => {
+        mockFetchOnce({
+            MRData: {
+                RaceTable: {
+                    Races: [
+                        {
+                            season: '2026',
+                            round: '1',
+                            raceName: 'Australian Grand Prix',
+                            date: '2026-03-08',
+                            time: '05:00:00Z',
+                            Circuit: { circuitId: 'albert_park', circuitName: 'Albert Park', Location: { locality: 'Melbourne', country: 'Australia' } },
+                            Sprint: { date: '2026-03-07', time: '05:00:00Z' },
+                        },
+                    ],
+                },
+            },
+        });
+        const schedule = await getSchedule(2026);
+        expect(schedule).toHaveLength(1);
+        expect(schedule[0]).toMatchObject({ round: 1, raceName: 'Australian Grand Prix', hasSprint: true });
+        expect(schedule[0].circuit.country).toBe('Australia');
+    });
+});
+
+describe('getQualifyingResults', () => {
+    it('maps Q1/Q2/Q3 times', async () => {
+        mockFetchOnce({
+            MRData: {
+                RaceTable: {
+                    Races: [
+                        {
+                            raceName: 'Bahrain Grand Prix',
+                            round: '1',
+                            QualifyingResults: [
+                                {
+                                    position: '1',
+                                    Driver: { driverId: 'leclerc', code: 'LEC', givenName: 'Charles', familyName: 'Leclerc', permanentNumber: '16' },
+                                    Constructor: { name: 'Ferrari' },
+                                    Q1: '1:30.0', Q2: '1:29.5', Q3: '1:29.0',
+                                },
+                            ],
+                        },
+                    ],
+                },
+            },
+        });
+        const quali = await getQualifyingResults(2026, 1);
+        expect(quali.results[0]).toMatchObject({ position: 1, q3: '1:29.0', driver: { code: 'LEC' } });
+    });
+});
+
+describe('getDriverSeasonResults', () => {
+    it('maps a season of race results', async () => {
+        mockFetchOnce({
+            MRData: {
+                RaceTable: {
+                    Races: [
+                        { round: '1', raceName: 'Australian GP', date: '2026-03-08', Circuit: { Location: { country: 'Australia' } }, Results: [{ position: '2', grid: '3', points: '18', status: 'Finished' }] },
+                    ],
+                },
+            },
+        });
+        const results = await getDriverSeasonResults('norris', 2026);
+        expect(results[0]).toMatchObject({ round: 1, position: 2, grid: 3, points: 18 });
+    });
+});
+
+describe('getSeasonDrivers + resolveErgastId', () => {
+    const payload = {
+        MRData: {
+            DriverTable: {
+                Drivers: [
+                    { driverId: 'max_verstappen', code: 'VER', permanentNumber: '1', givenName: 'Max', familyName: 'Verstappen', nationality: 'Dutch' },
+                    { driverId: 'norris', code: 'NOR', permanentNumber: '4', givenName: 'Lando', familyName: 'Norris', nationality: 'British' },
+                ],
+            },
+        },
+    };
+
+    it('lists season drivers with parsed numbers', async () => {
+        mockFetchOnce(payload);
+        const drivers = await getSeasonDrivers(2026);
+        expect(drivers).toHaveLength(2);
+        expect(drivers[0]).toMatchObject({ id: 'max_verstappen', number: 1 });
+    });
+
+    it('resolves an Ergast id from a driver number', async () => {
+        mockFetchOnce(payload);
+        expect(await resolveErgastId(4, {})).toBe('norris');
+    });
+
+    it('falls back to the static map when not in the live list', async () => {
+        mockFetchOnce({ MRData: { DriverTable: { Drivers: [] } } });
+        expect(await resolveErgastId(44, { 44: 'hamilton' })).toBe('hamilton');
     });
 });

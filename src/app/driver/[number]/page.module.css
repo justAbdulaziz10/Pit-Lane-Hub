@@ -456,3 +456,61 @@
         grid-template-columns: 1fr;
     }
 }
+/* Season results table */
+.resultsTable {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    background: var(--carbon-border);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+}
+
+.resultRow {
+    display: grid;
+    grid-template-columns: 70px 1fr 70px 90px 80px;
+    align-items: center;
+    gap: var(--space-md);
+    padding: var(--space-md) var(--space-lg);
+    background: var(--carbon-surface);
+    font-size: 0.9rem;
+}
+
+.resultHead {
+    background: var(--carbon-dark);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.resultRound {
+    font-family: var(--font-display);
+    font-weight: 700;
+    color: var(--racing-red);
+}
+
+.resultRace {
+    font-weight: 500;
+}
+
+.resultFinish {
+    font-weight: 700;
+}
+
+.resultPoints {
+    font-family: var(--font-display);
+    font-weight: 700;
+}
+
+@media (max-width: 640px) {
+    .resultRow {
+        grid-template-columns: 40px 1fr 60px 60px;
+        gap: var(--space-sm);
+        padding: var(--space-sm) var(--space-md);
+        font-size: 0.8rem;
+    }
+    .resultRow > :nth-child(3) {
+        display: none;
+    }
+}

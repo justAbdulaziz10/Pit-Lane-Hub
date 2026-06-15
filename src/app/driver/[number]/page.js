@@ -1,4 +1,4 @@
-import { DRIVER_ERGAST_IDS, getDriverCareerStats, getDrivers, getSessions, getTeamColor } from '@/lib/f1api';
+import { DRIVER_ERGAST_IDS, getDriverCareerStats, getDriverSeasonResults, getDrivers, getTeamColor, resolveErgastId } from '@/lib/f1api';
 import { getHighQualityPhoto } from '@/lib/photos';
 import Link from 'next/link';
 import styles from './page.module.css';
@@ -39,10 +39,7 @@ export async function generateMetadata({ params }) {
 export default async function DriverDetailPage({ params }) {
     const { number: driverNumber } = await params;
 
-    const [driver, allSessions] = await Promise.all([
-        getDriver(driverNumber),
-        getSessions(),
-    ]);
+    const driver = await getDriver(driverNumber);
 
     if (!driver) {
         return (
@@ -58,11 +55,16 @@ export default async function DriverDetailPage({ params }) {
 
     const teamColor = getTeamColor(driver.team_name);
     const photoUrl = getHighQualityPhoto(driver.headshot_url);
-    const sessions = allSessions.slice(-10);
 
-    // Real career stats from Ergast (when we can map the driver to an Ergast id).
-    const ergastId = DRIVER_ERGAST_IDS[driver.driver_number];
-    const careerStats = ergastId ? await getDriverCareerStats(ergastId) : null;
+    // Resolve the Ergast id dynamically from the live season driver list, falling
+    // back to the static map so new drivers still work without code changes.
+    const ergastId = await resolveErgastId(driver.driver_number, DRIVER_ERGAST_IDS);
+
+    // Real career stats + this season's results from Ergast.
+    const [careerStats, seasonResults] = ergastId
+        ? await Promise.all([getDriverCareerStats(ergastId), getDriverSeasonResults(ergastId)])
+        : [null, []];
+    const recentResults = [...seasonResults].reverse().slice(0, 8);
 
     return (
         <div className={styles.driverDetail} style={{ '--team-color': teamColor }}>
@@ -192,17 +194,30 @@ export default async function DriverDetailPage({ params }) {
                 </div>
             </div>
 
-            {/* Recent Sessions */}
-            {sessions.length > 0 && (
+            {/* Season Results (real Ergast data) */}
+            {recentResults.length > 0 && (
                 <div className={styles.sessionsSection}>
                     <div className="container">
-                        <h2 className={styles.sectionTitle}>Recent Sessions</h2>
-                        <div className={styles.sessionsGrid}>
-                            {sessions.map((session, index) => (
-                                <div key={session.session_key || index} className={styles.sessionCard}>
-                                    <span className={styles.sessionType}>{session.session_name}</span>
-                                    <h4>{session.meeting_name || session.circuit_short_name}</h4>
-                                    <p>{new Date(session.date_start).toLocaleDateString()}</p>
+                        <h2 className={styles.sectionTitle}>Recent Results</h2>
+                        <div className={styles.resultsTable}>
+                            <div className={`${styles.resultRow} ${styles.resultHead}`}>
+                                <span>Round</span>
+                                <span>Grand Prix</span>
+                                <span>Grid</span>
+                                <span>Finish</span>
+                                <span>Points</span>
+                            </div>
+                            {recentResults.map((r) => (
+                                <div key={r.round} className={styles.resultRow}>
+                                    <span className={styles.resultRound}>{r.round}</span>
+                                    <span className={styles.resultRace}>{r.raceName}</span>
+                                    <span>{r.grid ?? '—'}</span>
+                                    <span className={styles.resultFinish}>
+                                        {r.position
+                                            ? `P${r.position}`
+                                            : (r.status || '—')}
+                                    </span>
+                                    <span className={styles.resultPoints}>{r.points}</span>
                                 </div>
                             ))}
                         </div>

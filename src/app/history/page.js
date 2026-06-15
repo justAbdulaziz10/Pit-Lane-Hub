@@ -4,10 +4,17 @@ import { getTeamColor } from '@/lib/f1api';
 import { useEffect, useState } from 'react';
 import styles from './page.module.css';
 
-const AVAILABLE_YEARS = [2023, 2024, 2025, 2026];
+// OpenF1 provides data from 2023 onwards; build the list dynamically so it
+// keeps growing every season without code changes.
+const FIRST_DATA_YEAR = 2023;
+const CURRENT_YEAR = new Date().getFullYear();
+const AVAILABLE_YEARS = Array.from(
+    { length: CURRENT_YEAR - FIRST_DATA_YEAR + 1 },
+    (_, i) => FIRST_DATA_YEAR + i
+);
 
 export default function HistoryPage() {
-    const [selectedYear, setSelectedYear] = useState(2024);
+    const [selectedYear, setSelectedYear] = useState(CURRENT_YEAR);
     const [dataType, setDataType] = useState('drivers');
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(true);

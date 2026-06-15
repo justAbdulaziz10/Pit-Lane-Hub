@@ -130,6 +130,162 @@ export async function getRaceResults(year = null, round = null) {
 }
 
 /**
+ * Fetch the full race calendar for a season, including session times when
+ * Ergast provides them (sprint, qualifying, practices).
+ * @param {number|null} year - Season year (defaults to current).
+ */
+export async function getSchedule(year = null) {
+    try {
+        const seasonYear = year || 'current';
+        const response = await fetch(`${ERGAST_URL}/${seasonYear}/races.json?limit=100`, {
+            next: { revalidate: 3600 },
+        });
+        if (!response.ok) throw new Error('Failed to fetch schedule');
+        const data = await response.json();
+        const races = data?.MRData?.RaceTable?.Races || [];
+        return races.map((race) => ({
+            season: race.season,
+            round: parseInt(race.round),
+            raceName: race.raceName,
+            circuit: {
+                id: race.Circuit.circuitId,
+                name: race.Circuit.circuitName,
+                location: race.Circuit.Location?.locality,
+                country: race.Circuit.Location?.country,
+            },
+            date: race.date,
+            time: race.time || null,
+            hasSprint: Boolean(race.Sprint),
+            sessions: {
+                firstPractice: race.FirstPractice || null,
+                secondPractice: race.SecondPractice || null,
+                thirdPractice: race.ThirdPractice || null,
+                qualifying: race.Qualifying || null,
+                sprint: race.Sprint || null,
+                sprintQualifying: race.SprintQualifying || null,
+            },
+        }));
+    } catch (error) {
+        console.error('Error fetching schedule:', error);
+        return [];
+    }
+}
+
+/**
+ * Fetch qualifying results for a given race.
+ * @param {number|string} year
+ * @param {number} round
+ */
+export async function getQualifyingResults(year, round) {
+    try {
+        const response = await fetch(`${ERGAST_URL}/${year}/${round}/qualifying.json`, {
+            next: { revalidate: 3600 },
+        });
+        if (!response.ok) throw new Error('Failed to fetch qualifying');
+        const data = await response.json();
+        const race = data?.MRData?.RaceTable?.Races?.[0];
+        if (!race) return null;
+        return {
+            raceName: race.raceName,
+            round: parseInt(race.round),
+            results: (race.QualifyingResults || []).map((q) => ({
+                position: parseInt(q.position),
+                number: q.Driver.permanentNumber,
+                driver: {
+                    id: q.Driver.driverId,
+                    code: q.Driver.code,
+                    firstName: q.Driver.givenName,
+                    lastName: q.Driver.familyName,
+                },
+                team: q.Constructor.name,
+                q1: q.Q1 || null,
+                q2: q.Q2 || null,
+                q3: q.Q3 || null,
+            })),
+        };
+    } catch (error) {
+        console.error('Error fetching qualifying:', error);
+        return null;
+    }
+}
+
+/**
+ * Fetch a driver's results for a single season (recent form).
+ * @param {string} driverId - Ergast driver ID.
+ * @param {number|null} year - Season year (defaults to current).
+ */
+export async function getDriverSeasonResults(driverId, year = null) {
+    try {
+        const seasonYear = year || 'current';
+        const response = await fetch(
+            `${ERGAST_URL}/${seasonYear}/drivers/${driverId}/results.json?limit=100`,
+            { next: { revalidate: 3600 } }
+        );
+        if (!response.ok) throw new Error('Failed to fetch driver season results');
+        const data = await response.json();
+        const races = data?.MRData?.RaceTable?.Races || [];
+        return races.map((race) => {
+            const result = race.Results?.[0] || {};
+            return {
+                round: parseInt(race.round),
+                raceName: race.raceName,
+                country: race.Circuit?.Location?.country,
+                date: race.date,
+                position: result.position ? parseInt(result.position) : null,
+                grid: result.grid ? parseInt(result.grid) : null,
+                points: result.points ? parseFloat(result.points) : 0,
+                status: result.status || null,
+            };
+        });
+    } catch (error) {
+        console.error('Error fetching driver season results:', error);
+        return [];
+    }
+}
+
+/**
+ * Fetch the list of drivers for a season (id, code, number) so we can map an
+ * OpenF1 driver number to its Ergast id dynamically instead of hardcoding.
+ * @param {number|null} year - Season year (defaults to current).
+ */
+export async function getSeasonDrivers(year = null) {
+    try {
+        const seasonYear = year || 'current';
+        const response = await fetch(`${ERGAST_URL}/${seasonYear}/drivers.json?limit=100`, {
+            next: { revalidate: 86400 },
+        });
+        if (!response.ok) throw new Error('Failed to fetch season drivers');
+        const data = await response.json();
+        const drivers = data?.MRData?.DriverTable?.Drivers || [];
+        return drivers.map((d) => ({
+            id: d.driverId,
+            code: d.code,
+            number: d.permanentNumber ? parseInt(d.permanentNumber) : null,
+            firstName: d.givenName,
+            lastName: d.familyName,
+            nationality: d.nationality,
+        }));
+    } catch (error) {
+        console.error('Error fetching season drivers:', error);
+        return [];
+    }
+}
+
+/**
+ * Resolve an Ergast driver id from an OpenF1 driver number, preferring live
+ * season data and falling back to a static map for drivers not yet in Ergast.
+ * @param {number|string} driverNumber
+ * @param {Record<number, string>} fallbackMap
+ * @returns {Promise<string|null>}
+ */
+export async function resolveErgastId(driverNumber, fallbackMap = {}) {
+    const num = parseInt(driverNumber);
+    const seasonDrivers = await getSeasonDrivers();
+    const match = seasonDrivers.find((d) => d.number === num);
+    return match?.id || fallbackMap[num] || null;
+}
+
+/**
  * Fetch a driver's career stats, computed from their full Ergast results.
  * @param {string} driverId - Ergast driver ID (e.g. 'max_verstappen').
  */

@@ -24,6 +24,11 @@ export {
 export {
     getConstructorStandings,
     getDriverCareerStats,
+    getDriverSeasonResults,
     getDriverStandings,
+    getQualifyingResults,
     getRaceResults,
+    getSchedule,
+    getSeasonDrivers,
+    resolveErgastId,
 } from './f1/ergast';

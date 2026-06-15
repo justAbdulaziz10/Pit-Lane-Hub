@@ -24,8 +24,8 @@ export default function NotificationBanner() {
             }
         }
 
-        // Fetch next race info
-        fetch('https://api.openf1.org/v1/meetings?year=2026')
+        // Fetch next race info for the current season
+        fetch(`https://api.openf1.org/v1/meetings?year=${new Date().getFullYear()}`)
             .then(res => res.json())
             .then(data => {
                 const now = new Date();
