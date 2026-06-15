@@ -44,7 +44,6 @@ export const metadata = {
     apple: '/apple-touch-icon.png',
   },
   manifest: '/manifest.json',
-  manifest: '/manifest.json',
 };
 
 export const viewport = {
@@ -59,8 +58,9 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <body>
         <Providers>
+          <a href="#main-content" className="skip-link">Skip to main content</a>
           <Header />
-          <main style={{ paddingTop: '80px', minHeight: '100vh' }}>
+          <main id="main-content" className="app-main">
             {children}
           </main>
           <Footer />

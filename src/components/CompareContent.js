@@ -185,7 +185,7 @@ export default function CompareContent({ initialDrivers = [] }) {
                             <div className={styles.driverProfile} style={{ borderColor: color1 }}>
                                 {selectedDriver1.headshot_url && (
                                     // eslint-disable-next-line @next/next/no-img-element
-                                    <img src={selectedDriver1.headshot_url} alt="" />
+                                    <img src={selectedDriver1.headshot_url} alt={`${selectedDriver1.first_name} ${selectedDriver1.last_name}`} />
                                 )}
                                 <h2>{selectedDriver1.first_name} <strong>{selectedDriver1.last_name}</strong></h2>
                                 <span className={styles.teamTag}>{selectedDriver1.team_name}</span>
@@ -193,7 +193,7 @@ export default function CompareContent({ initialDrivers = [] }) {
                             <div className={styles.driverProfile} style={{ borderColor: color2 }}>
                                 {selectedDriver2.headshot_url && (
                                     // eslint-disable-next-line @next/next/no-img-element
-                                    <img src={selectedDriver2.headshot_url} alt="" />
+                                    <img src={selectedDriver2.headshot_url} alt={`${selectedDriver2.first_name} ${selectedDriver2.last_name}`} />
                                 )}
                                 <h2>{selectedDriver2.first_name} <strong>{selectedDriver2.last_name}</strong></h2>
                                 <span className={styles.teamTag}>{selectedDriver2.team_name}</span>
@@ -277,7 +277,7 @@ export default function CompareContent({ initialDrivers = [] }) {
                             </div>
 
                             {/* Data Source Footer */}
-                            <div className={styles.sourceFooter} style={{ marginTop: '20px', fontSize: '0.8rem', color: '#666', textAlign: 'center' }}>
+                            <div className={styles.sourceFooter}>
                                 <p>Data Source: {stats1.source} • Last Updated: {stats1.lastUpdated}</p>
                                 <p>Note: Comparison includes full career statistics from all seasons.</p>
                             </div>

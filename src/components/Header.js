@@ -45,7 +45,7 @@ export default function Header() {
                         <span className={styles.logoSecondary}>HUB</span>
                     </span>
                     {session?.user?.isPro && (
-                        <span className="ml-2 bg-[#E10600] text-white text-[10px] font-bold px-1.5 py-0.5 rounded">PRO</span>
+                        <span className={styles.proBadge}>PRO</span>
                     )}
                 </Link>
 
@@ -67,17 +67,17 @@ export default function Header() {
                     </Link>
 
                     {!session ? (
-                        <div className="flex gap-4">
+                        <div className={styles.authLinks}>
                             <Link href="/login" className={styles.navLink}>Log In</Link>
                             <Link href="/signup" className={styles.supportButton}>Sign Up</Link>
                         </div>
                     ) : (
-                        <div className="flex items-center gap-4">
-                            <Link href="/profile" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-                                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#e10600] to-[#ff4d4d] flex items-center justify-center text-white font-bold text-sm border-2 border-white/20">
+                        <div className={styles.profileWrap}>
+                            <Link href="/profile" className={styles.profileLink}>
+                                <div className={styles.avatar}>
                                     {session.user.name ? session.user.name[0].toUpperCase() : "U"}
                                 </div>
-                                <span className="text-sm font-medium hidden md:block">
+                                <span className={styles.profileName}>
                                     {session.user.name?.split(' ')[0] || "Profile"}
                                 </span>
                             </Link>
@@ -89,6 +89,8 @@ export default function Header() {
                         className={styles.mobileToggle}
                         onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                         aria-label="Toggle menu"
+                        aria-expanded={isMobileMenuOpen}
+                        aria-controls="mobile-menu"
                     >
                         <span className={`${styles.hamburger} ${isMobileMenuOpen ? styles.open : ''}`}>
                             <span></span>
@@ -100,7 +102,7 @@ export default function Header() {
             </div>
 
             {/* Mobile Menu */}
-            <div className={`${styles.mobileMenu} ${isMobileMenuOpen ? styles.mobileMenuOpen : ''}`}>
+            <div id="mobile-menu" className={`${styles.mobileMenu} ${isMobileMenuOpen ? styles.mobileMenuOpen : ''}`}>
                 {navLinks.map((link) => (
                     <Link
                         key={link.href}

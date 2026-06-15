@@ -281,3 +281,66 @@
         display: none;
     }
 }
+/* Pro badge */
+.proBadge {
+    margin-left: 0.5rem;
+    background: var(--racing-red);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 0.125rem 0.375rem;
+    border-radius: var(--radius-sm);
+    letter-spacing: 0.05em;
+}
+
+/* Auth links + profile */
+.authLinks {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.profileWrap {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.profileLink {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    text-decoration: none;
+    color: inherit;
+    transition: opacity var(--transition-fast);
+}
+
+.profileLink:hover {
+    opacity: 0.8;
+}
+
+.avatar {
+    width: 2rem;
+    height: 2rem;
+    border-radius: var(--radius-full);
+    background: linear-gradient(135deg, #e10600, #ff4d4d);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-weight: 700;
+    font-size: 0.875rem;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    flex-shrink: 0;
+}
+
+.profileName {
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+@media (max-width: 768px) {
+    .profileName {
+        display: none;
+    }
+}

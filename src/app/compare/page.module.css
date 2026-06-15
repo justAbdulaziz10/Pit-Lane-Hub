@@ -433,3 +433,9 @@
         width: 100%;
     }
 }
+.sourceFooter {
+    margin-top: 20px;
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.4);
+    text-align: center;
+}
