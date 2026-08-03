@@ -18,8 +18,8 @@
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.5.0",
     "bcryptjs": "^3.0.3",
-    "next": "16.1.6",
-    "next-auth": "^5.0.0-beta.30",
+    "next": "16.2.12",
+    "next-auth": "^5.0.0-beta.32",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "three": "^0.182.0"
