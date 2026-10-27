@@ -130,7 +130,7 @@ describe('Polar webhook route', () => {
 
         const response = await deliver('subscription.active');
 
-        expect(response.status).toBe(500);
+        expect(response.status).toBe(503);
         expect(stored().subscriptionStatus).toBeNull();
     });
 

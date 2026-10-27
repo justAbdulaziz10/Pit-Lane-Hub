@@ -85,7 +85,8 @@ export async function POST(req) {
 
     // Fail closed: never process unverified payment events.
     if (!webhookSecret) {
-        return new NextResponse("Webhook secret not configured", { status: 500 });
+        // 503 so Polar retries once the secret is configured.
+        return new NextResponse("Webhook secret not configured", { status: 503 });
     }
 
     const body = await req.text();
