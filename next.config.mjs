@@ -16,6 +16,13 @@ const nextConfig = {
       }
     ],
   },
+  async redirects() {
+    return [
+      // The junior-series page carried stale hand-maintained data and was removed.
+      { source: '/junior', destination: '/standings', permanent: true },
+      { source: '/junior/:path*', destination: '/standings', permanent: true },
+    ];
+  },
 };
 
 export default nextConfig;

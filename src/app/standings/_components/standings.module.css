@@ -1,0 +1,190 @@
+/* Shared by /standings and /history. */
+
+.tableWrap {
+    background: var(--carbon-surface);
+    border: 1px solid var(--carbon-border);
+    border-radius: var(--radius-lg);
+    overflow-x: auto;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    font-variant-numeric: tabular-nums;
+}
+
+.table caption {
+    text-align: left;
+    padding: var(--space-md) var(--space-lg);
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+.table th,
+.table td {
+    padding: var(--space-sm) var(--space-lg);
+    text-align: left;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    vertical-align: middle;
+}
+
+.table thead th {
+    background: var(--carbon-dark);
+    font-family: var(--font-display);
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.table tbody th {
+    font-weight: 400;
+}
+
+.table tbody tr:last-child th,
+.table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.table tbody tr:hover {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.table a {
+    color: inherit;
+    text-decoration: none;
+}
+
+.table a:hover,
+.table a:focus-visible {
+    color: var(--checkered-white);
+    text-decoration: underline;
+}
+
+.pos {
+    width: 4rem;
+    font-family: var(--font-display);
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.8);
+    border-left: 3px solid var(--team-color, transparent);
+}
+
+.table .num {
+    text-align: right;
+    width: 6rem;
+}
+
+.points {
+    font-family: var(--font-display);
+    font-weight: 800;
+}
+
+.driverName strong {
+    text-transform: uppercase;
+    font-weight: 700;
+}
+
+.code {
+    display: inline-block;
+    min-width: 2.75rem;
+    margin-right: var(--space-sm);
+    padding: 2px 6px;
+    border-radius: var(--radius-sm);
+    background: rgba(255, 255, 255, 0.08);
+    font-family: var(--font-display);
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-align: center;
+}
+
+.muted {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.empty {
+    padding: var(--space-2xl) var(--space-lg);
+    text-align: center;
+    background: var(--carbon-surface);
+    border: 1px solid var(--carbon-border);
+    border-radius: var(--radius-lg);
+}
+
+.empty h2,
+.empty h3 {
+    font-size: 1.5rem;
+    margin-bottom: var(--space-md);
+}
+
+.empty a {
+    color: var(--racing-red);
+    font-weight: 600;
+}
+
+/* Year picker */
+.picker {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-sm);
+    margin-top: var(--space-lg);
+}
+
+.picker label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.picker select,
+.picker button,
+.stepLink {
+    min-height: 2.5rem;
+    padding: var(--space-xs) var(--space-md);
+    background: var(--carbon-surface);
+    border: 1px solid var(--carbon-border);
+    border-radius: var(--radius-md);
+    color: var(--checkered-white);
+    font: inherit;
+    font-weight: 600;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+}
+
+.picker select {
+    width: auto;
+    min-width: 6.5rem;
+}
+
+.picker button {
+    cursor: pointer;
+    background: var(--racing-red);
+    border-color: var(--racing-red);
+}
+
+.picker select:focus-visible,
+.picker button:focus-visible,
+.stepLink:focus-visible {
+    outline: 2px solid var(--checkered-white);
+    outline-offset: 2px;
+}
+
+.stepLink:hover {
+    border-color: rgba(255, 255, 255, 0.4);
+}
+
+@media (max-width: 640px) {
+    .table th,
+    .table td {
+        padding: var(--space-sm);
+    }
+
+    .hideSmall {
+        display: none;
+    }
+}

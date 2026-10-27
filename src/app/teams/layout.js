@@ -1,7 +1,11 @@
+const title = 'F1 Teams: Constructors and Drivers';
+const description = 'Every Formula 1 team on the current grid with its drivers, championship position and points.';
+
 export const metadata = {
-  title: 'F1 Teams: Constructors, Drivers and History',
-  description: 'Meet the Formula 1 constructors, see their current drivers, and follow the teams behind each championship campaign.',
+  title,
+  description,
   alternates: { canonical: '/teams' },
+  openGraph: { title, description, url: '/teams' },
 };
 
 export default function TeamsLayout({ children }) {

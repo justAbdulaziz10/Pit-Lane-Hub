@@ -1,163 +1,99 @@
-'use client';
-
-import { getConstructorStandings, getCurrentYear, getTeamColor } from '@/lib/f1api';
-import { getHighQualityPhoto } from '@/lib/photos';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { connection } from 'next/server';
+import { getGrid } from '@/lib/f1/drivers';
+import { currentGridDrivers, getConstructorStandings } from '@/lib/f1/standings';
+import { getTeams } from '@/lib/f1/teams';
+import { getSeasonYear } from '@/lib/f1/year';
+import { getHighQualityPhoto } from '@/lib/photos';
 import styles from './page.module.css';
 
-export default function TeamsPage() {
-    const [teams, setTeams] = useState([]);
-    const [loading, setLoading] = useState(true);
+// Metadata lives in ./layout.js.
 
-    useEffect(() => {
-        async function fetchTeams() {
-            try {
-                // Fetch real constructor standings (try current year first, fallback to previous)
-                let standings = await getConstructorStandings(getCurrentYear());
+function DriverRow({ driver }) {
+    const photo = getHighQualityPhoto(driver.headshot);
+    const number = driver.racingNumber ?? driver.number;
+    const key = number ?? driver.driverId;
+    const content = (
+        <>
+            {photo ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={photo} alt={driver.fullName || driver.lastName} className={styles.driverPhoto} loading="lazy" />
+            ) : (
+                <span className={styles.driverPhotoPlaceholder} aria-hidden="true">{number ?? ''}</span>
+            )}
+            <span className={styles.driverDetails}>
+                <span className={styles.driverName}>
+                    {driver.firstName} <strong>{driver.lastName}</strong>
+                </span>
+                {number != null && <span className={styles.driverNumber}>#{number}</span>}
+            </span>
+        </>
+    );
+    if (key == null) return <li className={styles.driverRow}>{content}</li>;
+    return (
+        <li>
+            <Link href={`/driver/${encodeURIComponent(key)}`} className={styles.driverRow}>{content}</Link>
+        </li>
+    );
+}
 
-                if (standings.length === 0) {
-                    standings = await getConstructorStandings(getCurrentYear() - 1);
-                }
-
-                if (standings.length > 0) {
-                    // Map Ergast data to our format
-                    const formattedTeams = standings.map(s => ({
-                        id: s.team.id,
-                        name: s.team.name,
-                        position: s.position,
-                        points: s.points,
-                        color: getTeamColor(s.team.name),
-                        drivers: []
-                    }));
-
-                    // Fetch drivers to populate the team
-                    // Dynamic import to avoid circular dep issues if any
-                    const driversData = await import('@/lib/f1api').then(m => m.getDrivers());
-
-                    // Helper to find drivers for a team
-                    formattedTeams.forEach(team => {
-                        team.drivers = driversData.filter(d =>
-                            d.team_name && team.name.toLowerCase().includes(d.team_name.toLowerCase()) ||
-                            (team.name === 'Ferrari' && d.team_name === 'Ferrari') ||
-                            d.team_name === team.name
-                        );
-                        // Remove duplicates in drivers
-                        const seen = new Set();
-                        team.drivers = team.drivers.filter(d => {
-                            if (seen.has(d.driver_number)) return false;
-                            seen.add(d.driver_number);
-                            return true;
-                        });
-                    });
-
-                    setTeams(formattedTeams);
-                } else {
-                    setTeams([]);
-                }
-            } catch (e) {
-                console.error('Error fetching teams:', e);
-                setTeams([]);
-            }
-            setLoading(false);
-        }
-
-        fetchTeams();
-    }, []);
+export default async function TeamsPage() {
+    await connection();
+    const year = getSeasonYear();
+    const [teams, constructorStandings, grid] = await Promise.all([
+        getTeams(year),
+        getConstructorStandings(year),
+        getGrid(year),
+    ]);
+    const standingById = new Map(constructorStandings.standings.map((row) => [row.team.id, row]));
+    const ordered = [...teams].sort((a, b) => {
+        const posA = standingById.get(a.constructorId)?.position ?? Infinity;
+        const posB = standingById.get(b.constructorId)?.position ?? Infinity;
+        return posA - posB || a.name.localeCompare(b.name);
+    });
 
     return (
         <div className={styles.teams}>
-            {/* Header */}
-            <div className={styles.header}>
+            <header className={styles.header}>
                 <div className="container">
-                    <span className={styles.badge}>🏆 CONSTRUCTORS</span>
-                    <h1>{getCurrentYear()} Team Standings</h1>
-                    <p>Constructor championship positions and drivers</p>
+                    <h1>{year} Teams</h1>
+                    {constructorStandings.round && <p>Constructors&apos; standings after round {constructorStandings.round}</p>}
                 </div>
-            </div>
+            </header>
 
-            {/* Teams Grid */}
             <div className={styles.content}>
                 <div className="container">
-                    {loading ? (
-                        <div className={styles.loading}>
-                            <div className={styles.spinner}></div>
-                            <p>Loading teams...</p>
-                        </div>
-                    ) : teams.length > 0 ? (
-                        <div className={styles.teamsGrid}>
-                            {teams.map((team) => (
-                                <Link
-                                    key={team.name}
-                                    href={team.id ? `/team/${team.id}` : '/teams'}
-                                    className={styles.teamCard}
-                                    style={{ '--team-color': team.color }}
-                                >
-                                    <div className={styles.teamColorBar}></div>
-
-                                    <div className={styles.teamHeader}>
-                                        <span className={styles.teamPosition}>P{team.position}</span>
-                                        <div className={styles.teamPoints}>
-                                            <span className={styles.pointsValue}>{team.points}</span>
-                                            <span className={styles.pointsLabel}>PTS</span>
-                                        </div>
-                                    </div>
-
-                                    <h2 className={styles.teamName}>{team.name}</h2>
-
-                                    <div className={styles.driversList}>
-                                        {team.drivers.map(driver => {
-                                            const photoUrl = getHighQualityPhoto(driver.headshot_url);
-                                            return (
-                                                <div key={driver.driver_number} className={styles.driverRow}>
-                                                    {photoUrl ? (
-                                                        <div className={styles.driverPhotoWrapper}>
-                                                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                                                            <img
-                                                                src={photoUrl}
-                                                                alt={driver.last_name}
-                                                                className={styles.driverPhoto}
-                                                                loading="lazy"
-                                                                onError={(e) => {
-                                                                    if (driver.headshot_url && e.target.src !== driver.headshot_url) {
-                                                                        e.target.src = driver.headshot_url;
-                                                                    }
-                                                                }}
-                                                            />
-                                                        </div>
-                                                    ) : (
-                                                        <div className={styles.driverPhotoPlaceholder}>
-                                                            {driver.driver_number}
-                                                        </div>
-                                                    )}
-                                                    <div className={styles.driverDetails}>
-                                                        <span className={styles.driverName}>
-                                                            {driver.first_name} <strong>{driver.last_name}</strong>
-                                                        </span>
-                                                        <span className={styles.driverNumber}>#{driver.driver_number}</span>
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                </Link>
-                            ))}
-                        </div>
+                    {ordered.length === 0 ? (
+                        <p className={styles.empty}>No {year} teams announced yet.</p>
                     ) : (
-                        <div className={styles.loading}>
-                            <p>No teams data available</p>
-                        </div>
+                        <ul className={styles.teamsGrid} role="list">
+                            {ordered.map((team) => {
+                                const standing = standingById.get(team.constructorId);
+                                return (
+                                    <li key={team.constructorId} className={styles.teamCard} style={{ '--team-color': team.color }}>
+                                        <div className={styles.teamColorBar} aria-hidden="true"></div>
+                                        {standing && (
+                                            <div className={styles.teamHeader}>
+                                                <span className={styles.teamPosition}>P{standing.position ?? standing.positionText}</span>
+                                                <span className={styles.teamPoints}>
+                                                    <span className={styles.pointsValue}>{standing.points}</span>
+                                                    <span className={styles.pointsLabel}>Pts</span>
+                                                </span>
+                                            </div>
+                                        )}
+                                        <h2 className={styles.teamName}>
+                                            <Link href={`/team/${encodeURIComponent(team.constructorId)}`}>{team.name}</Link>
+                                        </h2>
+                                        <ul className={styles.driversList} aria-label={`${team.name} drivers`}>
+                                            {currentGridDrivers(team, grid).map((driver) => (
+                                                <DriverRow key={driver.driverId || driver.racingNumber} driver={driver} />
+                                            ))}
+                                        </ul>
+                                    </li>
+                                );
+                            })}
+                        </ul>
                     )}
-                </div>
-            </div>
-
-            {/* Note */}
-            <div className={styles.note}>
-                <div className="container">
-                    <p>
-                        ⓘ Team standings are based on driver data from OpenF1 API.
-                        For official standings, visit <a href="https://www.formula1.com/en/results" target="_blank" rel="noopener noreferrer">formula1.com</a>
-                    </p>
                 </div>
             </div>
         </div>

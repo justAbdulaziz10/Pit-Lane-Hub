@@ -1,174 +1,119 @@
-import { getConstructorStandings, getCurrentYear, getDriverStandings, getTeamColor } from '@/lib/f1api';
 import Link from 'next/link';
+import { notFound } from 'next/navigation';
+import { connection } from 'next/server';
+import {
+    FIRST_CONSTRUCTORS_CHAMPIONSHIP_YEAR,
+    FIRST_DRIVERS_CHAMPIONSHIP_YEAR,
+    getConstructorStandings,
+    getDriverStandings,
+    hasConstructorsChampionship,
+    parseSeasonYear,
+} from '@/lib/f1/standings';
+import { getSeasonYear } from '@/lib/f1/year';
+import {
+    ConstructorStandingsTable,
+    DriverStandingsTable,
+    standingsStyles,
+    YearPicker,
+} from './_components/StandingsTables';
+import { loadCurrentSeasonLookups, lookupsForSeason } from './_components/lookups';
 import styles from './page.module.css';
 
-export const revalidate = 300; // Refresh every 5 minutes
+async function resolveYear(searchParams) {
+    const { year: raw } = await searchParams;
+    const current = getSeasonYear();
+    const year = parseSeasonYear(raw, { current });
+    if (year === null) notFound();
+    return { year, current };
+}
 
-export const metadata = {
-    title: 'F1 Standings | Drivers & Constructors',
-    description: 'Current Formula 1 championship standings for drivers and teams. Real-time updates and points.',
-};
+export async function generateMetadata({ searchParams }) {
+    await connection();
+    const { year, current } = await resolveYear(searchParams);
+    const path = year === current ? '/standings' : `/standings?year=${year}`;
+    const title = hasConstructorsChampionship(year)
+        ? `${year} F1 Driver and Constructor Standings`
+        : `${year} F1 Drivers' Championship Standings`;
+    const description = hasConstructorsChampionship(year)
+        ? `Formula 1 ${year} drivers' and constructors' championship standings: positions, points and wins.`
+        : `Formula 1 ${year} drivers' championship standings: positions, points and wins.`;
+    return {
+        title,
+        description,
+        alternates: { canonical: path },
+        openGraph: { title, description, url: path },
+    };
+}
 
-export default async function StandingsPage() {
-    let driverStandings = [];
-    let constructorStandings = [];
-    let error = null;
+export default async function StandingsPage({ searchParams }) {
+    await connection();
+    const { year, current } = await resolveYear(searchParams);
+    const showConstructors = hasConstructorsChampionship(year);
 
-    try {
-        // Fetch real standings from Ergast API
-        const [driversRes, constructorsRes] = await Promise.allSettled([
-            getDriverStandings(),
-            getConstructorStandings()
-        ]);
-
-        if (driversRes.status === 'fulfilled' && driversRes.value.length > 0) {
-            driverStandings = driversRes.value;
-        }
-
-        if (constructorsRes.status === 'fulfilled' && constructorsRes.value.length > 0) {
-            constructorStandings = constructorsRes.value;
-        }
-    } catch (e) {
-        error = 'Failed to load standings data';
-        console.error(e);
-    }
-
-    const year = getCurrentYear();
-    // Use latest available Ergast data (2024) if current year not available
-    const dataYear = driverStandings.length > 0 ? 'current' : 2024;
+    const [drivers, constructors, lookups] = await Promise.all([
+        getDriverStandings(year),
+        showConstructors ? getConstructorStandings(year) : null,
+        loadCurrentSeasonLookups(current),
+    ]);
+    const tableLookups = lookupsForSeason(lookups, year, current);
+    const started = drivers.standings.length > 0;
+    const previous = year - 1;
 
     return (
         <div className={styles.standings}>
-            {/* Header */}
-            <div className={styles.header}>
+            <header className={styles.header}>
                 <div className="container">
-                    <span className={styles.badge}>🏆 CHAMPIONSHIP</span>
-                    <h1>F1 Standings</h1>
-                    <p>Live championship positions and points</p>
-
-                    {/* Tab Navigation */}
-                    <div className={styles.tabs}>
-                        <button className={`${styles.tab} ${styles.active}`}>Drivers</button>
-                        <span className={styles.tabDivider}>|</span>
-                        <Link href="/teams" className={styles.tab}>Constructors</Link>
-                    </div>
+                    <h1>{year} Standings</h1>
+                    {started && drivers.round && <p>After round {drivers.round}</p>}
+                    <YearPicker action="/standings" year={year} min={FIRST_DRIVERS_CHAMPIONSHIP_YEAR} max={current} />
                 </div>
-            </div>
+            </header>
 
-            {/* Driver Standings */}
             <div className={styles.content}>
                 <div className="container">
-                    {error ? (
-                        <div className={styles.error}>
-                            <span className={styles.errorIcon}>⚠️</span>
-                            <h3>Unable to load standings</h3>
-                            <p>{error}</p>
-                            <a href="https://www.formula1.com/en/results" target="_blank" rel="noopener noreferrer" className={styles.fallbackLink}>
-                                View on Formula1.com →
-                            </a>
-                        </div>
-                    ) : driverStandings.length > 0 ? (
-                        <>
-                            {/* Podium */}
-                            <div className={styles.podium}>
-                                {driverStandings.slice(0, 3).map((standing, idx) => (
-                                    <div
-                                        key={standing.driver.id}
-                                        className={`${styles.podiumCard} ${styles[`podium${idx + 1}`]}`}
-                                        style={{ '--team-color': getTeamColor(standing.team.name) }}
-                                    >
-                                        <div className={styles.podiumRank}>
-                                            {idx === 0 ? '🥇' : idx === 1 ? '🥈' : '🥉'}
-                                        </div>
-                                        <div className={styles.podiumCode}>{standing.driver.code}</div>
-                                        <h3 className={styles.podiumName}>
-                                            {standing.driver.firstName} <strong>{standing.driver.lastName}</strong>
-                                        </h3>
-                                        <p className={styles.podiumTeam}>{standing.team.name}</p>
-                                        <div className={styles.podiumStats}>
-                                            <div className={styles.podiumPoints}>
-                                                <span className={styles.pointsValue}>{standing.points}</span>
-                                                <span className={styles.pointsLabel}>PTS</span>
-                                            </div>
-                                            <div className={styles.podiumWins}>
-                                                <span className={styles.winsValue}>{standing.wins}</span>
-                                                <span className={styles.winsLabel}>WINS</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-
-                            {/* Rest of Grid */}
-                            <div className={styles.table}>
-                                <div className={styles.tableHeader}>
-                                    <span className={styles.colPos}>POS</span>
-                                    <span className={styles.colDriver}>Driver</span>
-                                    <span className={styles.colTeam}>Team</span>
-                                    <span className={styles.colWins}>Wins</span>
-                                    <span className={styles.colPoints}>Points</span>
-                                </div>
-                                {driverStandings.slice(3).map((standing) => (
-                                    <div
-                                        key={standing.driver.id}
-                                        className={styles.tableRow}
-                                        style={{ '--team-color': getTeamColor(standing.team.name) }}
-                                    >
-                                        <span className={styles.colPos}>{standing.position}</span>
-                                        <span className={styles.colDriver}>
-                                            <span className={styles.driverCode}>{standing.driver.code}</span>
-                                            <span className={styles.driverName}>
-                                                {standing.driver.firstName} <strong>{standing.driver.lastName}</strong>
-                                            </span>
-                                        </span>
-                                        <span className={styles.colTeam}>{standing.team.name}</span>
-                                        <span className={styles.colWins}>{standing.wins}</span>
-                                        <span className={styles.colPoints}>{standing.points}</span>
-                                    </div>
-                                ))}
-                            </div>
-                        </>
+                    {!started ? (
+                        <section className={standingsStyles.empty} aria-labelledby="no-standings">
+                            <h2 id="no-standings">No {year} standings yet</h2>
+                            {previous >= FIRST_DRIVERS_CHAMPIONSHIP_YEAR && (
+                                <Link href={`/standings?year=${previous}`}>{previous} final standings</Link>
+                            )}
+                        </section>
                     ) : (
-                        <div className={styles.loading}>
-                            <div className={styles.spinner}></div>
-                            <p>Loading standings...</p>
+                        <div className={styles.grid}>
+                            <section aria-label="Drivers' championship">
+                                <DriverStandingsTable
+                                    standings={drivers.standings}
+                                    caption={`${year} Drivers' Championship`}
+                                    lookups={tableLookups}
+                                />
+                            </section>
+                            <section aria-label="Constructors' championship">
+                                {showConstructors ? (
+                                    constructors.standings.length > 0 ? (
+                                        <ConstructorStandingsTable
+                                            standings={constructors.standings}
+                                            caption={`${year} Constructors' Championship`}
+                                            lookups={tableLookups}
+                                        />
+                                    ) : (
+                                        <div className={standingsStyles.empty}>
+                                            <h2>No {year} constructors&apos; standings yet</h2>
+                                        </div>
+                                    )
+                                ) : (
+                                    <div className={standingsStyles.empty}>
+                                        <h2>Constructors&apos; Championship</h2>
+                                        <p>
+                                            First awarded in{' '}
+                                            <Link href={`/standings?year=${FIRST_CONSTRUCTORS_CHAMPIONSHIP_YEAR}`}>
+                                                {FIRST_CONSTRUCTORS_CHAMPIONSHIP_YEAR}
+                                            </Link>
+                                        </p>
+                                    </div>
+                                )}
+                            </section>
                         </div>
                     )}
-                </div>
-            </div>
-
-            {/* Constructor Standings Preview */}
-            {constructorStandings.length > 0 && (
-                <div className={styles.constructorPreview}>
-                    <div className="container">
-                        <h2>🏎️ Constructor Standings</h2>
-                        <div className={styles.constructorGrid}>
-                            {constructorStandings.slice(0, 5).map((standing) => (
-                                <div
-                                    key={standing.team.id}
-                                    className={styles.constructorCard}
-                                    style={{ '--team-color': getTeamColor(standing.team.name) }}
-                                >
-                                    <span className={styles.constructorPos}>{standing.position}</span>
-                                    <span className={styles.constructorName}>{standing.team.name}</span>
-                                    <span className={styles.constructorPoints}>{standing.points} pts</span>
-                                </div>
-                            ))}
-                        </div>
-                        <Link href="/teams" className={styles.viewAllBtn}>
-                            View Full Constructor Standings →
-                        </Link>
-                    </div>
-                </div>
-            )}
-
-            {/* Data Source */}
-            <div className={styles.note}>
-                <div className="container">
-                    <p>
-                        📊 Data from <a href="https://jolpi.ca" target="_blank" rel="noopener noreferrer">Jolpica (Ergast Mirror)</a> •
-                        Updates automatically every 5 minutes
-                    </p>
                 </div>
             </div>
         </div>

@@ -9,18 +9,6 @@
     background: linear-gradient(to bottom, rgba(225, 6, 0, 0.1) 0%, transparent 100%);
 }
 
-.badge {
-    display: inline-block;
-    padding: var(--space-xs) var(--space-md);
-    background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
-    color: var(--carbon-black);
-    border-radius: var(--radius-full);
-    font-size: 0.75rem;
-    font-weight: 700;
-    letter-spacing: 0.1em;
-    margin-bottom: var(--space-lg);
-}
-
 .header h1 {
     margin-bottom: var(--space-sm);
 }
@@ -36,6 +24,13 @@
 }
 
 /* Teams Grid */
+.teamsGrid,
+.driversList {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
 .teamsGrid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
@@ -46,7 +41,6 @@
 .teamCard {
     position: relative;
     display: block;
-    text-decoration: none;
     color: inherit;
     background: var(--carbon-surface);
     border: 1px solid var(--carbon-border);
@@ -56,10 +50,9 @@
     transition: var(--transition-base);
 }
 
-.teamCard:hover {
-    transform: translateY(-4px);
+.teamCard:hover,
+.teamCard:focus-within {
     border-color: var(--team-color, var(--racing-red));
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
 }
 
 .teamColorBar {
@@ -109,7 +102,22 @@
 .teamName {
     font-size: 1.5rem;
     margin-bottom: var(--space-lg);
+}
+
+.teamName a {
     color: var(--checkered-white);
+    text-decoration: none;
+}
+
+.teamName a:hover,
+.teamName a:focus-visible {
+    text-decoration: underline;
+    text-decoration-color: var(--team-color, var(--racing-red));
+}
+
+.empty {
+    padding: var(--space-3xl);
+    text-align: center;
 }
 
 /* Drivers List */
@@ -121,12 +129,19 @@
 
 .driverRow {
     display: flex;
+    color: inherit;
+    text-decoration: none;
     align-items: center;
     gap: var(--space-md);
     padding: var(--space-sm);
     background: rgba(255, 255, 255, 0.03);
     border-radius: var(--radius-md);
     transition: var(--transition-fast);
+}
+
+.driverRow:focus-visible {
+    outline: 2px solid var(--checkered-white);
+    outline-offset: 2px;
 }
 
 .driverRow:hover {
@@ -174,51 +189,6 @@
 .driverNumber {
     font-size: 0.8rem;
     color: rgba(255, 255, 255, 0.5);
-}
-
-/* Loading */
-.loading {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: var(--space-3xl);
-    gap: var(--space-lg);
-}
-
-.spinner {
-    width: 50px;
-    height: 50px;
-    border: 4px solid rgba(255, 255, 255, 0.1);
-    border-top-color: var(--racing-red);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-    to {
-        transform: rotate(360deg);
-    }
-}
-
-.loading p {
-    color: rgba(255, 255, 255, 0.5);
-}
-
-/* Note */
-.note {
-    padding: var(--space-lg) 0;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-    text-align: center;
-}
-
-.note p {
-    font-size: 0.85rem;
-    color: rgba(255, 255, 255, 0.4);
-}
-
-.note a {
-    color: var(--racing-red);
 }
 
 /* Responsive */

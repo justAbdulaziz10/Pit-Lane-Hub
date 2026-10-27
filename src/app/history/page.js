@@ -1,199 +1,269 @@
-'use client';
-
-import { getTeamColor } from '@/lib/f1api';
-import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { notFound } from 'next/navigation';
+import { connection } from 'next/server';
+import { getChampions, getSeasonSummary } from '@/lib/f1/history';
+import {
+    FIRST_CONSTRUCTORS_CHAMPIONSHIP_YEAR,
+    FIRST_DRIVERS_CHAMPIONSHIP_YEAR,
+    getConstructorStandings,
+    getDriverStandings,
+    getRaceDates,
+    hasConstructorsChampionship,
+    parseSeasonYear,
+} from '@/lib/f1/standings';
+import { getSeasonYear } from '@/lib/f1/year';
+import { loadCurrentSeasonLookups, lookupsForSeason } from '../standings/_components/lookups';
+import {
+    ConstructorStandingsTable,
+    DriverStandingsTable,
+    standingsStyles,
+    YearPicker,
+} from '../standings/_components/StandingsTables';
 import styles from './page.module.css';
 
-// OpenF1 provides data from 2023 onwards; build the list dynamically so it
-// keeps growing every season without code changes.
-const FIRST_DATA_YEAR = 2023;
-const CURRENT_YEAR = new Date().getFullYear();
-const AVAILABLE_YEARS = Array.from(
-    { length: CURRENT_YEAR - FIRST_DATA_YEAR + 1 },
-    (_, i) => FIRST_DATA_YEAR + i
-);
+const VIEWS = [
+    ['races', 'Races'],
+    ['drivers', 'Drivers'],
+    ['constructors', 'Constructors'],
+];
+const DEFAULT_VIEW = 'races';
 
-export default function HistoryPage() {
-    const [selectedYear, setSelectedYear] = useState(CURRENT_YEAR);
-    const [dataType, setDataType] = useState('drivers');
-    const [data, setData] = useState([]);
-    const [loading, setLoading] = useState(true);
+async function resolveParams(searchParams) {
+    const params = await searchParams;
+    const current = getSeasonYear();
+    const year = parseSeasonYear(params.year, { current });
+    if (year === null) notFound();
+    const view = VIEWS.some(([key]) => key === params.view) ? params.view : DEFAULT_VIEW;
+    return { year, current, view, explicitYear: params.year !== undefined };
+}
 
-    useEffect(() => {
-        async function fetchData() {
-            setLoading(true);
-            try {
-                let result;
-                if (dataType === 'drivers') {
-                    const response = await fetch(`https://api.openf1.org/v1/drivers?session_key=latest`);
-                    result = await response.json();
-                    // Remove duplicates
-                    const seen = new Set();
-                    result = result.filter((driver) => {
-                        if (seen.has(driver.driver_number)) return false;
-                        seen.add(driver.driver_number);
-                        return true;
-                    });
-                } else {
-                    const response = await fetch(`https://api.openf1.org/v1/meetings?year=${selectedYear}`);
-                    result = await response.json();
+export async function generateMetadata({ searchParams }) {
+    await connection();
+    const { year, explicitYear } = await resolveParams(searchParams);
+    const title = explicitYear
+        ? `${year} F1 Season: Race Winners and Standings`
+        : 'F1 History: World Champions and Season Results';
+    const description = explicitYear
+        ? `Every ${year} Formula 1 race winner with the final drivers' and constructors' standings.`
+        : `Every Formula 1 world champion since ${FIRST_DRIVERS_CHAMPIONSHIP_YEAR}, with race winners and standings for each season.`;
+    const path = explicitYear ? `/history?year=${year}` : '/history';
+    return {
+        title,
+        description,
+        alternates: { canonical: path },
+        openGraph: { title, description, url: path },
+    };
+}
 
-                    // Filter invalid races (Tests, null names, short names, specific bad data)
-                    result = result.filter(m =>
-                        m.meeting_name &&
-                        m.meeting_name.length > 5 &&
-                        m.date_start && // Must have a date
-                        !m.meeting_name.toLowerCase().includes('test') &&
-                        !m.meeting_name.toLowerCase().includes('pre-season') &&
-                        !m.meeting_name.toLowerCase().includes('shakedown')
-                    ).sort((a, b) => new Date(a.date_start) - new Date(b.date_start));
-                }
-                setData(result);
-            } catch (e) {
-                console.error('Error fetching data:', e);
-                setData([]);
-            }
-            setLoading(false);
-        }
-        fetchData();
-    }, [selectedYear, dataType]);
+function formatDate(date) {
+    return new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })
+        .format(new Date(`${date}T00:00:00Z`));
+}
+
+function viewHref(year, view) {
+    const params = new URLSearchParams({ year: String(year) });
+    if (view !== DEFAULT_VIEW) params.set('view', view);
+    return `/history?${params.toString()}`;
+}
+
+function personName(person) {
+    return (
+        <>
+            {person.firstName} <strong>{person.lastName}</strong>
+        </>
+    );
+}
+
+function MaybeLink({ href, children }) {
+    return href ? <Link href={href}>{children}</Link> : children;
+}
+
+async function RacesView({ year, lookups }) {
+    const [summary, dates] = await Promise.all([getSeasonSummary(year), getRaceDates(year)]);
+    if (summary.races.length === 0) {
+        return <div className={standingsStyles.empty}><h3>No {year} races published yet</h3></div>;
+    }
+    const teamNames = new Map();
+    for (const row of summary.driverStandings) if (row.team?.id) teamNames.set(row.team.id, row.team.name);
+    for (const row of summary.constructorStandings) if (row.team?.id) teamNames.set(row.team.id, row.team.name);
+
+    return (
+        <div className={standingsStyles.tableWrap}>
+            <table className={standingsStyles.table}>
+                <caption>{year} race winners</caption>
+                <thead>
+                    <tr>
+                        <th scope="col">Rd</th>
+                        <th scope="col">Grand Prix</th>
+                        <th scope="col" className={standingsStyles.hideSmall}>Date</th>
+                        <th scope="col">Winner</th>
+                        <th scope="col" className={standingsStyles.hideSmall}>Team</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {summary.races.map((race) => {
+                        const date = dates.get(race.round) || race.date?.slice(0, 10) || null;
+                        const winner = race.winner;
+                        const teamId = winner?.constructorId;
+                        return (
+                            <tr key={race.round}>
+                                <td className={standingsStyles.pos}>{race.round}</td>
+                                <th scope="row">{race.raceName}</th>
+                                <td className={`${standingsStyles.muted} ${standingsStyles.hideSmall}`}>
+                                    {date ? <time dateTime={date}>{formatDate(date)}</time> : null}
+                                </td>
+                                <td className={standingsStyles.driverName}>
+                                    {winner
+                                        ? <MaybeLink href={lookups.driverHrefById.get(winner.driverId)}>{personName(winner)}</MaybeLink>
+                                        : <span className={standingsStyles.muted}>-</span>}
+                                </td>
+                                <td className={`${standingsStyles.muted} ${standingsStyles.hideSmall}`}>
+                                    {teamId && (
+                                        <Link href={`/team/${encodeURIComponent(teamId)}`}>
+                                            {lookups.nameById.get(teamId) || teamNames.get(teamId) || teamId}
+                                        </Link>
+                                    )}
+                                </td>
+                            </tr>
+                        );
+                    })}
+                </tbody>
+            </table>
+        </div>
+    );
+}
+
+async function DriversView({ year, lookups }) {
+    const { standings, round } = await getDriverStandings(year);
+    if (standings.length === 0) {
+        return <div className={standingsStyles.empty}><h3>No {year} standings yet</h3></div>;
+    }
+    return (
+        <DriverStandingsTable
+            standings={standings}
+            caption={`${year} Drivers' Championship${round ? `, after round ${round}` : ''}`}
+            lookups={lookups}
+        />
+    );
+}
+
+async function ConstructorsView({ year, lookups }) {
+    if (!hasConstructorsChampionship(year)) {
+        return (
+            <div className={standingsStyles.empty}>
+                <h3>Constructors&apos; Championship</h3>
+                <p>
+                    First awarded in{' '}
+                    <Link href={viewHref(FIRST_CONSTRUCTORS_CHAMPIONSHIP_YEAR, 'constructors')}>
+                        {FIRST_CONSTRUCTORS_CHAMPIONSHIP_YEAR}
+                    </Link>
+                </p>
+            </div>
+        );
+    }
+    const { standings, round } = await getConstructorStandings(year);
+    if (standings.length === 0) {
+        return <div className={standingsStyles.empty}><h3>No {year} standings yet</h3></div>;
+    }
+    return (
+        <ConstructorStandingsTable
+            standings={standings}
+            caption={`${year} Constructors' Championship${round ? `, after round ${round}` : ''}`}
+            lookups={lookups}
+        />
+    );
+}
+
+function ChampionsTable({ champions, lookups }) {
+    const constructorsByYear = new Map(champions.constructors.map((item) => [Number(item.year), item]));
+    const rows = [...champions.drivers].sort((a, b) => b.year - a.year);
+    return (
+        <div className={standingsStyles.tableWrap}>
+            <table className={standingsStyles.table}>
+                <caption>World Champions</caption>
+                <thead>
+                    <tr>
+                        <th scope="col">Season</th>
+                        <th scope="col">Drivers&apos; Champion</th>
+                        <th scope="col">Constructors&apos; Champion</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {rows.map((driver) => {
+                        const constructor = constructorsByYear.get(Number(driver.year));
+                        return (
+                            <tr key={driver.year}>
+                                <th scope="row" className={standingsStyles.pos}>
+                                    <Link href={viewHref(driver.year, DEFAULT_VIEW)}>{driver.year}</Link>
+                                </th>
+                                <td className={standingsStyles.driverName}>
+                                    <MaybeLink href={lookups.driverHrefById.get(driver.driverId)}>{personName(driver)}</MaybeLink>
+                                </td>
+                                <td>
+                                    {constructor ? (
+                                        <Link href={`/team/${encodeURIComponent(constructor.constructorId)}`}>{constructor.name}</Link>
+                                    ) : (
+                                        <span className={standingsStyles.muted}>Not awarded</span>
+                                    )}
+                                </td>
+                            </tr>
+                        );
+                    })}
+                </tbody>
+            </table>
+        </div>
+    );
+}
+
+export default async function HistoryPage({ searchParams }) {
+    await connection();
+    const { year, current, view } = await resolveParams(searchParams);
+    const [champions, allLookups] = await Promise.all([
+        getChampions(),
+        loadCurrentSeasonLookups(current),
+    ]);
+    const lookups = lookupsForSeason(allLookups, year, current);
+    const SeasonView = view === 'drivers' ? DriversView : view === 'constructors' ? ConstructorsView : RacesView;
 
     return (
         <div className={styles.history}>
-            {/* Header */}
-            <div className={styles.header}>
+            <header className={styles.header}>
                 <div className="container">
-                    <span className={styles.badge}>📚 ARCHIVE</span>
-                    <h1>Historical Data</h1>
-                    <p>Explore F1 data from previous seasons</p>
+                    <h1>F1 History</h1>
+                    <YearPicker
+                        action="/history"
+                        year={year}
+                        min={FIRST_DRIVERS_CHAMPIONSHIP_YEAR}
+                        max={current}
+                        extraParams={view === DEFAULT_VIEW ? {} : { view }}
+                    />
                 </div>
-            </div>
+            </header>
 
-            {/* Filters */}
-            <div className={styles.filters}>
+            <section className={styles.content} aria-labelledby="season-heading">
                 <div className="container">
-                    <div className={styles.filterRow}>
-                        {/* Year Selection */}
-                        <div className={styles.yearSelector}>
-                            <label>Season</label>
-                            <div className={styles.yearButtons}>
-                                {AVAILABLE_YEARS.map(year => (
-                                    <button
-                                        key={year}
-                                        className={`${styles.yearBtn} ${selectedYear === year ? styles.active : ''}`}
-                                        onClick={() => setSelectedYear(year)}
-                                    >
-                                        {year}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Data Type */}
-                        <div className={styles.dataTypeSelector}>
-                            <label>View</label>
-                            <div className={styles.dataTypeButtons}>
-                                <button
-                                    className={`${styles.typeBtn} ${dataType === 'races' ? styles.active : ''}`}
-                                    onClick={() => setDataType('races')}
-                                >
-                                    🏁 Races
-                                </button>
-                                <button
-                                    className={`${styles.typeBtn} ${dataType === 'drivers' ? styles.active : ''}`}
-                                    onClick={() => setDataType('drivers')}
-                                >
-                                    🏎️ Drivers
-                                </button>
-                            </div>
-                        </div>
-                    </div>
+                    <h2 id="season-heading" className={styles.sectionTitle}>{year} season</h2>
+                    <nav aria-label={`${year} season views`} className={styles.views}>
+                        {VIEWS.map(([key, label]) => (
+                            <Link
+                                key={key}
+                                href={viewHref(year, key)}
+                                className={`${styles.viewLink} ${key === view ? styles.active : ''}`}
+                                aria-current={key === view ? 'page' : undefined}
+                            >
+                                {label}
+                            </Link>
+                        ))}
+                    </nav>
+                    <SeasonView year={year} lookups={lookups} />
                 </div>
-            </div>
+            </section>
 
-            {/* Content */}
-            <div className={styles.content}>
+            <section className={styles.content} aria-label="World Champions">
                 <div className="container">
-                    {loading ? (
-                        <div className={styles.loading}>
-                            <div className={styles.spinner}></div>
-                            <p>Loading {selectedYear} data...</p>
-                        </div>
-                    ) : data.length === 0 ? (
-                        <div className={styles.noData}>
-                            <span className={styles.noDataIcon}>📭</span>
-                            <h3>No data available</h3>
-                            <p>Data for {selectedYear} {dataType} is not available yet</p>
-                        </div>
-                    ) : dataType === 'races' ? (
-                        <div className={styles.racesGrid}>
-                            {data.map((race, index) => (
-                                <div key={race.meeting_key || index} className={styles.raceCard}>
-                                    <span className={styles.round}>Round {index + 1}</span>
-                                    <h3>{race.meeting_name}</h3>
-                                    <p className={styles.location}>
-                                        {race.circuit_short_name} • {race.country_name}
-                                    </p>
-                                    <p className={styles.date}>
-                                        {new Date(race.date_start).toLocaleDateString('en-US', {
-                                            month: 'short',
-                                            day: 'numeric',
-                                            year: 'numeric'
-                                        })}
-                                    </p>
-                                </div>
-                            ))}
-                        </div>
-                    ) : (
-                        <div className={styles.driversGrid}>
-                            {data.map((driver) => (
-                                <div
-                                    key={driver.driver_number}
-                                    className={styles.driverCard}
-                                    style={{ '--team-color': getTeamColor(driver.team_name) }}
-                                >
-                                    <div className={styles.driverColorBar}></div>
-                                    <div className={styles.driverPhoto}>
-                                        {driver.headshot_url ? (
-                                            // eslint-disable-next-line @next/next/no-img-element
-                                            <img src={driver.headshot_url} alt={driver.last_name} loading="lazy" decoding="async" />
-                                        ) : (
-                                            <div className={styles.driverPhotoPlaceholder}>
-                                                {driver.driver_number}
-                                            </div>
-                                        )}
-                                    </div>
-                                    <div className={styles.driverInfo}>
-                                        <span className={styles.driverNumber}>{driver.driver_number}</span>
-                                        <h4>{driver.first_name} <strong>{driver.last_name}</strong></h4>
-                                        <p>{driver.team_name}</p>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
+                    <ChampionsTable champions={champions} lookups={allLookups} />
                 </div>
-            </div>
-
-            {/* Info */}
-            <div className={styles.info}>
-                <div className="container">
-                    <div className={styles.infoCard}>
-                        <h3>📊 About Historical Data</h3>
-                        <p>
-                            OpenF1 API provides data from the 2023 season onwards. Select a year above to explore
-                            race schedules and driver information from that season.
-                        </p>
-                        <p>
-                            For data from earlier seasons (2018-2022), check out the{' '}
-                            <a href="https://ergast.com/mrd/" target="_blank" rel="noopener noreferrer">
-                                Ergast API
-                            </a>{' '}
-                            which provides comprehensive historical F1 data.
-                        </p>
-                    </div>
-                </div>
-            </div>
+            </section>
         </div>
     );
 }
