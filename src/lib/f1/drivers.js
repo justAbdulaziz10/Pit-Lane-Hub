@@ -1,3 +1,4 @@
+import ALL_TIME_SNAPSHOT from './data/drivers-all-time.json';
 import {
     cacheF1Data,
     F1_CACHE_TAGS,
@@ -76,6 +77,7 @@ function mapJolpicaDriver(driver) {
         lastName: driver.familyName || '',
         fullName: [driver.givenName, driver.familyName].filter(Boolean).join(' '),
         nationality: driver.nationality || null,
+        dateOfBirth: driver.dateOfBirth || null,
         url: driver.url || null,
     };
 }
@@ -166,21 +168,47 @@ export async function resolveDriver(numberOrIdOrCode, year = getSeasonYear()) {
         || null;
 }
 
-async function loadAllDrivers() {
-    const drivers = await fetchJolpicaPages('drivers', {
-        select: (mrData) => mrData?.DriverTable?.Drivers || [],
-        revalidate: 604800,
-        tags: [F1_CACHE_TAGS.drivers],
-    });
-    return drivers.map(mapJolpicaDriver);
+const SNAPSHOT_DRIVERS = ALL_TIME_SNAPSHOT.map(mapJolpicaDriver);
+
+/**
+ * Every driver since 1950. History comes from the bundled snapshot
+ * (scripts/update-f1-snapshots.mjs); this season's entrants come from the
+ * cached season list the grid already uses, so debutants appear without a
+ * new snapshot and the lookup costs no extra Jolpica requests.
+ */
+export async function getAllTimeDrivers(year = getSeasonYear()) {
+    let season = [];
+    try {
+        season = await getSeasonDriverList(year);
+    } catch (error) {
+        console.error('Season driver list unavailable; using the all-time snapshot only', error);
+    }
+    const known = new Set(SNAPSHOT_DRIVERS.map((driver) => driver.driverId));
+    return [...SNAPSHOT_DRIVERS, ...season.filter((driver) => !known.has(driver.driverId))];
 }
 
-const cachedAllDrivers = cacheF1Data(loadAllDrivers, ['all-drivers'], 604800, [F1_CACHE_TAGS.drivers]);
+/** On this season's entry list (or last season's, before the new list is published). */
+export async function isActiveDriver(driverId, year = getSeasonYear()) {
+    try {
+        let season = await getSeasonDriverList(year);
+        if (season.length === 0) season = await getSeasonDriverList(Number(year) - 1);
+        return season.some((driver) => driver.driverId === driverId);
+    } catch (error) {
+        console.error('Season driver list unavailable; treating driver as active', error);
+        return true;
+    }
+}
+
+/** Any driver since 1950 by Jolpica driverId; null when unknown. */
+export async function findAllTimeDriver(driverId) {
+    const drivers = await getAllTimeDrivers();
+    return drivers.find((driver) => driver.driverId === driverId) || null;
+}
 
 export async function searchDrivers(query, limit = 50) {
     const needle = normalize(query);
     if (!needle) return [];
-    const drivers = await cachedAllDrivers();
+    const drivers = await getAllTimeDrivers();
     return drivers
         .filter((driver) => normalize(`${driver.firstName} ${driver.lastName} ${driver.code} ${driver.nationality}`).includes(needle))
         .slice(0, Math.max(1, Math.min(Number(limit) || 50, 100)));

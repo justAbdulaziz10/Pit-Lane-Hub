@@ -62,23 +62,27 @@ function mapConstructorStanding(item) {
     };
 }
 
-async function loadSeasonSummary(year) {
+const CURRENT_SEASON_REVALIDATE = 300;
+// A finished season's results and standings are final.
+const PAST_SEASON_REVALIDATE = 2592000;
+
+const seasonSummaryLoader = (revalidate) => async (year) => {
     const season = Number(year);
     const [calendar, winners, driverLists, constructorLists] = await Promise.all([
         getCalendar(season),
         fetchJolpicaPages(`${season}/results/1`, {
             select: (mrData) => mrData?.RaceTable?.Races || [],
-            revalidate: 300,
+            revalidate,
             tags: [F1_CACHE_TAGS.results],
         }),
         fetchJolpicaPages(`${season}/driverstandings`, {
             select: standingsLists,
-            revalidate: 300,
+            revalidate,
             tags: [F1_CACHE_TAGS.standings],
         }),
         fetchJolpicaPages(`${season}/constructorstandings`, {
             select: standingsLists,
-            revalidate: 300,
+            revalidate,
             tags: [F1_CACHE_TAGS.standings],
         }),
     ]);
@@ -107,17 +111,17 @@ async function loadSeasonSummary(year) {
         driverStandings: (driverList?.DriverStandings || []).map(mapDriverStanding),
         constructorStandings: (constructorList?.ConstructorStandings || []).map(mapConstructorStanding),
     };
-}
+};
 
-const cachedSeasonSummary = cacheF1Data(
-    loadSeasonSummary,
-    ['season-summary'],
-    300,
-    [F1_CACHE_TAGS.results, F1_CACHE_TAGS.standings, F1_CACHE_TAGS.calendar],
-);
+const summaryTags = [F1_CACHE_TAGS.results, F1_CACHE_TAGS.standings, F1_CACHE_TAGS.calendar];
+const cachedSeasonSummary = {
+    current: cacheF1Data(seasonSummaryLoader(CURRENT_SEASON_REVALIDATE), ['season-summary-current'], CURRENT_SEASON_REVALIDATE, summaryTags),
+    past: cacheF1Data(seasonSummaryLoader(PAST_SEASON_REVALIDATE), ['season-summary-past'], PAST_SEASON_REVALIDATE, summaryTags),
+};
 
 export function getSeasonSummary(year = getSeasonYear()) {
-    return cachedSeasonSummary(Number(year));
+    const season = Number(year);
+    return cachedSeasonSummary[season < getSeasonYear() ? 'past' : 'current'](season);
 }
 
 function seasonComplete(calendar, now = Date.now()) {
@@ -182,5 +186,3 @@ export async function getChampionshipCount(driverId) {
     const { drivers } = await getChampions();
     return drivers.filter((item) => item.driverId === driverId).length;
 }
-
-

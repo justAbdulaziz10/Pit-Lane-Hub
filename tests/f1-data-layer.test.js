@@ -2,8 +2,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('next/cache', () => ({ unstable_cache: (callback) => callback }));
 
-import { getCareerStats } from '@/lib/f1/career';
 import { getCircuitGeometry } from '@/lib/f1/circuits';
+import { getCareerStats } from '@/lib/f1/compare';
 import { getGrid, resolveDriver } from '@/lib/f1/drivers';
 import { fetchJolpicaPages, fetchJson, UpstreamError } from '@/lib/f1/http';
 import { getChampions } from '@/lib/f1/history';
@@ -332,32 +332,52 @@ describe('teams and career/history data', () => {
         expect(teamColorContrastRatio(adjustedColor, '#0D0D0D')).toBeGreaterThanOrEqual(3);
     });
 
-    it('derives career totals and championship seasons from MRData totals and standings', async () => {
-        installFetch((url) => {
+    it('derives career totals from the result rows and titles from the champions list', async () => {
+        const race = (season, round, position, grid, fastest) => ({
+            season: String(season),
+            round: String(round),
+            raceName: `Race ${round}`,
+            date: `${season}-05-01`,
+            Results: [{
+                position: position == null ? undefined : String(position),
+                positionText: position == null ? 'R' : String(position),
+                grid: String(grid),
+                points: '0',
+                status: position == null ? 'Engine' : 'Finished',
+                FastestLap: fastest ? { rank: '1' } : { rank: '5' },
+                Driver: { driverId: 'norris', givenName: 'Lando', familyName: 'Norris' },
+                Constructor: { constructorId: 'mclaren', name: 'McLaren' },
+            }],
+        });
+        const races = [
+            race(2024, 1, 1, 1, true),
+            race(2024, 2, 2, 3, false),
+            race(2025, 1, 3, 1, false),
+            race(2025, 2, 1, 2, true),
+            race(2025, 3, null, 1, false),
+        ];
+        const fetchMock = installFetch((url) => {
             if (url.hostname === 'api.openf1.org') return [];
             if (url.pathname.endsWith('/2026/races.json')) return mrData(0, { RaceTable: { Races: [] } });
-            if (url.pathname.endsWith('/seasons.json')) return mrData(8, { SeasonTable: { Seasons: [] } });
-            if (url.pathname.endsWith('/grid/1/results.json')) return mrData(20, { RaceTable: { Races: [] } });
-            if (url.pathname.endsWith('/fastest/1/results.json')) return mrData(10, { RaceTable: { Races: [] } });
-            if (url.pathname.endsWith('/results.json') || /\/results\/\d+\.json$/.test(url.pathname)) {
-                const rank = url.pathname.match(/results\/(\d+)\.json/)?.[1];
-                const total = rank === '1' ? 25 : rank === '2' ? 6 : rank === '3' ? 10 : 100;
-                return mrData(total, { RaceTable: { Races: [] } });
-            }
+            if (/\/\d{4}\/drivers\.json$/.test(url.pathname)) return mrData(0, { DriverTable: { Drivers: [] } });
+            if (url.pathname.endsWith('/drivers/norris/results.json')) return mrData(races.length, { RaceTable: { Races: races } });
             throw new Error(`Unexpected test request: ${url}`);
         });
 
         const stats = await getCareerStats('norris');
 
-        expect(stats).toMatchObject({
-            starts: 100,
-            wins: 25,
-            podiums: 41,
-            poles: 20,
-            fastestLaps: 10,
+        expect(stats).toEqual({
+            driverId: 'norris',
+            starts: 5,
+            wins: 2,
+            podiums: 4,
+            poles: 3,
+            fastestLaps: 2,
             championships: 1,
-            seasons: 8,
+            seasons: 2,
         });
+        const careerRequests = fetchMock.mock.calls.map(([input]) => new URL(input).pathname).filter((path) => path.includes('/drivers/norris/'));
+        expect(careerRequests).toEqual(['/ergast/f1/drivers/norris/results.json']);
     });
 
     it('includes Norris as 2025 champion but excludes the unfinished 2026 season', async () => {

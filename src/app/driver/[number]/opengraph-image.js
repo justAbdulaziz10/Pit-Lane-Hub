@@ -1,5 +1,5 @@
 import { ImageResponse } from 'next/og';
-import { getCareerStats } from '@/lib/f1/career';
+import { getCareerStats } from '@/lib/f1/compare';
 import { resolveDriverRoute } from './driver-data';
 
 export const alt = 'Formula 1 driver profile on Pit Lane Hub';

@@ -1,13 +1,17 @@
-import { DRIVER_ID_PATTERN, getCareerStats } from './career';
+import { careerTotals, DRIVER_ID_PATTERN } from './career';
+import { findAllTimeDriver, isActiveDriver } from './drivers';
+import { getChampionshipCount } from './history';
 import {
     cacheF1Data,
     F1_CACHE_TAGS,
     fetchJolpicaPage,
-    fetchJolpicaPages,
     UpstreamError,
 } from './http';
 
 const PAGE_LIMIT = 100;
+/** Active drivers' results change every race weekend; a retired driver's never do. */
+export const ACTIVE_RESULTS_REVALIDATE = 21600;
+export const RETIRED_RESULTS_REVALIDATE = 2592000;
 /** Jolpica records fastest-lap ranks from this season on; earlier counts are missing. */
 export const FASTEST_LAP_DATA_FROM = 2004;
 /** No driver has more than ~430 entries; this caps a single lookup at 800 rows. */
@@ -38,22 +42,10 @@ function mapDriver(driver) {
     };
 }
 
-async function loadAllTimeDrivers() {
-    const drivers = await fetchJolpicaPages('drivers', {
-        select: (mrData) => mrData?.DriverTable?.Drivers || [],
-        revalidate: 604800,
-        tags: [F1_CACHE_TAGS.drivers],
-    });
-    return drivers.map(mapDriver);
-}
-
-const cachedAllTimeDrivers = cacheF1Data(loadAllTimeDrivers, ['compare-all-time-drivers'], 604800, [F1_CACHE_TAGS.drivers]);
-
 /** Look up any driver since 1950 by Jolpica driverId; null when the id is unknown. */
 export async function getAllTimeDriver(driverId) {
     if (!isValidDriverId(driverId)) return null;
-    const drivers = await cachedAllTimeDrivers();
-    return drivers.find((driver) => driver.driverId === driverId) || null;
+    return findAllTimeDriver(driverId);
 }
 
 function mapResultRow(race, result) {
@@ -68,6 +60,7 @@ function mapResultRow(race, result) {
         grid: Number.isFinite(Number(result.grid)) ? Number(result.grid) : null,
         points: Number(result.points) || 0,
         status: result.status || null,
+        fastestLapRank: Number(result.FastestLap?.rank) || null,
         constructorId: result.Constructor?.constructorId || null,
         // The name the team raced under that year (Toro Rosso in 2015, not Racing Bulls).
         team: result.Constructor?.name || null,
@@ -123,16 +116,33 @@ export async function fetchDriverResults(driverId, {
     return { driver, total, results: rows.slice(0, total) };
 }
 
-const cachedDriverResults = cacheF1Data(
-    (driverId) => fetchDriverResults(driverId),
-    ['compare-driver-results-v2'],
-    21600,
-    [F1_CACHE_TAGS.results, F1_CACHE_TAGS.career],
-);
+const resultTags = [F1_CACHE_TAGS.results, F1_CACHE_TAGS.career];
+const cachedDriverResults = {
+    active: cacheF1Data(
+        (driverId) => fetchDriverResults(driverId, { revalidate: ACTIVE_RESULTS_REVALIDATE }),
+        ['driver-results-active-v3'],
+        ACTIVE_RESULTS_REVALIDATE,
+        resultTags,
+    ),
+    retired: cacheF1Data(
+        (driverId) => fetchDriverResults(driverId, { revalidate: RETIRED_RESULTS_REVALIDATE }),
+        ['driver-results-retired-v3'],
+        RETIRED_RESULTS_REVALIDATE,
+        resultTags,
+    ),
+};
 
+/** Every race result of a driver, cached for hours while active and a month once retired. */
 export function getDriverResults(driverId) {
     if (!isValidDriverId(driverId)) throw new TypeError('A valid Jolpica driverId is required');
-    return cachedDriverResults(driverId);
+    return isActiveDriver(driverId).then((active) => cachedDriverResults[active ? 'active' : 'retired'](driverId));
+}
+
+/** Starts, wins, podiums, poles, fastest laps, titles and seasons, from the cached result list. */
+export function getCareerStats(driverId) {
+    if (!isValidDriverId(driverId)) throw new TypeError('A valid Jolpica driverId is required');
+    return Promise.all([getDriverResults(driverId), getChampionshipCount(driverId)])
+        .then(([{ results }, championships]) => careerTotals(driverId, results, championships));
 }
 
 function raceKey(row) {

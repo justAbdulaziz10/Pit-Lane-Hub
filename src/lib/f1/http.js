@@ -27,17 +27,19 @@ export class UpstreamError extends Error {
 
 const nativeSetTimeout = globalThis.setTimeout.bind(globalThis);
 const delay = (ms) => new Promise((resolve) => nativeSetTimeout(resolve, ms));
-let jolpicaQueue = Promise.resolve();
-let lastJolpicaStart = 0;
+// Next bundles each route separately, so module state is per bundle. Keep the
+// pacing queue on globalThis so every route in the process shares one budget.
+const jolpicaPacer = globalThis.__pitLaneJolpicaPacer
+    ??= { queue: Promise.resolve(), lastStart: 0 };
 
 async function waitForJolpicaSlot() {
     let release;
-    const previous = jolpicaQueue;
-    jolpicaQueue = new Promise((resolve) => { release = resolve; });
+    const previous = jolpicaPacer.queue;
+    jolpicaPacer.queue = new Promise((resolve) => { release = resolve; });
     await previous;
-    const wait = Math.max(0, lastJolpicaStart + 260 - performance.now());
+    const wait = Math.max(0, jolpicaPacer.lastStart + 260 - performance.now());
     if (wait > 0) await delay(wait);
-    lastJolpicaStart = performance.now();
+    jolpicaPacer.lastStart = performance.now();
     release();
 }
 
@@ -54,6 +56,11 @@ function retryDelay(response, attempt) {
     return Math.min(base * (2 ** attempt), 8000);
 }
 
+// Jolpica's burst limit clears within a second; its hourly quota does not.
+// Wait out at most one short throttle per request and fail fast otherwise, so a
+// page falls back to its last cached data instead of hanging on retries.
+const MAX_THROTTLE_WAIT_MS = 2000;
+
 /** Fetch JSON with a timeout and bounded retries for throttling and server errors. */
 export async function fetchJson(url, {
     source = 'upstream',
@@ -61,13 +68,22 @@ export async function fetchJson(url, {
     retries = 3,
     fetchOptions = {},
 } = {}) {
+    let throttled = false;
     for (let attempt = 0; attempt <= retries; attempt += 1) {
         const controller = new AbortController();
         const timeout = nativeSetTimeout(() => controller.abort(), timeoutMs);
         let response;
         try {
             response = await fetch(url, { ...fetchOptions, signal: controller.signal });
-            if ((response.status === 429 || response.status >= 500) && attempt < retries) {
+            if (response.status === 429 && attempt < retries && !throttled) {
+                const wait = retryDelay(response, 0);
+                if (wait <= MAX_THROTTLE_WAIT_MS) {
+                    throttled = true;
+                    await delay(wait);
+                    continue;
+                }
+            }
+            if (response.status >= 500 && attempt < retries) {
                 await delay(retryDelay(response, attempt));
                 continue;
             }

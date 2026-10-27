@@ -1,8 +1,7 @@
 import Link from 'next/link';
 import { notFound, permanentRedirect } from 'next/navigation';
 import { connection } from 'next/server';
-import { getCareerStats } from '@/lib/f1/career';
-import { careerSummary, FASTEST_LAP_DATA_FROM, fastestLapCoverage, getAllTimeDriver, getDriverResults } from '@/lib/f1/compare';
+import { careerSummary, FASTEST_LAP_DATA_FROM, fastestLapCoverage, getAllTimeDriver, getCareerStats, getDriverResults } from '@/lib/f1/compare';
 import { getSeasonSummary } from '@/lib/f1/history';
 import { getSeasonYear } from '@/lib/f1/year';
 import { jsonLdScript } from '@/lib/jsonld';
