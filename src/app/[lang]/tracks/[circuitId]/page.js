@@ -1,3 +1,4 @@
+import { metadataOrNotFound } from '@/lib/i18n/metadata';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import CircuitPanel from '@/components/CircuitPanel';
@@ -24,30 +25,32 @@ function loadCircuit(circuitId) {
 
 export async function generateMetadata({ params }) {
     const { circuitId, lang } = await params;
-    const t = pick(tracksMessages, lang);
-    const circuit = loadCircuit(circuitId);
-    if (!circuit) notFound();
-    const description = circuit.length
-        ? fill(t.circuitDescription, { name: circuit.name, length: circuitLength(circuit.length, lang) })
-        : fill(t.circuitDescriptionNoLength, { name: circuit.name });
-    const path = `/tracks/${circuit.circuitId}`;
-    const canonical = `${SITE_URL}${localePath(lang, path)}`;
-    const image = `${SITE_URL}${localePath(lang, '/opengraph-image')}`;
-    const title = fill(t.circuitPageTitle, { name: circuit.name });
-    return {
-        // The /tracks layout sets a plain title, which stops the root template here.
-        title: { absolute: title || `${circuit.name} | ${SITE_NAME}` },
-        description,
-        alternates: localeAlternates(lang, path),
-        openGraph: {
-            title,
+    return metadataOrNotFound(lang, async () => {
+        const t = pick(tracksMessages, lang);
+        const circuit = loadCircuit(circuitId);
+        if (!circuit) notFound();
+        const description = circuit.length
+            ? fill(t.circuitDescription, { name: circuit.name, length: circuitLength(circuit.length, lang) })
+            : fill(t.circuitDescriptionNoLength, { name: circuit.name });
+        const path = `/tracks/${circuit.circuitId}`;
+        const canonical = `${SITE_URL}${localePath(lang, path)}`;
+        const image = `${SITE_URL}${localePath(lang, '/opengraph-image')}`;
+        const title = fill(t.circuitPageTitle, { name: circuit.name });
+        return {
+            // The /tracks layout sets a plain title, which stops the root template here.
+            title: { absolute: title || `${circuit.name} | ${SITE_NAME}` },
             description,
-            url: canonical,
-            images: [{ url: image, width: 1200, height: 630, alt: title }],
-            locale: lang === 'ar' ? 'ar_SA' : 'en_US',
-        },
-        twitter: { card: 'summary_large_image', images: [image] },
-    };
+            alternates: localeAlternates(lang, path),
+            openGraph: {
+                title,
+                description,
+                url: canonical,
+                images: [{ url: image, width: 1200, height: 630, alt: title }],
+                locale: lang === 'ar' ? 'ar_SA' : 'en_US',
+            },
+            twitter: { card: 'summary_large_image', images: [image] },
+        };
+    });
 }
 
 export default async function CircuitPage({ params }) {

@@ -201,7 +201,8 @@ function mapRace(race, year, meetings, sessions) {
             country: circuit.Location?.country || null,
         },
         meetingKey: meeting?.meeting_key ?? null,
-        routeKey: meeting?.meeting_key ?? `${Number(year)}-${Number(race.round)}`,
+        // Year-round keys keep race URLs stable whether or not OpenF1 is reachable.
+        routeKey: `${Number(year)}-${Number(race.round)}`,
         raceStart: starts.race,
         // Jolpica has no start time for most races before 2005.
         raceDate: (race.Race || race).date || null,

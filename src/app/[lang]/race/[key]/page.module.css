@@ -388,17 +388,37 @@
     }
 }
 
+/* Full-width sticky bar; the tabs themselves line up with the content column. */
 .sectionTabs {
     position: sticky;
     inset-block-start: var(--header-height);
     z-index: 10;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg);
+}
+
+.sectionTabList {
     display: flex;
     gap: var(--space-xs);
     overflow-x: auto;
     padding-block: var(--space-sm);
-    border-bottom: 1px solid var(--border);
-    background: var(--bg);
-    scrollbar-width: thin;
+    scrollbar-width: none;
+    overscroll-behavior-inline: contain;
+}
+
+.sectionTabList::-webkit-scrollbar {
+    display: none;
+}
+
+/* On narrow screens the last tab fades out at the inline end, hinting that the row scrolls. */
+@media (max-width: 640px) {
+    .sectionTabList {
+        mask-image: linear-gradient(to right, #000 85%, transparent);
+    }
+
+    :global([dir='rtl']) .sectionTabList {
+        mask-image: linear-gradient(to left, #000 85%, transparent);
+    }
 }
 
 .sectionTab {

@@ -1,3 +1,4 @@
+import { metadataOrNotFound } from '@/lib/i18n/metadata';
 import { meetingStatus, requestTime, statusLabel } from '@/app/[lang]/schedule/status';
 import LocalTime from '@/components/LocalTime';
 import { getGrid } from '@/lib/f1/drivers';
@@ -26,45 +27,47 @@ export const revalidate = 60;
 export async function generateMetadata({ params }) {
     await connection();
     const { key, lang } = await params;
-    const t = pick(raceMessages, lang);
-    const resolved = await loadEvent(key);
-    const title = eventTitle(resolved, lang);
-    const path = resolved.kind === 'race' ? `/race/${resolved.event.routeKey}` : `/race/${key}`;
-    const canonical = `${SITE_URL}${localePath(lang, path)}`;
-    const imagePath = resolved.kind === 'race'
-        ? `/race/${resolved.event.routeKey}/opengraph-image`
-        : '/opengraph-image';
-    let description;
-    if (resolved.kind === 'race') {
-        const { event } = resolved;
-        description = fill(t.roundDescription, {
-            round: formatNumber(lang, event.round),
-            year: String(event.year),
-            circuit: event.circuit.name,
-        });
-    } else if (resolved.kind === 'testing') {
-        description = fill(t.testingDescription, {
-            title,
-            place: resolved.meeting.circuitShortName || countryName(resolved.meeting.country, lang),
-        });
-    } else {
-        description = fill(t.cancelledDescription, { title, year: String(eventYear(resolved)) });
-    }
-    const displayTitle = resolved.kind === 'cancelled' ? `${title}${t.cancelledSuffix}` : title;
-    return {
-        title: displayTitle,
-        description,
-        alternates: localeAlternates(lang, path),
-        openGraph: {
+    return metadataOrNotFound(lang, async () => {
+        const t = pick(raceMessages, lang);
+        const resolved = await loadEvent(key);
+        const title = eventTitle(resolved, lang);
+        const path = resolved.kind === 'race' ? `/race/${resolved.event.routeKey}` : `/race/${key}`;
+        const canonical = `${SITE_URL}${localePath(lang, path)}`;
+        const imagePath = resolved.kind === 'race'
+            ? `/race/${resolved.event.routeKey}/opengraph-image`
+            : '/opengraph-image';
+        let description;
+        if (resolved.kind === 'race') {
+            const { event } = resolved;
+            description = fill(t.roundDescription, {
+                round: formatNumber(lang, event.round),
+                year: String(event.year),
+                circuit: event.circuit.name,
+            });
+        } else if (resolved.kind === 'testing') {
+            description = fill(t.testingDescription, {
+                title,
+                place: resolved.meeting.circuitShortName || countryName(resolved.meeting.country, lang),
+            });
+        } else {
+            description = fill(t.cancelledDescription, { title, year: String(eventYear(resolved)) });
+        }
+        const displayTitle = resolved.kind === 'cancelled' ? `${title}${t.cancelledSuffix}` : title;
+        return {
             title: displayTitle,
             description,
-            url: canonical,
-            images: [{ url: `${SITE_URL}${localePath(lang, imagePath)}`, width: 1200, height: 630, alt: displayTitle }],
-            type: 'website',
-            locale: lang === 'ar' ? 'ar_SA' : 'en_US',
-        },
-        twitter: { card: 'summary_large_image', images: [`${SITE_URL}${localePath(lang, imagePath)}`] },
-    };
+            alternates: localeAlternates(lang, path),
+            openGraph: {
+                title: displayTitle,
+                description,
+                url: canonical,
+                images: [{ url: `${SITE_URL}${localePath(lang, imagePath)}`, width: 1200, height: 630, alt: displayTitle }],
+                type: 'website',
+                locale: lang === 'ar' ? 'ar_SA' : 'en_US',
+            },
+            twitter: { card: 'summary_large_image', images: [`${SITE_URL}${localePath(lang, imagePath)}`] },
+        };
+    });
 }
 
 function sessionWindow(event, session, now) {
@@ -223,9 +226,11 @@ async function RaceWeekend({ resolved, title, now, lang }) {
             </header>
 
             <nav className={styles.sectionTabs} aria-label={t.weekendSections}>
-                {sections.map(([id, label]) => (
-                    <a className={styles.sectionTab} href={`#${id}`} key={id}>{label}</a>
-                ))}
+                <div className={`container ${styles.sectionTabList}`}>
+                    {sections.map(([id, label]) => (
+                        <a className={styles.sectionTab} href={`#${id}`} key={id}>{label}</a>
+                    ))}
+                </div>
             </nav>
 
             <div className="container">
