@@ -10,12 +10,24 @@ import { NextResponse } from "next/server";
  * matching on the account's email, and saves its id. Returns null when Polar has no such customer.
  */
 async function findLegacyCustomerId(polar, user) {
+    if (!user.emailVerified || !process.env.POLAR_PRODUCT_ID) return null;
+
     const email = normalizeEmail(user.email);
     if (!email) return null;
 
     const result = await polar.customers.list({ email, limit: 10 });
     const customer = (result?.items ?? []).find((item) => normalizeEmail(item?.email) === email);
     if (!customer?.id) return null;
+
+    const subscriptions = await polar.subscriptions.list({
+        customer_id: customer.id,
+        product_id: process.env.POLAR_PRODUCT_ID,
+        limit: 1,
+    });
+    const subscription = (subscriptions?.items ?? []).find((item) =>
+        item?.customer_id === customer.id && item?.product_id === process.env.POLAR_PRODUCT_ID
+    );
+    if (!subscription) return null;
 
     await prisma.user.update({ where: { id: user.id }, data: { polarCustomerId: customer.id } });
     return customer.id;
@@ -42,10 +54,13 @@ export async function GET(request) {
 
         const user = await prisma.user.findUnique({
             where: { id: session.user.id },
-            select: { id: true, email: true, polarCustomerId: true, polarSubscriptionId: true },
+            select: { id: true, email: true, emailVerified: true, polarCustomerId: true, polarSubscriptionId: true },
         });
         if (!user) {
             return NextResponse.json({ error: "No Polar subscription was found for this account." }, { status: 404 });
+        }
+        if (!user.emailVerified) {
+            return NextResponse.json({ error: "Verify your email before managing subscriptions." }, { status: 403 });
         }
 
         const polar = getPolar();

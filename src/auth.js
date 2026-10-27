@@ -62,6 +62,7 @@ export const authCallbacks = {
                     where: { id: token.id },
                     select: { subscriptionStatus: true, currentPeriodEnd: true },
                 });
+                if (!currentUser) return null;
                 token.subscriptionStatus = currentUser?.subscriptionStatus ?? null;
                 token.currentPeriodEnd = currentUser?.currentPeriodEnd?.toISOString() ?? null;
                 token.isPro = isProStatus(currentUser?.subscriptionStatus);

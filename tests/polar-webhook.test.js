@@ -184,6 +184,49 @@ describe('Polar webhook route', () => {
         expect(stored('other_user').subscriptionStatus).toBe('active');
     });
 
+    it('prefers our checkout metadata user id over the shared Polar external id', async () => {
+        store.reset([{ id: 'user_123' }, { id: 'other_site_user' }]);
+
+        const response = await deliver('subscription.active', {
+            customer: { id: 'cus_test_123', external_id: 'other_site_user' },
+            metadata: { userId: 'user_123' },
+        });
+
+        expect(response.status).toBe(200);
+        expect(stored().subscriptionStatus).toBe('active');
+        expect(stored('other_site_user').subscriptionStatus).toBeNull();
+    });
+
+    it('tries the Polar external id after checkout metadata does not identify a user', async () => {
+        store.reset([{ id: 'external_user' }]);
+
+        const response = await deliver('subscription.active', {
+            customer: { id: 'cus_test_123', external_id: 'external_user' },
+            metadata: { userId: 'missing_metadata_user' },
+        });
+
+        expect(response.status).toBe(200);
+        expect(stored('external_user').subscriptionStatus).toBe('active');
+    });
+
+    it('logs verified Pro events that match no user using only identifiers', async () => {
+        store.reset([]);
+        const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+        const response = await deliver('subscription.active', {
+            customer: { id: 'cus_test_123', external_id: 'external_elsewhere' },
+            metadata: { userId: 'metadata_elsewhere' },
+        });
+
+        expect(response.status).toBe(200);
+        expect(log).toHaveBeenCalledWith('[polar] Verified Pro subscription event matched no user', {
+            eventType: 'subscription.active',
+            userId: 'metadata_elsewhere',
+            customerId: 'cus_test_123',
+            subscriptionId: 'sub_test_123',
+        });
+    });
+
     it('ignores subscriptions to other products in the same Polar organization', async () => {
         const response = await deliver('subscription.active', { product_id: 'prod_other_site' });
 
@@ -209,6 +252,37 @@ describe('Polar webhook route', () => {
 });
 
 describe('Polar webhook ordering', () => {
+    it('cancels a stored subscription switched to another product only when the event is newer', async () => {
+        store.reset([{
+            id: 'user_123',
+            polarSubscriptionId: 'sub_switched',
+            subscriptionStatus: 'active',
+            polarSubscriptionUpdatedAt: new Date('2026-10-05T00:00:00.000Z'),
+        }, {
+            id: 'other_user',
+            polarSubscriptionId: 'sub_other',
+            subscriptionStatus: 'active',
+            polarSubscriptionUpdatedAt: new Date('2026-10-05T00:00:00.000Z'),
+        }]);
+
+        await deliver('subscription.updated', {
+            id: 'sub_switched', product_id: 'prod_other_site', modified_at: '2026-10-04T00:00:00.000Z',
+        });
+        expect(stored().subscriptionStatus).toBe('active');
+
+        const response = await deliver('subscription.updated', {
+            id: 'sub_switched', product_id: 'prod_other_site', modified_at: '2026-10-06T00:00:00.000Z',
+        });
+
+        expect(response.status).toBe(200);
+        expect(stored()).toMatchObject({
+            polarSubscriptionId: 'sub_switched',
+            subscriptionStatus: 'canceled',
+            polarSubscriptionUpdatedAt: new Date('2026-10-06T00:00:00.000Z'),
+        });
+        expect(stored('other_user').subscriptionStatus).toBe('active');
+    });
+
     it('does not re-grant Pro when an older subscription.active is retried after subscription.revoked', async () => {
         await deliver('subscription.active', { modified_at: '2026-10-01T00:00:00.000Z' });
         await deliver('subscription.revoked', { status: 'canceled', modified_at: '2026-10-05T00:00:00.000Z' });
