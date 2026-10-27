@@ -20,14 +20,16 @@ vi.mock('@/lib/rate-limit', () => ({
 }));
 vi.mock('next/headers', () => ({ headers: mocks.headers }));
 
-import { registerUser } from '@/app/actions/auth';
+import { registerUser, resendVerificationEmail } from '@/app/actions/auth';
 
-function makeFormData() {
-    return new Map([
-        ['name', 'Racer'],
-        ['email', '  RACER@Example.com '],
-        ['password', 'racecar123'],
-    ]);
+function makeFormData(lang = 'en', overrides = {}) {
+    return new Map(Object.entries({
+        name: 'Racer',
+        email: '  RACER@Example.com ',
+        password: 'racecar123',
+        lang,
+        ...overrides,
+    }));
 }
 
 beforeEach(() => {
@@ -82,11 +84,13 @@ describe('registerUser', () => {
         mocks.findUnique.mockResolvedValueOnce(null);
 
         const before = Date.now();
-        await registerUser(makeFormData());
+        await registerUser(makeFormData('ar'));
 
         const text = JSON.parse(fetch.mock.calls[0][1].body).text;
         const link = new URL(text.match(/https:\/\/\S+/)[0]);
-        expect(link.origin + link.pathname).toBe('https://pitlane.example/verify-email');
+        expect(link.origin + link.pathname).toBe('https://pitlane.example/ar/verify-email');
+        expect(JSON.parse(fetch.mock.calls[0][1].body).subject).toBe('أكّد حسابك في Pit Lane Hub');
+        expect(text).toContain('أكّد عنوان بريدك الإلكتروني خلال 24 ساعة:');
         const rawToken = link.searchParams.get('token');
         expect(rawToken).toMatch(/^[a-f0-9]{64}$/);
 
@@ -149,5 +153,26 @@ describe('registerUser', () => {
 
         expect(response.error).toMatch(/Too many attempts/);
         expect(mocks.findUnique).not.toHaveBeenCalled();
+    });
+
+    it('returns Arabic validation messages for invalid signup input', async () => {
+        const invalidEmail = await registerUser(makeFormData('ar', { email: 'not-an-email' }));
+        expect(invalidEmail).toEqual({ error: 'أدخل عنوان بريد إلكتروني صالحًا.' });
+
+        const weakPassword = await registerUser(makeFormData('ar', { password: 'abc' }));
+        expect(weakPassword).toEqual({ error: 'يجب أن تتكوّن كلمة المرور من 8 أحرف على الأقل.' });
+        expect(mocks.findUnique).not.toHaveBeenCalled();
+        expect(mocks.create).not.toHaveBeenCalled();
+    });
+
+    it('localizes generic resend responses and defaults invalid locale values to English', async () => {
+        const arabicResponse = await resendVerificationEmail(makeFormData('ar', { email: 'invalid' }));
+        expect(arabicResponse).toEqual({
+            success: true,
+            message: 'إذا كان هذا العنوان مرتبطًا بحساب لم يتم التحقق منه، فسيتم إرسال رابط تحقق جديد.',
+        });
+
+        const fallbackResponse = await registerUser(makeFormData('fr', { email: 'invalid' }));
+        expect(fallbackResponse).toEqual({ error: 'Please enter a valid email address' });
     });
 });

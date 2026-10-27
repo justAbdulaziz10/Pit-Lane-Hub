@@ -39,12 +39,20 @@ Every variable is documented in [`.env.example`](.env.example).
 | `AUTH_TRUST_HOST` | Only when running `next start` outside Vercel |
 | `AUTH_RESEND_KEY`, `EMAIL_FROM` | Magic links and verification emails |
 | `POLAR_ACCESS_TOKEN`, `POLAR_PRODUCT_ID`, `POLAR_SERVER`, `POLAR_WEBHOOK_SECRET` | Pit Lane Pro checkout, customer portal and webhook |
-| `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` | Optional shared rate limits (memory fallback otherwise) |
+| `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` | Optional shared rate limits (`auth:*` uses the Postgres `RateLimit` table when Upstash is not configured) |
 | `OPENF1_USERNAME`, `OPENF1_PASSWORD` | Optional authenticated OpenF1 access |
 
 Checkout returns 503 until the Polar token and product ID are set. The webhook rejects requests
 when `POLAR_WEBHOOK_SECRET` is missing. Its endpoint is `<site>/api/polar/webhook`, subscribed to
 `subscription.*` events.
+
+## Deploy
+
+- Upstash is optional. When it is not configured, `auth:*` rate limits use the Postgres `RateLimit` table.
+- Before `npx prisma migrate deploy`, run `psql -f scripts/check-email-duplicates.sql` against the target database.
+- Set `POLAR_SERVER` and `POLAR_WEBHOOK_SECRET` for Polar checkout and webhooks.
+- `EMAIL_FROM` must use a domain verified with Resend. Set `NEXT_PUBLIC_SITE_URL` to the public site origin for verification emails and Polar return links.
+- English routes stay unprefixed; Arabic pages use `/ar` (for example, `/ar/login` and `/ar/support`).
 
 ## Scripts
 

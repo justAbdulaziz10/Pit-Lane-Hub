@@ -2,12 +2,16 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
-import Link from 'next/link';
+import { Link, useLocale } from '@/lib/i18n/LocaleProvider';
+import { localePath } from '@/lib/i18n/config';
+import { pick } from '@/lib/i18n/messages';
+import supportMessages from '@/lib/i18n/messages/support';
+import { getCheckoutOutcome } from '@/lib/checkout-response';
 import { useRouter, useSearchParams } from 'next/navigation';
 import styles from './page.module.css';
 
 /** Confirmation shown when Polar sends the visitor back with ?success=true or ?canceled. */
-function CheckoutStatus() {
+function CheckoutStatus({ t }) {
     const searchParams = useSearchParams();
     const { update } = useSession();
     const succeeded = searchParams.get('success') === 'true';
@@ -18,52 +22,49 @@ function CheckoutStatus() {
     }, [succeeded, update]);
 
     if (succeeded) {
-        return (
-            <p className={styles.notice} role="status">
-                Payment received. Polar is confirming it; your Pro badge appears on your account within a few minutes.
-            </p>
-        );
+        return <p className={styles.notice} role="status">{t.checkoutReceived}</p>;
     }
     if (searchParams.has('canceled')) {
-        return (
-            <p className={styles.notice} role="status">
-                Checkout canceled. You have not been charged.
-            </p>
-        );
+        return <p className={styles.notice} role="status">{t.checkoutCanceled}</p>;
     }
     return null;
 }
 
 export default function SupportPage() {
+    const locale = useLocale();
+    const t = pick(supportMessages, locale);
     const { data: session, status } = useSession();
     const router = useRouter();
     const [checkoutError, setCheckoutError] = useState('');
+    const [portalUrl, setPortalUrl] = useState('');
     const [isCheckingOut, setIsCheckingOut] = useState(false);
     const isPro = session?.user?.isPro === true;
     const signedOut = status === 'unauthenticated';
 
     const handleSubscribe = async () => {
         setCheckoutError('');
+        setPortalUrl('');
         setIsCheckingOut(true);
 
         try {
-            const response = await fetch('/api/polar/checkout', {
-                method: 'POST',
-            });
-
+            const response = await fetch('/api/polar/checkout', { method: 'POST' });
             if (response.status === 401) {
-                router.push('/login?redirect=%2Fsupport');
+                router.push(localePath(locale, '/login?redirect=%2Fsupport'));
                 return;
             }
 
             const data = await response.json();
-            if (data.url) {
-                window.location.href = data.url;
+            const outcome = getCheckoutOutcome(response.status, data);
+            if (outcome.type === 'manage') {
+                setCheckoutError(t.alreadyPro);
+                setPortalUrl(outcome.url);
+            } else if (outcome.type === 'checkout') {
+                window.location.href = outcome.url;
             } else {
-                setCheckoutError(data.error || 'Checkout could not start. Try again later.');
+                setCheckoutError(t.checkoutFailed);
             }
         } catch {
-            setCheckoutError('Checkout could not start. Try again later.');
+            setCheckoutError(t.checkoutFailed);
         } finally {
             setIsCheckingOut(false);
         }
@@ -73,47 +74,47 @@ export default function SupportPage() {
         <div className={styles.support}>
             <div className="container">
                 <header className={styles.header}>
-                    <h1>Support Pit Lane Hub</h1>
-                    <p className={styles.lead}>
-                        Pit Lane Hub is free to use, with no ads. Support pays for hosting and keeps the data
-                        pages running. Nothing on the site is locked behind a payment.
-                    </p>
+                    <h1>{t.title}</h1>
+                    <p className={styles.lead}>{t.intro}</p>
                 </header>
 
                 <div className={styles.options}>
                     <section className={styles.option} aria-labelledby="tip-heading">
-                        <h2 id="tip-heading">One-time tip</h2>
-                        <p>Any amount, through Buy Me a Coffee. No account needed.</p>
+                        <h2 id="tip-heading">{t.oneTimeTip}</h2>
+                        <p>{t.tipDescription}</p>
                         <a
                             className="btn btn-secondary"
                             href="https://buymeacoffee.com/justAbdulaziz10"
                             target="_blank"
                             rel="noreferrer"
                         >
-                            Leave a one-time tip
+                            {t.leaveTip}
                         </a>
                     </section>
 
                     <section className={styles.option} aria-labelledby="pro-heading">
-                        <h2 id="pro-heading">Pit Lane Pro</h2>
+                        <h2 id="pro-heading">{t.proTitle}</h2>
                         <p className={styles.price}>
-                            <span className={styles.amount}>$4.99</span> per month
+                            <bdi className={styles.amount} dir="ltr">$4.99</bdi> {t.perMonth}
                         </p>
                         <ul className={styles.facts}>
-                            <li>Supporter badge on your profile</li>
-                            <li>Cancel any time from your account</li>
-                            <li>Needs a free account; billing is handled by Polar</li>
+                            <li>{t.supporterBadge}</li>
+                            <li>{t.cancelAnyTime}</li>
+                            <li>{t.billingDetails}</li>
                         </ul>
                         <Suspense fallback={null}>
-                            <CheckoutStatus />
+                            <CheckoutStatus t={t} />
                         </Suspense>
                         {checkoutError && <p className={styles.error} role="alert">{checkoutError}</p>}
+                        {portalUrl && (
+                            <a href={portalUrl} className="btn btn-secondary">{t.manageSubscription}</a>
+                        )}
                         {isPro ? (
                             <div className={styles.proState}>
-                                <p>You have Pit Lane Pro. Thank you.</p>
-                                <Link href="/profile" className="btn btn-secondary">Manage subscription</Link>
+                                <p>{t.proThanks}</p>
+                                <Link href="/profile" className="btn btn-secondary">{t.manageSubscription}</Link>
                             </div>
-                        ) : (
+                        ) : portalUrl ? null : (
                             <div className={styles.proActions}>
                                 <button
                                     type="button"
@@ -121,10 +122,10 @@ export default function SupportPage() {
                                     onClick={handleSubscribe}
                                     disabled={isCheckingOut}
                                 >
-                                    {isCheckingOut ? 'Opening checkout…' : 'Get Pit Lane Pro'}
+                                    {isCheckingOut ? t.openingCheckout : t.getPro}
                                 </button>
                                 {signedOut ? (
-                                    <Link href="/login?redirect=%2Fsupport" className={styles.textLink}>Sign in first</Link>
+                                    <Link href="/login?redirect=%2Fsupport" className={styles.textLink}>{t.signInFirst}</Link>
                                 ) : null}
                             </div>
                         )}
