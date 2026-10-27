@@ -4,8 +4,8 @@
 BEGIN;
 
 -- Expand only: the legacy "password", "isPro" and "stripeCustomerId" columns stay, so the
--- previous deployment keeps working while this runs and remains a safe rollback target. A later
--- migration drops them once no deployment reads them.
+-- previous deployment keeps working while this runs. scripts/post-deploy-sync.sql carries over
+-- what it writes before the new deployment is live. A later migration drops them.
 ALTER TABLE "User" ADD COLUMN "passwordHash" TEXT;
 
 UPDATE "User"

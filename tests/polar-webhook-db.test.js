@@ -32,6 +32,7 @@ const subscription = (overrides) => ({
     status: 'active',
     created_at: '2026-10-01T00:00:00.000Z',
     modified_at: '2026-10-01T00:00:00.000Z',
+    product_id: 'prod_pit_lane_pro',
     customer_id: 'cus_1',
     customer: { id: 'cus_1', external_id: 'user_1' },
     current_period_end: '2026-12-01T00:00:00.000Z',
@@ -52,6 +53,7 @@ describe.skipIf(!databaseUrl)('Polar webhook against Postgres', () => {
         process.env.POSTGRES_PRISMA_URL = databaseUrl;
         process.env.POSTGRES_URL_NON_POOLING = databaseUrl;
         process.env.POLAR_WEBHOOK_SECRET = SECRET;
+        process.env.POLAR_PRODUCT_ID = 'prod_pit_lane_pro';
         ({ POST } = await import('@/app/api/polar/webhook/route'));
         ({ prisma } = await import('@/lib/prisma'));
     });

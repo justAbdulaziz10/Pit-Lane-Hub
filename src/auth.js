@@ -35,6 +35,7 @@ adapter.updateUser = async (user) => {
             // A magic link proves inbox ownership; drop any password set before the address was
             // verified so a pre-registered (possibly attacker-chosen) password cannot be used.
             data.passwordHash = null;
+            data.password = null;
             data.emailVerificationTokenHash = null;
             data.emailVerificationTokenExpires = null;
             data.emailVerificationPasswordDigest = null;

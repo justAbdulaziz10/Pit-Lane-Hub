@@ -35,7 +35,8 @@ export default async function VerifyEmailPage({ params, searchParams }) {
                 <>
                     {passwordMismatch && (
                         <p id="verify-password-error" className={styles.message} role="alert">
-                            {t.verificationPasswordMismatch}
+                            {t.verificationPasswordMismatch}{' '}
+                            <NextLink href={localePath(lang, '/login')}>{t.verificationUseSignInLink}</NextLink>
                         </p>
                     )}
                     <form method="post" action={`/api/auth/verify?lang=${lang}`} className={formStyles.form}>

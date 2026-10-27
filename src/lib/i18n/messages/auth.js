@@ -48,6 +48,7 @@ const auth = {
         verifyDescription: 'Confirm the email address for your Pit Lane Hub account.',
         verifyButton: 'Verify email',
         verificationPasswordMismatch: 'That password does not match this account. Your email has not been verified.',
+        verificationUseSignInLink: 'Sign in with an email link instead',
         invalidVerificationLink: 'This verification link is invalid or has expired.',
     },
     ar: {
@@ -99,6 +100,7 @@ const auth = {
         verifyDescription: 'أكّد عنوان البريد الإلكتروني المرتبط بحسابك في Pit Lane Hub.',
         verifyButton: 'تحقّق من البريد الإلكتروني',
         verificationPasswordMismatch: 'كلمة المرور غير صحيحة لهذا الحساب. لم يتم التحقق من بريدك الإلكتروني.',
+        verificationUseSignInLink: 'سجّل الدخول برابط عبر البريد بدلًا من ذلك',
         invalidVerificationLink: 'رابط التحقق غير صالح أو انتهت صلاحيته.',
     },
 };

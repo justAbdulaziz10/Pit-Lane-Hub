@@ -116,6 +116,7 @@ describe('NextAuth callbacks', () => {
                 email: 'racer@example.com',
                 emailVerified: verifiedAt,
                 passwordHash: null,
+                password: null,
                 emailVerificationTokenHash: null,
                 emailVerificationTokenExpires: null,
                 emailVerificationPasswordDigest: null,
