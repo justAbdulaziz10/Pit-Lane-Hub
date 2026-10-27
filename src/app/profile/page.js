@@ -17,68 +17,56 @@ export default function ProfilePage() {
         }
     }, [status, router]);
 
-    if (status === "loading") {
-        return <div className={styles.container}>Loading...</div>;
-    }
-    if (status === "unauthenticated") {
-        return null;
+    if (status !== "authenticated") {
+        return (
+            <div className={styles.page} aria-busy="true">
+                <h1>Account</h1>
+                <p className={styles.muted}>Loading your account…</p>
+            </div>
+        );
     }
 
-    const isPro = session?.user?.isPro;
-    const initial = session?.user?.name ? session.user.name[0].toUpperCase() : "U";
+    const user = session.user;
+    const isPro = user?.isPro;
+    const initial = (user?.name || user?.email || "?").trim().charAt(0).toUpperCase();
 
     return (
-        <div className={styles.container}>
-            <header className={styles.header}>
-                <h1 className={styles.title}>My Garage</h1>
-                <p className={styles.subtitle}>Manage your account and subscription</p>
-            </header>
+        <div className={styles.page}>
+            <h1>Account</h1>
 
-            <div className={styles.card}>
-                <div className={styles.profileHeader}>
-                    <div className={styles.avatar}>
-                        {session?.user?.image ? (
-                            <Image
-                                src={session.user.image}
-                                alt="Profile"
-                                width={80}
-                                height={80}
-                                style={{ borderRadius: '50%' }}
-                            />
-                        ) : (
-                            <span>{initial}</span>
-                        )}
-                    </div>
-                    <div className={styles.userInfo}>
-                        <h2>{session?.user?.name || "Racer"}</h2>
-                        <p className={styles.email}>{session?.user?.email}</p>
-                    </div>
+            <section className={styles.identity} aria-label="Signed in as">
+                <div className={styles.avatar}>
+                    {user?.image ? (
+                        <Image src={user.image} alt="" width={56} height={56} />
+                    ) : (
+                        <span aria-hidden="true">{initial}</span>
+                    )}
                 </div>
-
-                <div className={styles.subscriptionSection}>
-                    <h3 className={styles.sectionTitle}>License Status</h3>
-                    <div className={isPro ? styles.statusPro : styles.statusFree}>
-                        <span className={styles.badgeIcon}>{isPro ? "🏆" : "🏎️"}</span>
-                        {isPro ? "Pit Lane Pro Active" : "Standard Driver"}
-                    </div>
-
-                    <div className={styles.actions}>
-                        {isPro ? (
-                            <a href="/api/polar/portal" className={`${styles.btn} ${styles.btnSecondary}`}>
-                                Manage Subscription
-                            </a>
-                        ) : (
-                            <Link href="/support" className={`${styles.btn} ${styles.btnPrimary}`}>
-                                Upgrade to Pro
-                            </Link>
-                        )}
-                    </div>
+                <div>
+                    {user?.name ? <p className={styles.name}>{user.name}</p> : null}
+                    <p className={styles.muted}>{user?.email}</p>
                 </div>
-            </div>
+            </section>
 
-            <button onClick={() => signOut({ callbackUrl: '/' })} className={`${styles.btn} ${styles.btnSignOut}`}>
-                Sign Out
-            </button>
+            <section className={styles.section} aria-labelledby="membership-heading">
+                <h2 id="membership-heading">Membership</h2>
+                <dl className={styles.facts}>
+                    <div>
+                        <dt>Plan</dt>
+                        <dd>{isPro ? "Pit Lane Pro" : "Free"}</dd>
+                    </div>
+                </dl>
+                <div className={styles.actions}>
+                    {isPro ? (
+                        <a href="/api/polar/portal" className="btn btn-secondary">Manage subscription</a>
+                    ) : (
+                        <Link href="/support" className="btn btn-secondary">About Pit Lane Pro</Link>
+                    )}
+                    <button type="button" onClick={() => signOut({ callbackUrl: "/" })} className="btn btn-secondary">
+                        Sign out
+                    </button>
+                </div>
+            </section>
         </div>
     );
 }

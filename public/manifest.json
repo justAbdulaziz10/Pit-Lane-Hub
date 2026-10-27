@@ -4,8 +4,8 @@
   "description": "Follow every Formula 1 race with the season calendar, driver and team standings, live timing, circuit details, and championship history.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0D0D0D",
-  "theme_color": "#E10600",
+  "background_color": "#101218",
+  "theme_color": "#101218",
   "icons": [
     {
       "src": "/icon-192.png",

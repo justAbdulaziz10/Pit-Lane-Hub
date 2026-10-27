@@ -11,16 +11,15 @@ export default function Error({ error, reset }) {
 
     return (
         <div className={styles.wrapper}>
-            <p className={styles.code}>DNF</p>
-            <h1 className={styles.title}>Something went wrong</h1>
+            <h1 className={styles.title}>This page didn&apos;t load</h1>
             <p className={styles.message}>
-                We hit an unexpected issue loading this page. You can try again, or head back to the pits.
+                A data source didn&apos;t respond in time. Try again, or go back to the home page.
             </p>
             <div className={styles.actions}>
                 <button type="button" className="btn btn-primary" onClick={() => reset()}>
                     Try again
                 </button>
-                <Link href="/" className="btn btn-secondary">Back to Home</Link>
+                <Link href="/" className="btn btn-secondary">Home</Link>
             </div>
         </div>
     );

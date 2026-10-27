@@ -3,8 +3,8 @@
 }
 
 .header {
-    padding: var(--space-3xl) 0 var(--space-xl);
-    background: linear-gradient(to bottom, rgba(225, 6, 0, 0.1) 0%, transparent 100%);
+    padding: var(--space-2xl) 0 var(--space-lg);
+    background: none;
 }
 
 .content {
@@ -14,5 +14,5 @@
 .empty {
     padding: var(--space-3xl) 0;
     text-align: center;
-    color: rgba(255, 255, 255, 0.7);
+    color: var(--text-2);
 }

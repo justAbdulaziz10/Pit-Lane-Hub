@@ -5,7 +5,7 @@
 /* Header */
 .header {
     padding: var(--space-2xl) 0 var(--space-xl);
-    background: linear-gradient(to bottom, rgba(225, 6, 0, 0.1) 0%, transparent 100%);
+    background: none;
 }
 
 .header h1 {
@@ -13,7 +13,7 @@
 }
 
 .summary {
-    color: rgba(255, 255, 255, 0.6);
+    color: var(--text-2);
     font-size: 1rem;
 }
 
@@ -35,13 +35,14 @@
 
 .sectionTitle {
     font-family: var(--font-display);
+    font-stretch: var(--stretch-display);
     font-size: 1.25rem;
     font-weight: 700;
     margin-bottom: var(--space-md);
 }
 
 .empty {
-    color: rgba(255, 255, 255, 0.6);
+    color: var(--text-2);
 }
 
 .grid {
@@ -63,8 +64,8 @@
     display: flex;
     flex-direction: column;
     width: 100%;
-    background: var(--carbon-surface);
-    border: 1px solid var(--carbon-border);
+    background: var(--surface-1);
+    border: 1px solid var(--border);
     border-radius: var(--radius-lg);
     padding: var(--space-lg);
     color: inherit;
@@ -73,12 +74,11 @@
 }
 
 a.raceCard:hover {
-    transform: translateY(-2px);
-    border-color: var(--racing-red);
+    border-color: var(--accent);
 }
 
 a.raceCard:focus-visible {
-    outline: 2px solid var(--checkered-white);
+    outline: 2px solid var(--text-1);
     outline-offset: 2px;
 }
 
@@ -87,8 +87,8 @@ a.raceCard:focus-visible {
 }
 
 .raceCard.next {
-    border-color: var(--racing-red);
-    background: linear-gradient(135deg, rgba(225, 6, 0, 0.18) 0%, var(--carbon-surface) 100%);
+    border-color: var(--accent);
+    background: var(--surface-1);
     opacity: 1;
 }
 
@@ -103,28 +103,27 @@ a.raceCard:focus-visible {
 .round {
     font-size: 0.75rem;
     font-weight: 600;
-    color: rgba(255, 255, 255, 0.6);
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
+    color: var(--text-2);
 }
 
 .raceName {
     font-family: var(--font-display);
+    font-stretch: var(--stretch-display);
     font-size: 1.2rem;
     font-weight: 700;
-    color: var(--checkered-white);
+    color: var(--text-1);
     margin-bottom: var(--space-xs);
     line-height: 1.3;
 }
 
 .circuit {
     font-size: 0.875rem;
-    color: rgba(255, 255, 255, 0.7);
+    color: var(--text-2);
 }
 
 .country {
     font-size: 0.875rem;
-    color: rgba(255, 255, 255, 0.55);
+    color: var(--text-3);
 }
 
 .dates {
@@ -134,15 +133,14 @@ a.raceCard:focus-visible {
     margin-top: auto;
     padding-top: var(--space-md);
     font-family: var(--font-display);
+    font-stretch: var(--stretch-display);
     font-weight: 600;
-    color: var(--checkered-white);
+    color: var(--text-1);
 }
 
 .dateLabel {
     font-size: 0.7rem;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: rgba(255, 255, 255, 0.55);
+    color: var(--text-3);
 }
 
 /* Status */
@@ -152,26 +150,24 @@ a.raceCard:focus-visible {
     border-radius: var(--radius-sm);
     font-size: 0.7rem;
     font-weight: 700;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
     background: rgba(255, 255, 255, 0.08);
-    color: rgba(255, 255, 255, 0.75);
+    color: var(--text-2);
     white-space: nowrap;
 }
 
 .status_live {
-    background: var(--racing-red);
-    color: var(--checkered-white);
+    background: var(--accent);
+    color: var(--text-1);
 }
 
 .status_weekend {
-    background: var(--pit-lane-yellow);
-    color: var(--carbon-black);
+    background: var(--caution);
+    color: var(--bg);
 }
 
 .status_upcoming {
     background: rgba(255, 255, 255, 0.12);
-    color: var(--checkered-white);
+    color: var(--text-1);
 }
 
 .status_cancelled {
@@ -184,7 +180,7 @@ a.raceCard:focus-visible {
     list-style: none;
     padding: 0;
     margin: 0;
-    border: 1px solid var(--carbon-border);
+    border: 1px solid var(--border);
     border-radius: var(--radius-lg);
     overflow: hidden;
 }
@@ -195,25 +191,25 @@ a.raceCard:focus-visible {
     align-items: center;
     gap: var(--space-md);
     padding: var(--space-md) var(--space-lg);
-    background: var(--carbon-surface);
+    background: var(--surface-1);
 }
 
 .meetingRow + .meetingRow {
-    border-top: 1px solid var(--carbon-border);
+    border-top: 1px solid var(--border);
 }
 
 .meetingName {
     font-weight: 600;
-    color: var(--checkered-white);
+    color: var(--text-1);
 }
 
 a.meetingName:hover {
-    color: var(--racing-red);
+    color: var(--accent-text);
 }
 
 .meetingDates {
     font-size: 0.9rem;
-    color: rgba(255, 255, 255, 0.75);
+    color: var(--text-2);
 }
 
 @media (max-width: 640px) {

@@ -19,15 +19,15 @@ function CheckoutStatus() {
 
     if (succeeded) {
         return (
-            <p className={styles.checkoutMessage} role="status">
-                Thanks for subscribing! Polar is confirming your payment; your Pro badge appears on your profile within a few minutes.
+            <p className={styles.notice} role="status">
+                Payment received. Polar is confirming it; your Pro badge appears on your account within a few minutes.
             </p>
         );
     }
     if (searchParams.has('canceled')) {
         return (
-            <p className={styles.checkoutMessage} role="status">
-                Checkout was canceled. You have not been charged.
+            <p className={styles.notice} role="status">
+                Checkout canceled. You have not been charged.
             </p>
         );
     }
@@ -35,11 +35,12 @@ function CheckoutStatus() {
 }
 
 export default function SupportPage() {
-    const { data: session } = useSession();
+    const { data: session, status } = useSession();
     const router = useRouter();
     const [checkoutError, setCheckoutError] = useState('');
     const [isCheckingOut, setIsCheckingOut] = useState(false);
     const isPro = session?.user?.isPro === true;
+    const signedOut = status === 'unauthenticated';
 
     const handleSubscribe = async () => {
         setCheckoutError('');
@@ -59,10 +60,10 @@ export default function SupportPage() {
             if (data.url) {
                 window.location.href = data.url;
             } else {
-                setCheckoutError(data.error || 'Unable to start checkout. Please try again later.');
+                setCheckoutError(data.error || 'Checkout could not start. Try again later.');
             }
         } catch {
-            setCheckoutError('Unable to start checkout. Please try again later.');
+            setCheckoutError('Checkout could not start. Try again later.');
         } finally {
             setIsCheckingOut(false);
         }
@@ -70,114 +71,64 @@ export default function SupportPage() {
 
     return (
         <div className={styles.support}>
-            {/* Hero */}
-            <div className={styles.hero}>
-                <div className="container">
-                    <span className={styles.badge}>❤️ SUPPORT US</span>
+            <div className="container">
+                <header className={styles.header}>
                     <h1>Support Pit Lane Hub</h1>
-                    <p>Help us keep F1 data free and accessible for everyone</p>
-                </div>
-            </div>
+                    <p className={styles.lead}>
+                        Pit Lane Hub is free to use, with no ads. Support pays for hosting and keeps the data
+                        pages running. Nothing on the site is locked behind a payment.
+                    </p>
+                </header>
 
-            {/* Main Content */}
-            <div className={styles.content}>
-                <div className="container">
-                    <div className={styles.grid}>
-                        {/* Donation Section */}
-                        <div className={styles.donationCard}>
-                            <h2>☕ Buy Me a Coffee</h2>
-                            <p className={styles.subtitle}>
-                                Leave a one-time tip to support the project.
-                            </p>
-                            <a
-                                className={styles.donateBtn}
-                                href="https://buymeacoffee.com/justAbdulaziz10"
-                                target="_blank"
-                                rel="noreferrer"
-                            >
-                                Leave a one-time tip
-                            </a>
+                <div className={styles.options}>
+                    <section className={styles.option} aria-labelledby="tip-heading">
+                        <h2 id="tip-heading">One-time tip</h2>
+                        <p>Any amount, through Buy Me a Coffee. No account needed.</p>
+                        <a
+                            className="btn btn-secondary"
+                            href="https://buymeacoffee.com/justAbdulaziz10"
+                            target="_blank"
+                            rel="noreferrer"
+                        >
+                            Leave a one-time tip
+                        </a>
+                    </section>
 
-                            <p className={styles.disclaimer}>
-                                Buy Me a Coffee handles one-time tips.
-                            </p>
-                        </div>
-
-                        {/* Why Support */}
-                        <div className={styles.whySupport}>
-                            <h2>Why Support?</h2>
-
-                            <div className={styles.benefitsList}>
-                                <div className={styles.benefit}>
-                                    <span className={styles.benefitIcon}>🚀</span>
-                                    <div>
-                                        <h3>Keep It Free</h3>
-                                        <p>Your support helps keep F1 data available to everyone.</p>
-                                    </div>
-                                </div>
-                                <div className={styles.benefit}>
-                                    <span className={styles.benefitIcon}>⚡</span>
-                                    <div>
-                                        <h3>Support Development</h3>
-                                        <p>Help fund ongoing work on Pit Lane Hub.</p>
-                                    </div>
-                                </div>
-                                <div className={styles.benefit}>
-                                    <span className={styles.benefitIcon}>🏆</span>
-                                    <div>
-                                        <h3>Supporter Badge</h3>
-                                        <p>Pro members are recognized on their profile.</p>
-                                    </div>
-                                </div>
+                    <section className={styles.option} aria-labelledby="pro-heading">
+                        <h2 id="pro-heading">Pit Lane Pro</h2>
+                        <p className={styles.price}>
+                            <span className={styles.amount}>$4.99</span> per month
+                        </p>
+                        <ul className={styles.facts}>
+                            <li>Supporter badge on your profile</li>
+                            <li>Cancel any time from your account</li>
+                            <li>Needs a free account; billing is handled by Polar</li>
+                        </ul>
+                        <Suspense fallback={null}>
+                            <CheckoutStatus />
+                        </Suspense>
+                        {checkoutError && <p className={styles.error} role="alert">{checkoutError}</p>}
+                        {isPro ? (
+                            <div className={styles.proState}>
+                                <p>You have Pit Lane Pro. Thank you.</p>
+                                <Link href="/profile" className="btn btn-secondary">Manage subscription</Link>
                             </div>
-                        </div>
-                    </div>
-
-                    {/* Premium Tier */}
-                    <div className={styles.premiumSection}>
-                        <div className={styles.premiumCard}>
-                            <div className={styles.premiumBadge}>MEMBERSHIP</div>
-                            <h2>🏎️ Pit Lane Pro</h2>
-                            <div className={styles.premiumPrice}>
-                                <span className={styles.price}>$4.99</span>
-                                <span className={styles.period}>/month</span>
-                            </div>
-                            <ul className={styles.premiumFeatures}>
-                                <li>✓ Supporter badge on your profile</li>
-                                <li>✓ Support development of Pit Lane Hub</li>
-                            </ul>
-                            <Suspense fallback={null}>
-                                <CheckoutStatus />
-                            </Suspense>
-                            {checkoutError && <p className={styles.checkoutError} role="alert">{checkoutError}</p>}
-                            {isPro ? (
-                                <div className={styles.proState}>
-                                    <p>You&apos;re Pro. Thanks for supporting Pit Lane Hub.</p>
-                                    <Link href="/profile" className={styles.premiumBtn}>Manage subscription</Link>
-                                </div>
-                            ) : (
+                        ) : (
+                            <div className={styles.proActions}>
                                 <button
-                                    className={styles.premiumBtn}
+                                    type="button"
+                                    className="btn btn-primary"
                                     onClick={handleSubscribe}
                                     disabled={isCheckingOut}
                                 >
                                     {isCheckingOut ? 'Opening checkout…' : 'Get Pit Lane Pro'}
                                 </button>
-                            )}
-                            <p className={styles.premiumNote}>
-                                Subscription checkout and management are handled by Polar.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Thank You */}
-            <div className={styles.thankYou}>
-                <div className="container">
-                    <p>
-                        Built with ❤️ by <strong>Abdulaziz</strong> • Every contribution helps keep this project alive!
-                    </p>
+                                {signedOut ? (
+                                    <Link href="/login?redirect=%2Fsupport" className={styles.textLink}>Sign in first</Link>
+                                ) : null}
+                            </div>
+                        )}
+                    </section>
                 </div>
             </div>
         </div>

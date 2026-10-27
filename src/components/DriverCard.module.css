@@ -14,39 +14,40 @@
 }
 
 .card:focus-within {
-    outline: 2px solid var(--team-color, var(--racing-red));
-    outline-offset: 3px;
+    outline: 2px solid var(--text-1);
+    outline-offset: 2px;
 }
 
 .cardLink:focus-visible {
     outline: none;
 }
 
+.cardLink:hover {
+    color: inherit;
+}
+
 .card {
     position: relative;
-    background: var(--carbon-surface);
-    border: 1px solid var(--carbon-border);
-    border-radius: var(--radius-xl);
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
     overflow: hidden;
-    transition: var(--transition-base);
-    cursor: pointer;
+    transition: border-color var(--transition-fast);
 }
 
 .card:hover {
-    transform: translateY(-6px);
-    border-color: var(--team-color, var(--racing-red));
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+    border-color: var(--team-color, var(--border-strong));
 }
 
-
-/* Color Bar */
+/* Team colour bar */
 .colorBar {
     position: absolute;
     top: 0;
     left: 0;
     right: 0;
-    height: 4px;
-    background: var(--team-color, var(--racing-red));
+    z-index: 2;
+    height: 3px;
+    background: var(--team-color, var(--border-strong));
 }
 
 /* Photo */
@@ -54,7 +55,7 @@
     position: relative;
     width: 100%;
     height: 220px;
-    background: linear-gradient(135deg, var(--carbon-dark) 0%, var(--carbon-surface) 100%);
+    background: var(--surface-2);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -66,49 +67,39 @@
     height: 100%;
     object-fit: cover;
     object-position: top center;
-    transition: var(--transition-base);
-    image-rendering: -webkit-optimize-contrast;
-    image-rendering: crisp-edges;
-}
-
-.card:hover .photo {
-    transform: scale(1.05);
 }
 
 .photoPlaceholder {
     position: absolute;
     inset: 0;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(135deg, var(--team-color, var(--racing-red)) 0%, rgba(255, 255, 255, 0.1) 100%);
     display: flex;
     align-items: center;
     justify-content: center;
+    background: var(--surface-2);
 }
 
 .photoCode {
     font-family: var(--font-display);
+    font-stretch: 75%;
     font-size: 4rem;
-    font-weight: 900;
-    color: rgba(255, 255, 255, 0.9);
-    text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    font-weight: 800;
+    color: var(--team-color, var(--text-3));
 }
 
 /* Info */
 .info {
-    padding: var(--space-lg);
+    padding: var(--space-md) var(--space-lg) var(--space-lg);
 }
 
 .number {
-    display: inline-block;
-    padding: var(--space-xs) var(--space-sm);
-    border: 1px solid var(--team-color, var(--racing-red));
-    border-radius: var(--radius-sm);
     font-family: var(--font-display);
-    font-size: 0.85rem;
+    font-stretch: 75%;
+    font-size: var(--text-lg);
     font-weight: 800;
-    color: var(--team-color, var(--racing-red));
-    margin-bottom: var(--space-sm);
+    line-height: 1;
+    color: var(--team-color, var(--text-2));
+    font-variant-numeric: tabular-nums;
+    margin-bottom: var(--space-xs);
 }
 
 .name {
@@ -118,22 +109,25 @@
 }
 
 .firstName {
-    font-size: 0.9rem;
-    color: rgba(255, 255, 255, 0.7);
+    font-family: var(--font-body);
+    font-stretch: var(--stretch-body);
+    font-size: var(--text-sm);
+    font-weight: 400;
+    color: var(--text-2);
 }
 
 .lastName {
     font-family: var(--font-display);
-    font-size: 1.4rem;
+    font-stretch: var(--stretch-display);
+    font-size: var(--text-lg);
     font-weight: 800;
     text-transform: uppercase;
-    color: var(--checkered-white);
-    letter-spacing: 0.02em;
+    color: var(--text-1);
 }
 
 .team {
-    font-size: 0.85rem;
-    color: var(--team-color, rgba(255, 255, 255, 0.5));
+    font-size: var(--text-sm);
+    color: var(--text-2);
     margin-bottom: var(--space-sm);
 }
 
@@ -141,25 +135,17 @@
     display: flex;
     align-items: center;
     gap: var(--space-xs);
+    font-size: var(--text-xs);
 }
 
 .countryCode {
-    padding: var(--space-xs) var(--space-sm);
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: var(--radius-sm);
-    font-size: 0.75rem;
     font-weight: 600;
-    color: rgba(255, 255, 255, 0.6);
+    color: var(--text-3);
 }
 
-/* Responsive */
 @media (max-width: 768px) {
     .photoContainer {
         height: 180px;
-    }
-
-    .lastName {
-        font-size: 1.2rem;
     }
 
     .photoCode {

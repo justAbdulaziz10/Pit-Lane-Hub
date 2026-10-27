@@ -12,7 +12,7 @@ export default function DriversError({ error, reset }) {
     return (
         <div className={styles.wrapper}>
             <h1 className={styles.title}>Driver data is unavailable</h1>
-            <p className={styles.message}>The results service did not respond. Try again in a moment.</p>
+            <p className={styles.message}>The results service didn&apos;t respond. Try again in a moment.</p>
             <div className={styles.actions}>
                 <button type="button" className="btn btn-primary" onClick={() => reset()}>
                     Try again

@@ -3,9 +3,8 @@
 }
 
 .header {
-    padding: var(--space-3xl) 0 var(--space-xl);
-    text-align: center;
-    background: linear-gradient(to bottom, rgba(225, 6, 0, 0.1) 0%, transparent 100%);
+    padding: var(--space-2xl) 0 var(--space-lg);
+    background: none;
 }
 
 .header h1 {
@@ -34,28 +33,29 @@
 
 .viewLink {
     padding: var(--space-sm) var(--space-lg);
-    background: var(--carbon-surface);
-    border: 1px solid var(--carbon-border);
+    background: var(--surface-1);
+    border: 1px solid var(--border);
     border-radius: var(--radius-full);
-    color: rgba(255, 255, 255, 0.75);
+    color: var(--text-2);
     font-family: var(--font-display);
+    font-stretch: var(--stretch-display);
     font-weight: 600;
     text-decoration: none;
     transition: var(--transition-fast);
 }
 
 .viewLink:hover {
-    color: var(--checkered-white);
+    color: var(--text-1);
     border-color: rgba(255, 255, 255, 0.4);
 }
 
 .viewLink:focus-visible {
-    outline: 2px solid var(--checkered-white);
+    outline: 2px solid var(--text-1);
     outline-offset: 2px;
 }
 
 .viewLink.active {
-    background: var(--racing-red);
-    border-color: var(--racing-red);
-    color: var(--checkered-white);
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--text-1);
 }

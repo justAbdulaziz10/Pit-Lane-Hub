@@ -16,11 +16,11 @@
 }
 
 .head p {
-    color: var(--silver-chrome);
+    color: var(--text-2);
 }
 
 .head a {
-    color: var(--checkered-white);
+    color: var(--text-1);
     text-decoration: underline;
     text-underline-offset: 3px;
 }

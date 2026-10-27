@@ -8,7 +8,7 @@ import { resendVerificationEmail } from "../actions/auth"
 import styles from "./page.module.css"
 
 const AUTH_ERROR_MESSAGES = {
-    TooManyRequests: "Too many sign-in link requests. Please try again later.",
+    TooManyRequests: "Too many sign-in link requests. Try again later.",
     Verification: "That sign-in link is invalid or has expired. Request a new one.",
 }
 
@@ -38,7 +38,7 @@ function LoginForm() {
     const origin = typeof window === "undefined" ? "http://localhost" : window.location.origin
     const redirectTo = safeRedirectPath(searchParams.get("redirect") || searchParams.get("callbackUrl"), origin)
     const authError = searchParams.get("error")
-    const displayedError = error || (authError ? AUTH_ERROR_MESSAGES[authError] || "Sign-in failed. Please try again." : "")
+    const displayedError = error || (authError ? AUTH_ERROR_MESSAGES[authError] || "Sign-in failed. Try again." : "")
     const notice = actionNotice || (
         searchParams.get("verified") === "true"
             ? "Your email is verified. You can sign in now."
@@ -66,7 +66,7 @@ function LoginForm() {
         try {
             await signIn("resend", { email: normalizeEmail(formData.get("email")), redirectTo })
         } catch {
-            setError("Failed to send magic link. Please try again.")
+            setError("The sign-in link could not be sent. Try again.")
             setIsLoading(false)
         }
     }
@@ -86,157 +86,101 @@ function LoginForm() {
             })
 
             if (result?.error) {
-                setError("Invalid email or password, or your email is not verified yet.")
+                setError("Wrong email or password, or the email is not verified yet.")
                 setIsLoading(false)
             } else {
                 router.push(redirectTo)
                 router.refresh()
             }
         } catch {
-            setError("Something went wrong. Please try again.")
+            setError("Sign-in failed. Try again.")
             setIsLoading(false)
         }
     }
 
     return (
-        <div className={styles.container}>
-            {/* Background Effects */}
-            <div className={styles['bg-gradient']}></div>
-            <div className={styles['glow-orb-1']}></div>
-            <div className={styles['glow-orb-2']}></div>
+        <div className={styles.page}>
+            <div className={styles.panel}>
+                <h1 className={styles.title}>Sign in</h1>
+                <p className={styles.intro}>
+                    An account is only needed for Pit Lane Pro. Everything else, including favourite drivers,
+                    works without one.
+                </p>
 
-            <div className={styles.content}>
-                {/* Logo Area */}
-                <div className={styles.logo}>
-                    <Link href="/" style={{ textDecoration: 'none' }}>
-                        <span className={styles['logo-icon']}>🏎️</span>
-                        <div className={styles['logo-text']}>
-                            <span>PIT LANE</span>
-                            <span className={styles['logo-highlight']}>HUB</span>
-                        </div>
-                    </Link>
-                </div>
+                {displayedError && (
+                    <p className={styles.error} role="alert">{displayedError}</p>
+                )}
 
-                {/* Card */}
-                <div className={styles.card}>
-                    <h1 className={styles.title}>Welcome Back</h1>
-                    <p className={styles.subtitle}>Sign in to access premium F1 data</p>
+                {notice && <p className={styles.notice} role="status">{notice}</p>}
 
-                    {displayedError && (
-                        <div className={styles.error} role="alert">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" width="20" height="20">
-                                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                            </svg>
-                            {displayedError}
-                        </div>
-                    )}
+                <form action={handleMagicLink} className={styles.form}>
+                    <div className={styles.field}>
+                        <label htmlFor="link-email" className={styles.label}>Email</label>
+                        <input
+                            id="link-email"
+                            type="email"
+                            name="email"
+                            autoComplete="email"
+                            required
+                            disabled={isLoading}
+                        />
+                    </div>
+                    <button type="submit" disabled={isLoading} className="btn btn-primary">
+                        {isLoading ? "Sending…" : "Email me a sign-in link"}
+                    </button>
+                </form>
 
-                    {notice && <div className={styles.success} role="status">{notice}</div>}
+                <p className={styles.divider}><span>or use a password</span></p>
 
-                    {/* Magic Link Form */}
-                    <div className={styles.magicLinkSection}>
-                        <form action={handleMagicLink}>
-                            <div className={styles['form-group']}>
-                                <label className={styles.label}>Sign in with Email (Magic Link)</label>
-                                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                    <input
-                                        type="email"
-                                        name="email"
-                                        placeholder="name@example.com"
-                                        className={styles.input}
-                                        required
-                                        disabled={isLoading}
-                                    />
-                                    <button
-                                        type="submit"
-                                        disabled={isLoading}
-                                        className={styles['submit-btn']}
-                                        style={{ width: 'auto', padding: '0 1.5rem' }}
-                                    >
-                                        {isLoading ? "Sending…" : "✨ Send Link"}
-                                    </button>
-                                </div>
-                            </div>
-                        </form>
+                <form onSubmit={handleSubmit} className={styles.form}>
+                    <div className={styles.field}>
+                        <label htmlFor="password-email" className={styles.label}>Email</label>
+                        <input
+                            id="password-email"
+                            type="email"
+                            name="email"
+                            autoComplete="email"
+                            required
+                        />
                     </div>
 
-                    <div className={styles.divider}>
-                        <span>OR USE PASSWORD</span>
+                    <div className={styles.field}>
+                        <label htmlFor="password" className={styles.label}>Password</label>
+                        <input
+                            id="password"
+                            type="password"
+                            name="password"
+                            autoComplete="current-password"
+                            required
+                        />
                     </div>
 
-                    <form onSubmit={handleSubmit}>
-                        <div className={styles['form-group']}>
-                            <label className={styles.label}>Email</label>
+                    <button type="submit" disabled={isLoading} className="btn btn-secondary">
+                        {isLoading ? "Signing in…" : "Sign in with password"}
+                    </button>
+                </form>
+
+                {canResendVerification && (
+                    <form onSubmit={handleResendVerification} className={`${styles.form} ${styles.resend}`}>
+                        <div className={styles.field}>
+                            <label htmlFor="resend-email" className={styles.label}>Resend verification email</label>
                             <input
+                                id="resend-email"
                                 type="email"
                                 name="email"
+                                autoComplete="email"
                                 required
-                                placeholder="name@example.com"
-                                className={styles.input}
+                                disabled={isResendingVerification}
                             />
                         </div>
-
-                        <div className={styles['form-group']}>
-                            <label className={styles.label}>Password</label>
-                            <input
-                                type="password"
-                                name="password"
-                                required
-                                placeholder="••••••••"
-                                className={styles.input}
-                            />
-                        </div>
-
-                        <button
-                            type="submit"
-                            disabled={isLoading}
-                            className={styles['submit-btn']}
-                        >
-                            {isLoading ? (
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                    <span className={styles.spinner}></span>
-                                    Signing In...
-                                </div>
-                            ) : (
-                                "Sign In"
-                            )}
+                        <button type="submit" disabled={isResendingVerification} className="btn btn-secondary">
+                            {isResendingVerification ? "Sending…" : "Resend email"}
                         </button>
                     </form>
+                )}
 
-                    {canResendVerification && (
-                        <div className={styles.magicLinkSection}>
-                            <form onSubmit={handleResendVerification}>
-                                <div className={styles['form-group']}>
-                                    <label className={styles.label}>Resend verification email</label>
-                                    <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                        <input
-                                            type="email"
-                                            name="email"
-                                            placeholder="name@example.com"
-                                            className={styles.input}
-                                            required
-                                            disabled={isResendingVerification}
-                                        />
-                                        <button
-                                            type="submit"
-                                            disabled={isResendingVerification}
-                                            className={styles['submit-btn']}
-                                            style={{ width: 'auto', padding: '0 1rem' }}
-                                        >
-                                            {isResendingVerification ? "Sending…" : "Resend"}
-                                        </button>
-                                    </div>
-                                </div>
-                            </form>
-                        </div>
-                    )}
-                </div>
-
-                <p className={styles.footer}>
-                    Don&apos;t have an account?{" "}
-                    <Link href="/signup" className={styles.link}>
-                        Create one now
-                    </Link>
+                <p className={styles.switch}>
+                    No account? <Link href="/signup">Create one</Link>
                 </p>
             </div>
         </div>
