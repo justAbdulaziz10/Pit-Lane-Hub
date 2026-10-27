@@ -15,9 +15,6 @@ export const metadata = {
   keywords: ['F1', 'Formula 1', 'F1 standings', 'F1 live timing', 'F1 drivers', 'F1 schedule', 'racing', 'motorsport'],
   authors: [{ name: 'Abdulaziz', url: 'https://github.com/justAbdulaziz10' }],
   creator: 'Abdulaziz',
-  alternates: {
-    canonical: '/',
-  },
   openGraph: {
     type: 'website',
     locale: 'en_US',
