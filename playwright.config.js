@@ -15,10 +15,11 @@ export default defineConfig({
         trace: 'on-first-retry',
     },
     projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+    // Runs against a production build (`next start`), not the dev server.
     webServer: {
-        command: 'npm run dev',
+        command: 'npm run build && npm start',
         url: baseURL,
-        timeout: 120_000,
+        timeout: 300_000,
         reuseExistingServer: !process.env.CI,
     },
 });

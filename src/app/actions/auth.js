@@ -1,13 +1,91 @@
 'use server'
 
-import { prisma } from "@/lib/prisma"
-import { isValidEmail, validatePassword } from "@/lib/validation"
-import bcrypt from "bcryptjs"
+import { createHash, randomBytes } from "node:crypto";
+import { headers } from "next/headers";
+import bcrypt from "bcryptjs";
+import { prisma } from "@/lib/prisma";
+import { getClientIp, rateLimit } from "@/lib/rate-limit";
+import { isValidEmail, normalizeEmail, validatePassword } from "@/lib/validation";
+
+const GENERIC_SIGNUP_MESSAGE = "If you can create an account with this address, check your inbox for the next step.";
+const GENERIC_RESEND_MESSAGE = "If an unverified account uses this address, a new verification link will be sent.";
+const TOKEN_LIFETIME_MS = 24 * 60 * 60 * 1000;
+
+async function checkRequestLimit(scope, limit) {
+    const requestHeaders = await headers();
+    return rateLimit(`${scope}:${getClientIp(requestHeaders)}`, {
+        limit,
+        windowMs: 15 * 60 * 1000,
+    });
+}
+
+async function sendResendEmail({ to, subject, text }) {
+    const apiKey = process.env.AUTH_RESEND_KEY;
+    if (!apiKey) throw new Error("Email service is not configured");
+
+    const response = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+            Authorization: `Bearer ${apiKey}`,
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+            from: process.env.EMAIL_FROM || "onboarding@resend.dev",
+            to: [to],
+            subject,
+            text,
+        }),
+    });
+
+    if (!response.ok) throw new Error("Email could not be sent");
+}
+
+// Links in emails never use the request Host header, which a caller could forge.
+function getPublicOrigin() {
+    const productionHost = process.env.VERCEL_PROJECT_PRODUCTION_URL;
+    return new URL(
+        process.env.NEXT_PUBLIC_SITE_URL ||
+        process.env.AUTH_URL ||
+        (productionHost ? `https://${productionHost}` : "http://localhost:3000"),
+    ).origin;
+}
+
+async function sendVerificationEmail(user) {
+    const token = randomBytes(32).toString("hex");
+    const tokenHash = createHash("sha256").update(token).digest("hex");
+    const expires = new Date(Date.now() + TOKEN_LIFETIME_MS);
+
+    await prisma.user.update({
+        where: { id: user.id },
+        data: {
+            emailVerificationTokenHash: tokenHash,
+            emailVerificationTokenExpires: expires,
+        },
+    });
+
+    const verificationUrl = new URL("/api/auth/verify", getPublicOrigin());
+    verificationUrl.searchParams.set("token", token);
+
+    await sendResendEmail({
+        to: user.email,
+        subject: "Verify your Pit Lane Hub account",
+        text: `Confirm your email address within 24 hours: ${verificationUrl.toString()}`,
+    });
+}
+
+async function sendExistingAccountEmail(email) {
+    const loginUrl = new URL("/login", getPublicOrigin());
+    await sendResendEmail({
+        to: email,
+        subject: "You already have a Pit Lane Hub account",
+        text: `You already have an account. Sign in here: ${loginUrl.toString()}\n\nIf you did not request this email, you can ignore it.`,
+    });
+}
 
 export async function registerUser(formData) {
-    const name = formData.get("name")
-    const email = formData.get("email")
-    const password = formData.get("password")
+    const name = String(formData.get("name") || "").trim();
+    const email = normalizeEmail(formData.get("email"));
+    const password = formData.get("password");
 
     if (!email || !password) {
         return { error: "Missing required fields" }
@@ -23,27 +101,78 @@ export async function registerUser(formData) {
     }
 
     try {
+        const limit = await checkRequestLimit("auth:signup", 5);
+        if (!limit.success) return { error: "Too many attempts. Please try again later." };
+
         const existingUser = await prisma.user.findUnique({
             where: { email }
         })
 
-        if (existingUser) {
-            return { error: "Email already in use" }
-        }
-
         const hashedPassword = await bcrypt.hash(password, 10)
 
-        await prisma.user.create({
+        if (existingUser?.emailVerified || (existingUser && !existingUser.passwordHash)) {
+            try {
+                await sendExistingAccountEmail(email);
+            } catch {
+                // The public response must not reveal whether the address is registered.
+            }
+            return { success: true, message: GENERIC_SIGNUP_MESSAGE };
+        }
+
+        if (existingUser) {
+            // Unverified password account: the latest sign-up replaces the unproven password and
+            // gets a fresh link (older links stop working). Nothing is usable until the inbox confirms.
+            const user = await prisma.user.update({
+                where: { id: existingUser.id },
+                data: { name: name || existingUser.name, passwordHash: hashedPassword },
+            });
+            try {
+                await sendVerificationEmail(user);
+            } catch {
+                // Keep the same response for every case.
+            }
+            return { success: true, message: GENERIC_SIGNUP_MESSAGE };
+        }
+
+        const user = await prisma.user.create({
             data: {
                 name,
                 email,
-                password: hashedPassword,
+                passwordHash: hashedPassword,
+                emailVerified: null,
             }
         })
 
-        return { success: true }
-    } catch (error) {
-        console.error("Registration error:", error)
+        try {
+            await sendVerificationEmail(user);
+        } catch {
+            // Keep the same response for new and existing addresses.
+        }
+        return { success: true, message: GENERIC_SIGNUP_MESSAGE };
+    } catch {
         return { error: "Something went wrong" }
     }
+}
+
+export async function resendVerificationEmail(formData) {
+    const email = normalizeEmail(formData.get("email"));
+    if (!isValidEmail(email)) return { success: true, message: GENERIC_RESEND_MESSAGE };
+
+    try {
+        const limit = await checkRequestLimit("auth:verify-resend", 3);
+        if (!limit.success) return { success: true, message: GENERIC_RESEND_MESSAGE };
+
+        const user = await prisma.user.findUnique({ where: { email } });
+        if (user && !user.emailVerified && user.passwordHash) {
+            try {
+                await sendVerificationEmail(user);
+            } catch {
+                // Keep address existence and delivery failures out of the response.
+            }
+        }
+    } catch {
+        // The response remains generic if the limiter or mail service is unavailable.
+    }
+
+    return { success: true, message: GENERIC_RESEND_MESSAGE };
 }

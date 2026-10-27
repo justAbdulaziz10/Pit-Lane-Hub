@@ -7,8 +7,8 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("POSTGRES_PRISMA_URL") // uses connection pooling
-  directUrl = env("POSTGRES_URL_NON_POOLING") // uses a direct connection
+  url       = env("POSTGRES_PRISMA_URL") // pooled connection
+  directUrl = env("POSTGRES_URL_NON_POOLING") // direct connection (migrations)
 }
 
 model User {
@@ -17,11 +17,15 @@ model User {
   email         String?   @unique
   emailVerified DateTime?
   image         String?
-  password      String?   // Added for Credentials auth
+  passwordHash  String?
   accounts      Account[]
   sessions      Session[]
-  stripeCustomerId String? @unique
-  isPro         Boolean   @default(false)
+  polarCustomerId String? @unique
+  polarSubscriptionId String? @unique
+  subscriptionStatus String?
+  currentPeriodEnd DateTime?
+  emailVerificationTokenHash String? @unique
+  emailVerificationTokenExpires DateTime?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 }

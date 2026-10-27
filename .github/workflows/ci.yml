@@ -8,6 +8,10 @@ on:
 jobs:
   verify:
     runs-on: ubuntu-latest
+    env:
+      AUTH_SECRET: ci-only-placeholder-secret
+      POSTGRES_PRISMA_URL: postgresql://postgres:postgres@localhost:5432/pit_lane_hub?schema=public
+      POSTGRES_URL_NON_POOLING: postgresql://postgres:postgres@localhost:5432/pit_lane_hub?schema=public
     steps:
       - uses: actions/checkout@v4
 
@@ -18,6 +22,12 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Validate Prisma schema
+        run: npx prisma validate
+
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
 
       - name: Lint
         run: npm run lint
@@ -30,6 +40,11 @@ jobs:
 
   e2e:
     runs-on: ubuntu-latest
+    env:
+      AUTH_SECRET: ci-only-placeholder-secret
+      AUTH_TRUST_HOST: "true"
+      POSTGRES_PRISMA_URL: postgresql://postgres:postgres@localhost:5432/pit_lane_hub?schema=public
+      POSTGRES_URL_NON_POOLING: postgresql://postgres:postgres@localhost:5432/pit_lane_hub?schema=public
     steps:
       - uses: actions/checkout@v4
 

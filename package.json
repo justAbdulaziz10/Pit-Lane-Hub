@@ -13,12 +13,13 @@
     "postinstall": "prisma generate"
   },
   "dependencies": {
-    "@auth/prisma-adapter": "^2.11.1",
-    "@polar-sh/sdk": "^0.42.5",
+    "@auth/prisma-adapter": "^2.11.3",
+    "@polar-sh/sdk": "^1.0.2",
+    "@prisma/client": "^5.22.0",
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.5.0",
     "bcryptjs": "^3.0.3",
-    "next": "16.2.12",
+    "next": "16.4.3",
     "next-auth": "^5.0.0-beta.32",
     "react": "19.2.3",
     "react-dom": "19.2.3",
@@ -26,9 +27,8 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.61.0",
-    "@prisma/client": "^5.22.0",
     "eslint": "^9",
-    "eslint-config-next": "16.1.6",
+    "eslint-config-next": "16.4.3",
     "prisma": "^5.22.0",
     "vitest": "^4.1.9"
   }

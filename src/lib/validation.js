@@ -2,13 +2,22 @@
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+/** Canonical email form used for storage, lookups, and sending: trimmed and lowercased. */
+export function normalizeEmail(email) {
+    return typeof email === "string" ? email.trim().toLowerCase() : "";
+}
+
 /**
  * Validate an email address.
  * @param {string} email
  * @returns {boolean}
  */
 export function isValidEmail(email) {
-    return typeof email === "string" && EMAIL_REGEX.test(email.trim());
+    return typeof email === "string" && EMAIL_REGEX.test(normalizeEmail(email));
+}
+
+export function isProStatus(status) {
+    return status === "active" || status === "trialing";
 }
 
 /**

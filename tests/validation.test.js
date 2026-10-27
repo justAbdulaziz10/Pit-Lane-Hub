@@ -1,5 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { isValidEmail, validatePassword } from '@/lib/validation';
+import { isProStatus, isValidEmail, normalizeEmail, validatePassword } from '@/lib/validation';
+
+describe('normalizeEmail', () => {
+    it('trims whitespace and lowercases', () => {
+        expect(normalizeEmail('  RACER@Example.COM\n')).toBe('racer@example.com');
+    });
+
+    it('returns an empty string for non-string input', () => {
+        expect(normalizeEmail(null)).toBe('');
+    });
+});
 
 describe('isValidEmail', () => {
     it('accepts well-formed addresses', () => {
@@ -30,5 +40,15 @@ describe('validatePassword', () => {
     it('requires both a letter and a number', () => {
         expect(validatePassword('allletters').valid).toBe(false);
         expect(validatePassword('12345678').valid).toBe(false);
+    });
+});
+
+describe('isProStatus', () => {
+    it('grants Pro only for an active or trialing subscription', () => {
+        expect(isProStatus('active')).toBe(true);
+        expect(isProStatus('trialing')).toBe(true);
+        expect(isProStatus('canceled')).toBe(false);
+        expect(isProStatus('revoked')).toBe(false);
+        expect(isProStatus(null)).toBe(false);
     });
 });

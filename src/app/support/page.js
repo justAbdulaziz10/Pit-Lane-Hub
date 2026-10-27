@@ -1,31 +1,57 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
+import { useSession } from 'next-auth/react';
+import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
 import styles from './page.module.css';
 
+/** Confirmation shown when Polar sends the visitor back with ?success=true or ?canceled. */
+function CheckoutStatus() {
+    const searchParams = useSearchParams();
+    const { update } = useSession();
+    const succeeded = searchParams.get('success') === 'true';
+
+    useEffect(() => {
+        // Ask the server to reload Pro state from the database (the webhook may land a moment later).
+        if (succeeded) void update?.();
+    }, [succeeded, update]);
+
+    if (succeeded) {
+        return (
+            <p className={styles.checkoutMessage} role="status">
+                Thanks for subscribing! Polar is confirming your payment; your Pro badge appears on your profile within a few minutes.
+            </p>
+        );
+    }
+    if (searchParams.has('canceled')) {
+        return (
+            <p className={styles.checkoutMessage} role="status">
+                Checkout was canceled. You have not been charged.
+            </p>
+        );
+    }
+    return null;
+}
+
 export default function SupportPage() {
-    const [selectedAmount, setSelectedAmount] = useState(5);
-    const [customAmount, setCustomAmount] = useState('');
-    const [email, setEmail] = useState('');
-
-    const donationAmounts = [3, 5, 10, 25, 50];
-
-    const handleDonate = (e) => {
-        e.preventDefault();
-        // Redirect to Buy Me a Coffee
-        window.open('https://buymeacoffee.com/justAbdulaziz10', '_blank');
-    };
+    const { data: session } = useSession();
+    const router = useRouter();
+    const [checkoutError, setCheckoutError] = useState('');
+    const [isCheckingOut, setIsCheckingOut] = useState(false);
+    const isPro = session?.user?.isPro === true;
 
     const handleSubscribe = async () => {
+        setCheckoutError('');
+        setIsCheckingOut(true);
+
         try {
-            // Updated to use Polar checkout
             const response = await fetch('/api/polar/checkout', {
                 method: 'POST',
             });
 
             if (response.status === 401) {
-                // Not logged in
-                window.location.href = '/login?redirect=/support';
+                router.push('/login?redirect=%2Fsupport');
                 return;
             }
 
@@ -33,11 +59,12 @@ export default function SupportPage() {
             if (data.url) {
                 window.location.href = data.url;
             } else {
-                alert('Something went wrong initiating checkout.');
+                setCheckoutError(data.error || 'Unable to start checkout. Please try again later.');
             }
-        } catch (error) {
-            console.error('Subscription error:', error);
-            alert('Error starting subscription. Please try again.');
+        } catch {
+            setCheckoutError('Unable to start checkout. Please try again later.');
+        } finally {
+            setIsCheckingOut(false);
         }
     };
 
@@ -60,51 +87,19 @@ export default function SupportPage() {
                         <div className={styles.donationCard}>
                             <h2>☕ Buy Me a Coffee</h2>
                             <p className={styles.subtitle}>
-                                Your support helps cover server costs and keeps the site ad-free.
+                                Leave a one-time tip to support the project.
                             </p>
-
-                            {/* Amount Selection */}
-                            <div className={styles.amountGrid}>
-                                {donationAmounts.map(amount => (
-                                    <button
-                                        key={amount}
-                                        className={`${styles.amountBtn} ${selectedAmount === amount ? styles.selected : ''}`}
-                                        onClick={() => {
-                                            setSelectedAmount(amount);
-                                            setCustomAmount('');
-                                        }}
-                                    >
-                                        ${amount}
-                                    </button>
-                                ))}
-                                <input
-                                    type="number"
-                                    placeholder="Custom"
-                                    className={styles.customInput}
-                                    value={customAmount}
-                                    onChange={(e) => {
-                                        setCustomAmount(e.target.value);
-                                        setSelectedAmount(0);
-                                    }}
-                                />
-                            </div>
-
-                            {/* Email (optional) */}
-                            <input
-                                type="email"
-                                placeholder="Email (optional, for thank you note)"
-                                className={styles.emailInput}
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                            />
-
-                            {/* Donate Button */}
-                            <button className={styles.donateBtn} onClick={handleDonate}>
-                                Support with ${customAmount || selectedAmount}
-                            </button>
+                            <a
+                                className={styles.donateBtn}
+                                href="https://buymeacoffee.com/justAbdulaziz10"
+                                target="_blank"
+                                rel="noreferrer"
+                            >
+                                Leave a one-time tip
+                            </a>
 
                             <p className={styles.disclaimer}>
-                                Secure payment via Buy Me a Coffee ☕
+                                Buy Me a Coffee handles one-time tips.
                             </p>
                         </div>
 
@@ -117,28 +112,21 @@ export default function SupportPage() {
                                     <span className={styles.benefitIcon}>🚀</span>
                                     <div>
                                         <h3>Keep It Free</h3>
-                                        <p>Your donations help us provide free F1 data without ads</p>
+                                        <p>Your support helps keep F1 data available to everyone.</p>
                                     </div>
                                 </div>
                                 <div className={styles.benefit}>
                                     <span className={styles.benefitIcon}>⚡</span>
                                     <div>
-                                        <h3>Faster Updates</h3>
-                                        <p>Fund development of new features and faster data refresh</p>
+                                        <h3>Support Development</h3>
+                                        <p>Help fund ongoing work on Pit Lane Hub.</p>
                                     </div>
                                 </div>
                                 <div className={styles.benefit}>
                                     <span className={styles.benefitIcon}>🏆</span>
                                     <div>
                                         <h3>Supporter Badge</h3>
-                                        <p>Get recognized as an official Pit Lane Hub supporter</p>
-                                    </div>
-                                </div>
-                                <div className={styles.benefit}>
-                                    <span className={styles.benefitIcon}>💬</span>
-                                    <div>
-                                        <h3>Priority Features</h3>
-                                        <p>Supporters can suggest and vote on new features</p>
+                                        <p>Pro members are recognized on their profile.</p>
                                     </div>
                                 </div>
                             </div>
@@ -155,47 +143,30 @@ export default function SupportPage() {
                                 <span className={styles.period}>/month</span>
                             </div>
                             <ul className={styles.premiumFeatures}>
-                                <li>✓ Race start push notifications</li>
-                                <li>✓ Live lap-by-lap timing</li>
-                                <li>✓ Historical data comparisons</li>
-                                <li>✓ Custom driver alerts</li>
-                                <li>✓ Ad-free experience</li>
-                                <li>✓ Early access to new features</li>
-                                <li>✓ Supporter badge on profile</li>
+                                <li>✓ Supporter badge on your profile</li>
+                                <li>✓ Support development of Pit Lane Hub</li>
                             </ul>
-                            <button
-                                className={`${styles.premiumBtn} ${styles.proPulse}`}
-                                onClick={handleSubscribe}
-                                style={{
-                                    background: 'linear-gradient(45deg, #e10600, #ff4d4d)',
-                                    boxShadow: '0 0 20px rgba(225, 6, 0, 0.4)',
-                                    fontWeight: '800',
-                                    padding: '1rem 3rem',
-                                    fontSize: '1.2rem',
-                                    border: '1px solid rgba(255, 255, 255, 0.2)'
-                                }}
-                            >
-                                GET PRO ACCESS
-                            </button>
+                            <Suspense fallback={null}>
+                                <CheckoutStatus />
+                            </Suspense>
+                            {checkoutError && <p className={styles.checkoutError} role="alert">{checkoutError}</p>}
+                            {isPro ? (
+                                <div className={styles.proState}>
+                                    <p>You&apos;re Pro. Thanks for supporting Pit Lane Hub.</p>
+                                    <Link href="/profile" className={styles.premiumBtn}>Manage subscription</Link>
+                                </div>
+                            ) : (
+                                <button
+                                    className={styles.premiumBtn}
+                                    onClick={handleSubscribe}
+                                    disabled={isCheckingOut}
+                                >
+                                    {isCheckingOut ? 'Opening checkout…' : 'Get Pit Lane Pro'}
+                                </button>
+                            )}
                             <p className={styles.premiumNote}>
-                                Cancel anytime • Billed monthly via Buy Me a Coffee
+                                Subscription checkout and management are handled by Polar.
                             </p>
-                        </div>
-                    </div>
-
-                    {/* Stats */}
-                    <div className={styles.stats}>
-                        <div className={styles.stat}>
-                            <span className={styles.statValue}>10K+</span>
-                            <span className={styles.statLabel}>Monthly Users</span>
-                        </div>
-                        <div className={styles.stat}>
-                            <span className={styles.statValue}>100%</span>
-                            <span className={styles.statLabel}>Free Data</span>
-                        </div>
-                        <div className={styles.stat}>
-                            <span className={styles.statValue}>24/7</span>
-                            <span className={styles.statLabel}>Live Updates</span>
                         </div>
                     </div>
                 </div>

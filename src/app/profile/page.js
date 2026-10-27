@@ -4,29 +4,28 @@ import { signOut, useSession } from "next-auth/react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import styles from "./page.module.css";
 
 export default function ProfilePage() {
     const { data: session, status } = useSession();
     const router = useRouter();
 
+    useEffect(() => {
+        if (status === "unauthenticated") {
+            router.replace("/login?redirect=%2Fprofile");
+        }
+    }, [status, router]);
+
     if (status === "loading") {
         return <div className={styles.container}>Loading...</div>;
     }
-
     if (status === "unauthenticated") {
-        router.push("/login");
         return null;
     }
 
     const isPro = session?.user?.isPro;
     const initial = session?.user?.name ? session.user.name[0].toUpperCase() : "U";
-
-    const handleManageSubscription = () => {
-        // Redirect to Polar customer portal or support page for now
-        // In a real integration, this would call a portal API
-        window.open('https://polar.sh/settings', '_blank');
-    };
 
     return (
         <div className={styles.container}>
@@ -65,9 +64,9 @@ export default function ProfilePage() {
 
                     <div className={styles.actions}>
                         {isPro ? (
-                            <button onClick={handleManageSubscription} className={`${styles.btn} ${styles.btnSecondary}`}>
+                            <a href="/api/polar/portal" className={`${styles.btn} ${styles.btnSecondary}`}>
                                 Manage Subscription
-                            </button>
+                            </a>
                         ) : (
                             <Link href="/support" className={`${styles.btn} ${styles.btnPrimary}`}>
                                 Upgrade to Pro

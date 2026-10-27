@@ -1,6 +1,6 @@
 # 🏎️ Pit Lane Hub
 
-**Your ultimate destination for live F1 racing data, driver standings, race calendar, and real-time timing.**
+F1 standings, schedule, driver statistics, historical results, and session data in one place.
 
 🌐 **Live Site**: [f1-xi-weld.vercel.app](https://f1-xi-weld.vercel.app)
 
@@ -10,14 +10,16 @@
 
 | Feature | Description |
 |---------|-------------|
-| 📊 **Live Timing** | Real-time session data during F1 weekends |
+| 📊 **Session Timing** | Session data from OpenF1 when available |
 | 🏆 **Standings** | Current driver and constructor championships |
 | 👤 **Driver Profiles** | Detailed driver info with career stats |
 | 🏁 **Race Calendar** | Full 2026 F1 season schedule |
 | 📈 **Compare Drivers** | Side-by-side driver statistics |
-| 📚 **Historical Data** | Browse F1 seasons from 2023-2026 |
+| 📚 **Historical Data** | Browse past F1 seasons from Jolpica |
 | 🏁 **F2 & F3 Info** | Feeder series team listings |
-| 🗺️ **Track Maps** | Interactive circuit layouts with live positions |
+| 🗺️ **Track Maps** | Interactive circuit layouts |
+| 👤 **Accounts** | Verified password accounts and Resend magic links |
+| 🏆 **Pit Lane Pro** | Polar subscriptions with a supporter badge on your profile |
 
 ---
 
@@ -26,7 +28,7 @@
 - **Framework**: [Next.js 16](https://nextjs.org/) (App Router) + React 19
 - **Data Sources**: [OpenF1 API](https://openf1.org/) (live timing) and the
   [Ergast/Jolpica API](https://api.jolpi.ca/ergast/f1) (historical standings & career stats)
-- **Auth**: [NextAuth v5](https://authjs.dev/) with the Prisma adapter (credentials + Resend magic links)
+- **Auth**: [NextAuth v5](https://authjs.dev/) with the Prisma adapter (verified password accounts + Resend magic links)
 - **Database**: PostgreSQL via [Prisma](https://www.prisma.io/)
 - **Payments**: [Polar](https://polar.sh/) subscriptions
 - **3D**: [Three.js](https://threejs.org/) via React Three Fiber for circuit maps
@@ -39,7 +41,7 @@
 ## 🚀 Getting Started
 
 ### Prerequisites
-- Node.js 18+
+- Node.js 20+
 - npm
 - A PostgreSQL database (for auth — the public F1 data works without it)
 
@@ -48,7 +50,7 @@
 ```bash
 git clone https://github.com/justAbdulaziz10/Pit-Lane-Hub.git
 cd Pit-Lane-Hub
-npm install
+npm ci
 
 # Configure environment variables
 cp .env.example .env.local   # then fill in the values
@@ -64,9 +66,16 @@ Open [http://localhost:3000](http://localhost:3000) to view the site.
 
 ### Environment variables
 
-All required variables are documented in [`.env.example`](.env.example) — database URLs,
-NextAuth secret, Resend, and Polar credentials. The Polar webhook route **requires** its
-signing secret (`POLAR_WEBHOOK_SECRET`) and fails closed without it.
+Copy [`.env.example`](.env.example) to `.env.local`; every variable is documented there.
+Configure `POSTGRES_PRISMA_URL` and `POSTGRES_URL_NON_POOLING` for PostgreSQL,
+`AUTH_SECRET` and `NEXT_PUBLIC_SITE_URL` for Auth.js and email links, `AUTH_RESEND_KEY`
+and `EMAIL_FROM` for email, and `POLAR_ACCESS_TOKEN`, `POLAR_PRODUCT_ID`, `POLAR_SERVER`,
+and `POLAR_WEBHOOK_SECRET` for subscriptions. `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` are
+optional; without both, rate limits use a process-local memory fallback. OpenF1 credentials
+are optional. The Polar webhook rejects requests when its signing secret is missing.
+
+After pulling schema changes, apply migrations with `npx prisma migrate deploy` (production)
+or `npx prisma migrate dev` (local).
 
 ### Scripts
 
@@ -74,22 +83,19 @@ signing secret (`POLAR_WEBHOOK_SECRET`) and fails closed without it.
 |--------|-------------|
 | `npm run dev` | Start the dev server |
 | `npm run build` | Production build |
+| `npm start` | Start the production server |
 | `npm run lint` | Run ESLint |
 | `npm test` | Run the Vitest suite |
 | `npm run test:watch` | Run tests in watch mode |
+| `npm run test:e2e` | Run Playwright smoke tests against a production build |
 
 ---
 
-## 📡 Data Updates
+## 📡 Data Sources
 
-**Data updates automatically!** The site uses the OpenF1 API which provides:
-
-- **Live session data** refreshes every 10 seconds during active sessions
-- **Driver data** refreshes every 60 seconds
-- **Race schedule** refreshes every hour
-- **Historical data** is cached for 1 year
-
-No manual updates needed - the API always returns the latest F1 data.
+Session and current-season data comes from OpenF1. Historical standings, results, and
+career statistics come from Jolpica. Availability and freshness depend on those public
+APIs and the page's revalidation settings.
 
 ---
 
@@ -98,7 +104,7 @@ No manual updates needed - the API always returns the latest F1 data.
 If you find this project useful, consider supporting it:
 
 - ☕ [Buy Me a Coffee](https://buymeacoffee.com/justAbdulaziz10)
-- 🏎️ [Pit Lane Pro Membership](https://buymeacoffee.com/justAbdulaziz10/membership) - $4.99/month
+- 🏎️ Pit Lane Pro subscriptions are started from the support page and checked out through Polar.
 
 ---
 
@@ -116,8 +122,8 @@ src/
 │   ├── compare/           # Driver comparison
 │   ├── history/           # Historical data browser
 │   ├── junior/            # F2 & F3 info
-│   └── support/           # Donation page
-│   ├── api/               # Route handlers (auth, Polar checkout + webhook)
+│   ├── support/           # Tips and Pit Lane Pro
+│   ├── api/               # Route handlers (auth, email verification, Polar checkout/portal/webhook)
 │   ├── error.js           # App-level error boundary
 │   └── not-found.js       # 404 page
 ├── components/            # Reusable React components
@@ -128,7 +134,8 @@ src/
     │   └── ergast.js      # Ergast API wrappers (standings, results, qualifying,
     │                      #   schedule, career stats, season drivers)
     ├── f1api.js           # Barrel re-export of the f1/ modules
-    ├── validation.js      # Email/password validation
+    ├── validation.js      # Email normalization and password validation
+    ├── rate-limit.js      # Upstash REST and memory rate limits
     └── photos.js          # Headshot URL helpers
 
 tests/                     # Vitest unit tests
@@ -138,8 +145,8 @@ tests/                     # Vitest unit tests
 
 ## 🧪 Testing
 
-Unit tests (Vitest) cover the data-layer transforms, input validation, and webhook
-signature verification. Playwright drives end-to-end smoke tests across the key pages:
+Vitest covers data transforms, validation, rate limiting, auth, checkout, and Polar
+webhook handling. Playwright drives smoke tests against the production server:
 
 ```bash
 npm test          # unit tests
@@ -158,7 +165,7 @@ This project uses the [OpenF1 API](https://openf1.org/):
 - **Positions**: `GET /v1/position`
 - **Weather**: `GET /v1/weather`
 
-All data is fetched in real-time with automatic revalidation.
+Data is fetched from those APIs with page-specific revalidation.
 
 ---
 

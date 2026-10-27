@@ -32,3 +32,17 @@ test('unknown route shows the custom 404', async ({ page }) => {
     await page.goto('/this-route-does-not-exist');
     await expect(page.getByText('Lost in the gravel trap')).toBeVisible();
 });
+
+test('support page shows honest Pro and tip options', async ({ page }) => {
+    await page.goto('/support');
+    await expect(page.getByRole('heading', { name: /Pit Lane Pro/ })).toBeVisible();
+    await expect(page.getByText('Supporter badge on your profile')).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Leave a one-time tip' })).toHaveAttribute('href', /buymeacoffee\.com/);
+    await expect(page.getByText(/10K\+|24\/7/)).toHaveCount(0);
+});
+
+test('login page has one magic-link form and one password form', async ({ page }) => {
+    await page.goto('/login?redirect=https://evil.example/');
+    await expect(page.getByRole('button', { name: /Send Link/ })).toHaveCount(1);
+    await expect(page.getByRole('button', { name: 'Sign In' })).toHaveCount(1);
+});

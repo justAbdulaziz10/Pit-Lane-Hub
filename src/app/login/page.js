@@ -2,33 +2,70 @@
 
 import { signIn } from "next-auth/react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { useState } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
+import { Suspense, useState } from "react"
+import { resendVerificationEmail } from "../actions/auth"
 import styles from "./page.module.css"
 
-export default function LoginPage() {
+const AUTH_ERROR_MESSAGES = {
+    TooManyRequests: "Too many sign-in link requests. Please try again later.",
+    Verification: "That sign-in link is invalid or has expired. Request a new one.",
+}
+
+/** Only same-origin paths are allowed as post-login destinations. */
+function safeRedirectPath(value, origin) {
+    if (typeof value !== "string" || !value) return "/"
+    try {
+        const target = new URL(value, origin)
+        if (target.origin !== origin) return "/"
+        return `${target.pathname}${target.search}${target.hash}`
+    } catch {
+        return "/"
+    }
+}
+
+function normalizeEmail(value) {
+    return String(value || "").trim().toLowerCase()
+}
+
+function LoginForm() {
     const router = useRouter()
+    const searchParams = useSearchParams()
     const [error, setError] = useState("")
-    const [success, setSuccess] = useState("")
+    const [actionNotice, setActionNotice] = useState("")
     const [isLoading, setIsLoading] = useState(false)
+    const [isResendingVerification, setIsResendingVerification] = useState(false)
+    const origin = typeof window === "undefined" ? "http://localhost" : window.location.origin
+    const redirectTo = safeRedirectPath(searchParams.get("redirect") || searchParams.get("callbackUrl"), origin)
+    const authError = searchParams.get("error")
+    const displayedError = error || (authError ? AUTH_ERROR_MESSAGES[authError] || "Sign-in failed. Please try again." : "")
+    const notice = actionNotice || (
+        searchParams.get("verified") === "true"
+            ? "Your email is verified. You can sign in now."
+            : searchParams.get("registered") === "true"
+                ? "Check your inbox for a link to verify your email, then sign in."
+                : searchParams.get("verification") === "invalid"
+                    ? "That verification link is invalid or expired. Request a new one below."
+                    : ""
+    )
+    const canResendVerification = Boolean(error) ||
+        searchParams.get("registered") === "true" ||
+        searchParams.get("verification") === "invalid"
 
-    const handleMagicLink = async (e) => {
+    const handleResendVerification = async (e) => {
         e.preventDefault()
+        setIsResendingVerification(true)
+        const result = await resendVerificationEmail(new FormData(e.currentTarget))
+        setActionNotice(result.message)
+        setIsResendingVerification(false)
+    }
+
+    const handleMagicLink = async (formData) => {
         setError("")
-        setSuccess("")
         setIsLoading(true)
-
-        const email = e.target.magicEmail.value
-
         try {
-            await signIn("resend", { email, redirect: false })
-            // Whether it works or fails server-side, for security we usually say "Check your email"
-            // But with redirect: false, NextAuth might return a URL or just complete.
-            // For Magic Links, typically we receive an ok response.
-            setSuccess("Check your email! A magic link has been sent.")
-            setIsLoading(false)
-        } catch (err) {
-            console.error(err)
+            await signIn("resend", { email: normalizeEmail(formData.get("email")), redirectTo })
+        } catch {
             setError("Failed to send magic link. Please try again.")
             setIsLoading(false)
         }
@@ -37,27 +74,25 @@ export default function LoginPage() {
     const handleSubmit = async (e) => {
         e.preventDefault()
         setError("")
-        setSuccess("")
+        setActionNotice("")
         setIsLoading(true)
 
-        const email = e.target.email.value
-        const password = e.target.password.value
-
+        const form = e.currentTarget
         try {
             const result = await signIn("credentials", {
-                email,
-                password,
+                email: normalizeEmail(form.email.value),
+                password: form.password.value,
                 redirect: false,
             })
 
             if (result?.error) {
-                setError("Invalid email or password")
+                setError("Invalid email or password, or your email is not verified yet.")
                 setIsLoading(false)
             } else {
-                router.push("/")
+                router.push(redirectTo)
                 router.refresh()
             }
-        } catch (err) {
+        } catch {
             setError("Something went wrong. Please try again.")
             setIsLoading(false)
         }
@@ -87,21 +122,20 @@ export default function LoginPage() {
                     <h1 className={styles.title}>Welcome Back</h1>
                     <p className={styles.subtitle}>Sign in to access premium F1 data</p>
 
-                    {error && (
-                        <div className={styles.error}>
+                    {displayedError && (
+                        <div className={styles.error} role="alert">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" width="20" height="20">
                                 <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                             </svg>
-                            {error}
+                            {displayedError}
                         </div>
                     )}
 
+                    {notice && <div className={styles.success} role="status">{notice}</div>}
+
                     {/* Magic Link Form */}
                     <div className={styles.magicLinkSection}>
-                        <form action={async (formData) => {
-                            setIsLoading(true);
-                            await signIn("resend", formData);
-                        }}>
+                        <form action={handleMagicLink}>
                             <div className={styles['form-group']}>
                                 <label className={styles.label}>Sign in with Email (Magic Link)</label>
                                 <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -111,45 +145,15 @@ export default function LoginPage() {
                                         placeholder="name@example.com"
                                         className={styles.input}
                                         required
+                                        disabled={isLoading}
                                     />
                                     <button
                                         type="submit"
+                                        disabled={isLoading}
                                         className={styles['submit-btn']}
                                         style={{ width: 'auto', padding: '0 1.5rem' }}
                                     >
-                                        ✨ Send Link
-                                    </button>
-                                </div>
-                            </div>
-                        </form>
-                    </div>
-
-                    <div className={styles.divider}>
-                        <span>OR USE PASSWORD</span>
-                    </div>
-
-                    <div className={styles.magicLinkSection}>
-                        <form
-                            action={async (formData) => {
-                                await signIn("resend", formData)
-                            }}
-                        >
-                            <div className={styles['form-group']}>
-                                <label className={styles.label}>Sign in with Email (Magic Link)</label>
-                                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                    <input
-                                        type="email"
-                                        name="email"
-                                        placeholder="name@example.com"
-                                        className={styles.input}
-                                        required
-                                    />
-                                    <button
-                                        type="submit"
-                                        className={styles['submit-btn']}
-                                        style={{ width: 'auto', padding: '0 1.5rem', marginTop: 0 }}
-                                    >
-                                        ✨ Send Link
+                                        {isLoading ? "Sending…" : "✨ Send Link"}
                                     </button>
                                 </div>
                             </div>
@@ -198,6 +202,34 @@ export default function LoginPage() {
                             )}
                         </button>
                     </form>
+
+                    {canResendVerification && (
+                        <div className={styles.magicLinkSection}>
+                            <form onSubmit={handleResendVerification}>
+                                <div className={styles['form-group']}>
+                                    <label className={styles.label}>Resend verification email</label>
+                                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                        <input
+                                            type="email"
+                                            name="email"
+                                            placeholder="name@example.com"
+                                            className={styles.input}
+                                            required
+                                            disabled={isResendingVerification}
+                                        />
+                                        <button
+                                            type="submit"
+                                            disabled={isResendingVerification}
+                                            className={styles['submit-btn']}
+                                            style={{ width: 'auto', padding: '0 1rem' }}
+                                        >
+                                            {isResendingVerification ? "Sending…" : "Resend"}
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    )}
                 </div>
 
                 <p className={styles.footer}>
@@ -208,5 +240,13 @@ export default function LoginPage() {
                 </p>
             </div>
         </div>
+    )
+}
+
+export default function LoginPage() {
+    return (
+        <Suspense fallback={null}>
+            <LoginForm />
+        </Suspense>
     )
 }

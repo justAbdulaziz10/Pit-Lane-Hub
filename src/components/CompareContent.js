@@ -8,9 +8,10 @@ import { useEffect, useState } from 'react';
 export default function CompareContent({ initialDrivers = [] }) {
     const [drivers] = useState(initialDrivers);
 
-    // Selection State
-    const [selectedDriver1, setSelectedDriver1] = useState(null);
-    const [selectedDriver2, setSelectedDriver2] = useState(null);
+    // Selection State (defaults to the first two drivers when available)
+    const hasDefaults = initialDrivers.length >= 2;
+    const [selectedDriver1, setSelectedDriver1] = useState(hasDefaults ? initialDrivers[0] : null);
+    const [selectedDriver2, setSelectedDriver2] = useState(hasDefaults ? initialDrivers[1] : null);
 
     // Data State
     const [stats1, setStats1] = useState(null);
@@ -19,14 +20,6 @@ export default function CompareContent({ initialDrivers = [] }) {
     const [loading2, setLoading2] = useState(false);
     const [error1, setError1] = useState(null);
     const [error2, setError2] = useState(null);
-
-    // Initialize defaults if available
-    useEffect(() => {
-        if (drivers.length >= 2 && !selectedDriver1 && !selectedDriver2) {
-            setSelectedDriver1(drivers[0]);
-            setSelectedDriver2(drivers[1]);
-        }
-    }, [drivers, selectedDriver1, selectedDriver2]);
 
     // Fetch Helper
     const fetchDriverStats = async (driver, setStats, setLoading, setError) => {
