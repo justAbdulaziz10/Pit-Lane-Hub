@@ -82,9 +82,10 @@
     background: transparent;
     border: 0;
     border-bottom: 1px solid var(--border);
+    border-inline-start: 3px solid transparent;
     color: var(--text-1);
     font: inherit;
-    text-align: left;
+    text-align: start;
     cursor: pointer;
 }
 
@@ -96,7 +97,7 @@
 .pickerResults button:focus-visible {
     background: var(--surface-1);
     outline: none;
-    box-shadow: inset 3px 0 0 var(--driver-color, var(--accent));
+    border-inline-start-color: var(--driver-color, var(--accent));
 }
 
 .pickerMeta {
@@ -174,7 +175,7 @@
     padding: var(--space-lg);
     background: var(--surface-1);
     border: 1px solid var(--border);
-    border-left: 4px solid var(--driver-color, var(--accent));
+    border-inline-start: 4px solid var(--driver-color, var(--accent));
     border-radius: var(--radius-lg);
 }
 
@@ -246,12 +247,12 @@
 .statsTable td {
     padding: var(--space-sm) var(--space-md);
     border-bottom: 1px solid var(--border);
-    text-align: right;
+    text-align: end;
 }
 
 .statsTable th[scope='row'],
 .statsTable thead th:first-child {
-    text-align: left;
+    text-align: start;
     font-weight: 500;
     color: var(--text-2);
 }

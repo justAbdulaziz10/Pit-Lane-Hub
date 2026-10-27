@@ -1,9 +1,14 @@
 'use client';
 
 import { useFavorites } from '@/lib/useFavorites';
+import { useLocale } from '@/lib/i18n/LocaleProvider';
+import { fill, pick } from '@/lib/i18n/messages';
+import driverMessages from '@/lib/i18n/messages/drivers';
 import styles from './FavoriteButton.module.css';
 
 export default function FavoriteButton({ driverNumber, driverName = 'driver', className = '' }) {
+    const locale = useLocale();
+    const t = pick(driverMessages, locale);
     const { isFavorite, toggle } = useFavorites();
     const active = isFavorite(driverNumber);
 
@@ -12,7 +17,7 @@ export default function FavoriteButton({ driverNumber, driverName = 'driver', cl
             type="button"
             className={`${styles.fav} ${active ? styles.active : ''} ${className}`}
             aria-pressed={active}
-            aria-label={`Favourite ${driverName}`}
+            aria-label={fill(locale === 'en' ? t.favorite : active ? t.removeFavorite : t.addFavorite, { name: driverName })}
             onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();

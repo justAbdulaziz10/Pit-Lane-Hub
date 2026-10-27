@@ -84,8 +84,8 @@
 
 .groupTitle {
     margin-bottom: var(--space-md);
-    padding-left: var(--space-md);
-    border-left: 4px solid var(--team-color, var(--accent));
+    padding-inline-start: var(--space-md);
+    border-inline-start: 4px solid var(--team-color, var(--accent));
     font-size: 1.25rem;
 }
 

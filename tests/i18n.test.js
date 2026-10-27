@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { localeAlternates, localeDir, localePath, splitLocale } from '@/lib/i18n/config';
 import { countryName, nationalityName, raceName } from '@/lib/i18n/f1-names';
+import drivers, { sharedStats } from '@/lib/i18n/messages/drivers';
+import compare from '@/lib/i18n/messages/compare';
+import teams from '@/lib/i18n/messages/teams';
+import standings from '@/lib/i18n/messages/standings';
+import history from '@/lib/i18n/messages/history';
 import ALL_TIME_DRIVERS from '@/lib/f1/data/drivers-all-time.json';
 
 // Every race name in Jolpica's archive (1950–2026) and every circuit country.
@@ -48,6 +53,25 @@ describe('Arabic F1 names', () => {
         const nationalities = new Set(ALL_TIME_DRIVERS.map((driver) => driver.nationality).filter(Boolean));
         for (const nationality of nationalities) expect(nationalityName(nationality, 'ar'), nationality).toMatch(ARABIC);
         expect(nationalityName('British', 'en')).toBe('British');
+    });
+});
+
+describe('Arabic route messages', () => {
+    it('provides Arabic copy for each B2 namespace key', () => {
+        for (const namespace of [drivers, compare, teams, standings, history]) {
+            expect(Object.keys(namespace.ar).sort()).toEqual(Object.keys(namespace.en).sort());
+            for (const value of Object.values(namespace.ar)) expect(value).toMatch(ARABIC);
+        }
+    });
+
+    it('reuses the driver namespace for shared stat labels', () => {
+        for (const key of Object.keys(sharedStats.en)) {
+            expect(drivers.en[key]).toBe(sharedStats.en[key]);
+            expect(compare.ar[key]).toBe(sharedStats.ar[key]);
+            expect(teams.ar[key]).toBe(sharedStats.ar[key]);
+            expect(standings.ar[key]).toBe(sharedStats.ar[key]);
+            expect(history.ar[key]).toBe(sharedStats.ar[key]);
+        }
     });
 });
 

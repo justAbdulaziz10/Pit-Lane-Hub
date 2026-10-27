@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { jsonLdScript } from '@/lib/jsonld';
 import { resolveSiteUrl } from '@/lib/site';
-import { metadata as driversMetadata } from '@/app/[lang]/drivers/layout';
-import { metadata as teamsMetadata } from '@/app/[lang]/teams/layout';
+import { generateMetadata as driversMetadata } from '@/app/[lang]/drivers/layout';
+import { generateMetadata as teamsMetadata } from '@/app/[lang]/teams/layout';
 import { metadata as liveMetadata } from '@/app/[lang]/live/layout';
 import { metadata as tracksMetadata } from '@/app/[lang]/tracks/layout';
-import { metadata as historyMetadata } from '@/app/[lang]/history/layout';
+import { generateMetadata as historyMetadata } from '@/app/[lang]/history/layout';
 import { metadata as supportMetadata } from '@/app/[lang]/support/layout';
 
 describe('jsonLdScript', () => {
@@ -44,15 +44,15 @@ describe('resolveSiteUrl', () => {
 });
 
 describe('segment metadata', () => {
-  it('uses distinct plain titles and unique descriptions for each new layout', () => {
-    const metadata = [
-      driversMetadata,
-      teamsMetadata,
+  it('uses distinct plain titles and unique descriptions for each layout', async () => {
+    const metadata = await Promise.all([
+      driversMetadata({ params: Promise.resolve({ lang: 'en' }) }),
+      teamsMetadata({ params: Promise.resolve({ lang: 'en' }) }),
       liveMetadata,
       tracksMetadata,
-      historyMetadata,
+      historyMetadata({ params: Promise.resolve({ lang: 'en' }) }),
       supportMetadata,
-    ];
+    ]);
     const titles = metadata.map((segment) => segment.title);
     const descriptions = metadata.map((segment) => segment.description);
 

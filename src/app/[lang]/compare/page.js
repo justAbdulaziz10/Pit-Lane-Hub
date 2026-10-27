@@ -5,18 +5,26 @@ import { compareDrivers, isValidDriverId } from '@/lib/f1/compare';
 import { getGrid } from '@/lib/f1/drivers';
 import { getSeasonSummary } from '@/lib/f1/history';
 import { getClientIp, rateLimit } from '@/lib/rate-limit';
+import { localeAlternates, localePath } from '@/lib/i18n/config';
+import { pick } from '@/lib/i18n/messages';
+import compareMessages from '@/lib/i18n/messages/compare';
 import styles from './page.module.css';
 
-export const metadata = {
-    title: 'Compare Drivers',
-    description: 'Compare any two Formula 1 drivers since 1950: championships, wins, podiums, poles, fastest laps, starts and head-to-head record.',
-    alternates: { canonical: '/compare' },
-    openGraph: {
-        title: 'Compare Drivers',
-        description: 'Compare any two Formula 1 drivers since 1950, with career totals and head-to-head record.',
-        url: '/compare',
-    },
-};
+export async function generateMetadata({ params }) {
+    const { lang } = await params;
+    const t = pick(compareMessages, lang);
+    return {
+        title: t.metadataTitle,
+        description: t.metadataDescription,
+        alternates: localeAlternates(lang, '/compare'),
+        openGraph: {
+            title: t.metadataTitle,
+            description: t.metadataOgDescription,
+            url: localePath(lang, '/compare'),
+            locale: lang === 'ar' ? 'ar_SA' : 'en_US',
+        },
+    };
+}
 
 function param(value) {
     const raw = Array.isArray(value) ? value[0] : value;
@@ -40,8 +48,10 @@ async function initialPair(a, b) {
     return [candidates[0] || '', candidates[1] || ''];
 }
 
-export default async function ComparePage({ searchParams }) {
+export default async function ComparePage({ params, searchParams }) {
     await connection();
+    const { lang } = await params;
+    const t = pick(compareMessages, lang);
     const query = await searchParams;
     let [a, b] = [param(query.a), param(query.b)];
     let comparison = null;
@@ -69,7 +79,7 @@ export default async function ComparePage({ searchParams }) {
         <div className={styles.compare}>
             <div className={styles.header}>
                 <div className="container">
-                    <h1>Compare drivers</h1>
+                    <h1>{t.pageTitle}</h1>
                 </div>
             </div>
             <CompareContent

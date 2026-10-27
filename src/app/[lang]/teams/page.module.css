@@ -57,8 +57,7 @@
 .teamColorBar {
     position: absolute;
     top: 0;
-    left: 0;
-    right: 0;
+    inset-inline: 0;
     height: 4px;
     background: var(--team-color, var(--accent));
 }

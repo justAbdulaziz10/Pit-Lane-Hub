@@ -5,6 +5,11 @@
     text-decoration: none;
 }
 
+.cardLink > bdi {
+    display: flex;
+    flex-direction: column;
+}
+
 /* The name link covers the whole card; the favourite button sits above it. */
 .cardLink::after {
     content: '';
@@ -43,8 +48,7 @@
 .colorBar {
     position: absolute;
     top: 0;
-    left: 0;
-    right: 0;
+    inset-inline: 0;
     z-index: 2;
     height: 3px;
     background: var(--team-color, var(--border-strong));
