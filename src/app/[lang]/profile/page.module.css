@@ -13,8 +13,15 @@
     display: flex;
     align-items: center;
     gap: var(--space-md);
-    padding-bottom: var(--space-lg);
-    border-bottom: 1px solid var(--border);
+    min-width: 0;
+    padding: var(--space-lg);
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+}
+
+.userDetails {
+    min-width: 0;
 }
 
 .avatar {
@@ -50,7 +57,11 @@
 }
 
 .section {
-    padding-top: var(--space-lg);
+    margin-top: var(--space-md);
+    padding: var(--space-lg);
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
 }
 
 .section h2 {
@@ -71,7 +82,28 @@
 }
 
 .facts dd {
+    margin: 0;
     font-weight: 600;
+}
+
+.proBadge,
+.freeBadge {
+    display: inline-flex;
+    align-items: center;
+    min-height: 1.75rem;
+    padding: 0 var(--space-sm);
+    border-radius: var(--radius-full);
+    font-size: var(--text-sm);
+}
+
+.proBadge {
+    color: var(--accent-text);
+    background: rgba(225, 6, 0, 0.12);
+}
+
+.freeBadge {
+    color: var(--text-2);
+    background: var(--surface-2);
 }
 
 .actions {

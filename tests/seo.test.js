@@ -6,7 +6,12 @@ import { metadata as teamsMetadata } from '@/app/[lang]/teams/layout';
 import { metadata as liveMetadata } from '@/app/[lang]/live/layout';
 import { metadata as tracksMetadata } from '@/app/[lang]/tracks/layout';
 import { metadata as historyMetadata } from '@/app/[lang]/history/layout';
-import { metadata as supportMetadata } from '@/app/[lang]/support/layout';
+import { generateMetadata as supportMetadata } from '@/app/[lang]/support/layout';
+import { localizedPageMetadata } from '@/lib/i18n/metadata';
+import authMessages from '@/lib/i18n/messages/auth';
+import accountMessages from '@/lib/i18n/messages/account';
+import supportMessages from '@/lib/i18n/messages/support';
+import errorMessages from '@/lib/i18n/messages/errors';
 
 describe('jsonLdScript', () => {
   it('escapes script-sensitive characters and round-trips through JSON.parse', () => {
@@ -44,14 +49,15 @@ describe('resolveSiteUrl', () => {
 });
 
 describe('segment metadata', () => {
-  it('uses distinct plain titles and unique descriptions for each new layout', () => {
+  it('uses distinct plain titles and unique descriptions for each new layout', async () => {
+    const support = await supportMetadata({ params: Promise.resolve({ lang: 'en' }) });
     const metadata = [
       driversMetadata,
       teamsMetadata,
       liveMetadata,
       tracksMetadata,
       historyMetadata,
-      supportMetadata,
+      support,
     ];
     const titles = metadata.map((segment) => segment.title);
     const descriptions = metadata.map((segment) => segment.description);
@@ -59,5 +65,31 @@ describe('segment metadata', () => {
     expect(new Set(titles).size).toBe(titles.length);
     expect(new Set(descriptions).size).toBe(descriptions.length);
     expect(titles.every((title) => !title.includes('| Pit Lane Hub'))).toBe(true);
+  });
+
+  it('localizes owned route metadata and emits matching canonical and language alternates', async () => {
+    const paths = ['/login', '/signup', '/profile', '/support', '/verify-email', '/nope'];
+
+    for (const path of paths) {
+      const segment = path === '/profile' ? accountMessages : path === '/support' ? supportMessages
+        : path === '/nope' ? errorMessages : authMessages;
+      const titleKey = path === '/login' ? 'loginTitle' : path === '/signup' ? 'signupTitle'
+        : path === '/profile' ? 'metadataTitle' : path === '/support' ? 'metadataTitle'
+            : path === '/verify-email' ? 'verifyMetadataTitle' : 'notFoundMetadataTitle';
+      const descriptionKey = path === '/login' ? 'loginDescription' : path === '/signup' ? 'signupDescription'
+        : path === '/profile' ? 'metadataDescription' : path === '/support' ? 'metadataDescription'
+            : path === '/verify-email' ? 'verifyDescription' : 'notFoundDescription';
+      const metadata = localizedPageMetadata('ar', path, {
+        title: segment.ar[titleKey],
+        description: segment.ar[descriptionKey],
+      });
+      expect(metadata.title).toMatch(/[\u0600-\u06ff]/);
+      expect(metadata.description).toMatch(/[\u0600-\u06ff]/);
+      expect(metadata.alternates.canonical).toBe(`/ar${path}`);
+      expect(metadata.alternates.languages.en).toBe(path);
+      expect(metadata.alternates.languages.ar).toBe(`/ar${path}`);
+      expect(metadata.openGraph.url).toBe(`/ar${path}`);
+      expect(metadata.openGraph.locale).toBe('ar_SA');
+    }
   });
 });
