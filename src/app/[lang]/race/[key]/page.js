@@ -181,20 +181,22 @@ async function RaceWeekend({ resolved, title, now, lang }) {
     const t = pick(raceMessages, lang);
     const { event } = resolved;
     const isCurrentSeason = event.year === getSeasonYear();
+    // A throttled or failing results service leaves the weekend page up with a notice.
     const [results, driverNumbers, grid] = await Promise.all([
-        getWeekendResults(event, now),
-        getDriverNumbers(),
+        getWeekendResults(event, now).catch(() => null),
+        getDriverNumbers().catch(() => ({})),
         getGrid(event.year).catch(() => []),
     ]);
+    const resultsFailed = results === null;
     const teamColors = Object.fromEntries(grid.filter((driver) => driver.team && driver.teamColour).map((driver) => [driver.team, driver.teamColour]));
     const links = { drivers: driverNumbers, teams: isCurrentSeason, teamColors };
     const scheduled = ICS_SESSIONS.filter((session) => event.sessions?.[session.key]);
     const raceRun = sessionDone('race', event.raceStart, now);
     const highlights = `https://www.youtube.com/results?search_query=${encodeURIComponent(`F1 ${event.year} ${event.raceName} highlights`)}`;
 
-    const raceResults = results.race || [];
-    const sprintResults = results.sprint || [];
-    const qualifyingResults = results.qualifying || [];
+    const raceResults = results?.race || [];
+    const sprintResults = results?.sprint || [];
+    const qualifyingResults = results?.qualifying || [];
     const sections = [
         ['results', t.resultsTab],
         ['qualifying', t.qualifying],
@@ -234,10 +236,10 @@ async function RaceWeekend({ resolved, title, now, lang }) {
             </nav>
 
             <div className="container">
-                {results.race?.length > 0 && (
+                {raceResults.length > 0 && (
                     <section className={styles.block} aria-labelledby="podium-heading">
                         <h2 id="podium-heading">{t.podium}</h2>
-                        <Podium results={results.race} links={links} lang={lang} />
+                        <Podium results={raceResults} links={links} lang={lang} />
                     </section>
                 )}
 
@@ -264,14 +266,14 @@ async function RaceWeekend({ resolved, title, now, lang }) {
                 <section id="results" className={styles.block} aria-labelledby="results-heading">
                     <h2 id="results-heading">{t.raceResult}</h2>
                     {raceResults.length === 0
-                        ? <p className={styles.notice}>{raceRun ? t.classificationUnpublished : t.sessionNotRun}</p>
+                        ? <p className={styles.notice}>{resultsFailed ? t.resultsUnavailable : raceRun ? t.classificationUnpublished : t.sessionNotRun}</p>
                         : <ClassificationTable results={raceResults} links={links} caption={`${title} ${t.raceResult}`} lang={lang} />}
                 </section>
 
                 <section id="qualifying" className={styles.block} aria-labelledby="qualifying-heading">
                     <h2 id="qualifying-heading">{t.qualifying}</h2>
                     {qualifyingResults.length === 0
-                        ? <p className={styles.notice}>{t.sessionNotRun}</p>
+                        ? <p className={styles.notice}>{resultsFailed ? t.resultsUnavailable : t.sessionNotRun}</p>
                         : <QualifyingTable results={qualifyingResults} links={links} caption={`${title} ${t.qualifying}`} lang={lang} />}
                 </section>
 

@@ -66,13 +66,15 @@ export default async function TeamDetailPage({ params }) {
     const { lang } = await params;
     const t = pick(teamsMessages, lang);
     const { id, info, year, current, name } = await loadTeam(params);
+    // Records degrade to a dash when the results service is throttled, instead of failing the page.
     const [record, champions, constructorStandings] = await Promise.all([
-        getConstructorRecord(id),
-        getChampions(),
-        getConstructorStandings(year),
+        getConstructorRecord(id).catch(() => null),
+        getChampions().catch(() => null),
+        getConstructorStandings(year).catch(() => ({ standings: [] })),
     ]);
     const titleYears = constructorChampionshipYears(champions, id);
     const standing = constructorStandings.standings.find((row) => row.team.id === id) || null;
+    const stat = (value) => (Number.isFinite(value) ? formatNumber(lang, value) : '—');
     const position = standing
         ? (standing.position == null ? standing.positionText : formatNumber(lang, standing.position))
         : null;
@@ -180,19 +182,19 @@ export default async function TeamDetailPage({ params }) {
                     <dl className={styles.statsGrid}>
                         <div className={styles.statCard}>
                             <dt className={styles.statLabel}>{t.constructorTitles}</dt>
-                            <dd className={styles.statValue}><bdi dir="ltr">{formatNumber(lang, titleYears.length)}</bdi></dd>
+                            <dd className={styles.statValue}><bdi dir="ltr">{stat(champions ? titleYears.length : null)}</bdi></dd>
                         </div>
                         <div className={styles.statCard}>
                             <dt className={styles.statLabel}>{t.raceWins}</dt>
-                            <dd className={styles.statValue}><bdi dir="ltr">{formatNumber(lang, record.wins)}</bdi></dd>
+                            <dd className={styles.statValue}><bdi dir="ltr">{stat(record?.wins)}</bdi></dd>
                         </div>
                         <div className={styles.statCard}>
                             <dt className={styles.statLabel}>{t.grandsPrix}</dt>
-                            <dd className={styles.statValue}><bdi dir="ltr">{formatNumber(lang, record.races)}</bdi></dd>
+                            <dd className={styles.statValue}><bdi dir="ltr">{stat(record?.races)}</bdi></dd>
                         </div>
                         <div className={styles.statCard}>
                             <dt className={styles.statLabel}>{t.statSeasons}</dt>
-                            <dd className={styles.statValue}><bdi dir="ltr">{formatNumber(lang, record.seasons)}</bdi></dd>
+                            <dd className={styles.statValue}><bdi dir="ltr">{stat(record?.seasons)}</bdi></dd>
                         </div>
                     </dl>
                     {titleYears.length > 0 && (
