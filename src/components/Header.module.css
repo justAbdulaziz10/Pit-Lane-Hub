@@ -61,7 +61,7 @@
 /* Desktop navigation */
 .nav {
     height: 100%;
-    margin-left: var(--space-sm);
+    margin-inline-start: var(--space-sm);
 }
 
 .navList {
@@ -93,8 +93,8 @@
 .navLink[aria-current='page']::after {
     content: '';
     position: absolute;
-    left: 0.75rem;
-    right: 0.75rem;
+    inset-inline-start: 0.75rem;
+    inset-inline-end: 0.75rem;
     bottom: -1px;
     height: 2px;
     background: var(--accent);
@@ -109,7 +109,7 @@
     display: flex;
     align-items: center;
     gap: var(--space-sm);
-    margin-left: auto;
+    margin-inline-start: auto;
 }
 
 .signIn,
@@ -180,8 +180,7 @@
 .menu {
     position: absolute;
     top: 100%;
-    left: 0;
-    right: 0;
+    inset-inline: 0;
     max-height: calc(100dvh - var(--header-height));
     overflow-y: auto;
     background: var(--surface-1);
@@ -266,11 +265,9 @@
     }
 }
 
-@media (max-width: 360px) {
-    .wordmarkText {
-        font-size: 1.1875rem;
-    }
-
+/* Phones: the menu button is icon-only (it keeps its aria-label) so sign-in and the
+   language switch fit beside the wordmark in both languages. */
+@media (max-width: 480px) {
     .menuButton span {
         display: none;
     }
@@ -279,4 +276,14 @@
         min-width: 40px;
         justify-content: center;
     }
+}
+
+@media (max-width: 360px) {
+    .wordmarkText {
+        font-size: 1.1875rem;
+    }
+}
+
+:global([dir='rtl']) .menuLink[aria-current='page'] {
+    box-shadow: inset -2px 0 0 var(--accent);
 }
