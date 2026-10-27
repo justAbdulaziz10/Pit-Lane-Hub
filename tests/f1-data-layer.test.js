@@ -206,6 +206,7 @@ describe('season calendar', () => {
         expect(await getEventByMeetingKey(999, 2026)).toMatchObject({ kind: 'testing' });
         expect(await getEventByMeetingKey(1001, 2026)).toMatchObject({ kind: 'cancelled' });
         expect(await getEventByMeetingKey(1818, 2026)).toMatchObject({ kind: 'race', event: { round: 18 } });
+        expect(await getEventByMeetingKey('2026-18')).toMatchObject({ kind: 'race', event: { round: 18, routeKey: 1818 } });
         expect(await getEventByMeetingKey('../etc', 2026)).toBeNull();
         expect((await getEventByRound(2026, 18))?.raceName).toBe('United States Grand Prix');
     });

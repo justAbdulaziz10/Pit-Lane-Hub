@@ -4,7 +4,10 @@ import { getCalendar } from '@/lib/f1/season';
 import { getTeams } from '@/lib/f1/teams';
 import { getSeasonYear } from '@/lib/f1/year';
 import { SITE_URL } from '@/lib/site';
-import { connection } from 'next/server';
+
+export const revalidate = 3600;
+
+const SITEMAP_SNAPSHOT = '__pitLaneHubCompleteSitemap';
 
 const STATIC_ROUTES = [
     ['', 'daily', 1],
@@ -38,9 +41,9 @@ function raceLastModified(event, now) {
 
 export function dynamicEntries({ calendar, grid, teams }, now = new Date()) {
     const races = calendar.rounds
-        .filter((event) => event.meetingKey != null)
+        .filter((event) => event.routeKey != null)
         .map((event) => ({
-            url: `${SITE_URL}/race/${event.meetingKey}`,
+            url: `${SITE_URL}/race/${event.routeKey}`,
             lastModified: raceLastModified(event, now),
             changeFrequency: event.status === 'completed' ? 'monthly' : 'daily',
             priority: 0.7,
@@ -89,15 +92,17 @@ export function withLanguages(entries) {
 }
 
 export default async function sitemap() {
-    await connection();
     const now = new Date();
     const year = getSeasonYear();
     try {
         const [calendar, grid, teams] = await Promise.all([getCalendar(year), getGrid(year), getTeams(year)]);
-        return withLanguages([...staticEntries(now), ...dynamicEntries({ calendar, grid, teams }, now)]);
+        const entries = withLanguages([...staticEntries(now), ...dynamicEntries({ calendar, grid, teams }, now)]);
+        globalThis[SITEMAP_SNAPSHOT] = entries;
+        return entries;
     } catch (error) {
-        // The one allowed fallback: search engines still get the static routes.
-        console.error('Sitemap data failed; serving static routes only', error);
-        return withLanguages(staticEntries(now));
+        const snapshot = globalThis[SITEMAP_SNAPSHOT];
+        if (Array.isArray(snapshot) && snapshot.length > 0) return snapshot;
+        console.error('Sitemap refresh failed without a complete snapshot', error);
+        throw error;
     }
 }

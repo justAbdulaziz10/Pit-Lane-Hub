@@ -1,5 +1,6 @@
 import { meetingStatus, requestTime, statusLabel } from '@/app/[lang]/schedule/status';
 import LocalTime from '@/components/LocalTime';
+import { getGrid } from '@/lib/f1/drivers';
 import { getDriverNumbers, getWeekendResults, sessionDone } from '@/lib/f1/results';
 import { getSeasonYear } from '@/lib/f1/year';
 import { ICS_SESSIONS } from '@/lib/ics';
@@ -20,13 +21,19 @@ import { ClassificationTable, Podium, QualifyingTable } from './ResultTables';
 import Strategy from './Strategy';
 import styles from './page.module.css';
 
+export const revalidate = 60;
+
 export async function generateMetadata({ params }) {
     await connection();
     const { key, lang } = await params;
     const t = pick(raceMessages, lang);
     const resolved = await loadEvent(key);
     const title = eventTitle(resolved, lang);
-    const path = `/race/${key}`;
+    const path = resolved.kind === 'race' ? `/race/${resolved.event.routeKey}` : `/race/${key}`;
+    const canonical = `${SITE_URL}${localePath(lang, path)}`;
+    const imagePath = resolved.kind === 'race'
+        ? `/race/${resolved.event.routeKey}/opengraph-image`
+        : '/opengraph-image';
     let description;
     if (resolved.kind === 'race') {
         const { event } = resolved;
@@ -51,10 +58,12 @@ export async function generateMetadata({ params }) {
         openGraph: {
             title: displayTitle,
             description,
-            url: localePath(lang, path),
+            url: canonical,
+            images: [{ url: `${SITE_URL}${localePath(lang, imagePath)}`, width: 1200, height: 630, alt: displayTitle }],
             type: 'website',
             locale: lang === 'ar' ? 'ar_SA' : 'en_US',
         },
+        twitter: { card: 'summary_large_image', images: [`${SITE_URL}${localePath(lang, imagePath)}`] },
     };
 }
 
@@ -169,20 +178,27 @@ async function RaceWeekend({ resolved, title, now, lang }) {
     const t = pick(raceMessages, lang);
     const { event } = resolved;
     const isCurrentSeason = event.year === getSeasonYear();
-    const [results, driverNumbers] = await Promise.all([
+    const [results, driverNumbers, grid] = await Promise.all([
         getWeekendResults(event, now),
         getDriverNumbers(),
+        getGrid(event.year).catch(() => []),
     ]);
-    const links = { drivers: driverNumbers, teams: isCurrentSeason };
+    const teamColors = Object.fromEntries(grid.filter((driver) => driver.team && driver.teamColour).map((driver) => [driver.team, driver.teamColour]));
+    const links = { drivers: driverNumbers, teams: isCurrentSeason, teamColors };
     const scheduled = ICS_SESSIONS.filter((session) => event.sessions?.[session.key]);
     const raceRun = sessionDone('race', event.raceStart, now);
     const highlights = `https://www.youtube.com/results?search_query=${encodeURIComponent(`F1 ${event.year} ${event.raceName} highlights`)}`;
 
-    const resultSections = [
-        { id: 'race', heading: t.raceResult, data: results.race, table: 'race' },
-        { id: 'sprint', heading: t.sprintResult, data: results.sprint, table: 'race' },
-        { id: 'qualifying', heading: t.qualifying, data: results.qualifying, table: 'qualifying' },
-    ].filter((section) => section.data !== null);
+    const raceResults = results.race || [];
+    const sprintResults = results.sprint || [];
+    const qualifyingResults = results.qualifying || [];
+    const sections = [
+        ['results', t.resultsTab],
+        ['qualifying', t.qualifying],
+        ['sprint', t.sprintTab],
+        ['strategy', t.tyreStrategy],
+        ['map', t.mapTab],
+    ];
 
     return (
         <>
@@ -205,6 +221,12 @@ async function RaceWeekend({ resolved, title, now, lang }) {
                     </p>
                 </div>
             </header>
+
+            <nav className={styles.sectionTabs} aria-label={t.weekendSections}>
+                {sections.map(([id, label]) => (
+                    <a className={styles.sectionTab} href={`#${id}`} key={id}>{label}</a>
+                ))}
+            </nav>
 
             <div className="container">
                 {results.race?.length > 0 && (
@@ -234,28 +256,36 @@ async function RaceWeekend({ resolved, title, now, lang }) {
                     )}
                 </section>
 
-                {resultSections.map((section) => (
-                    <section key={section.id} className={styles.block} aria-labelledby={`${section.id}-heading`}>
-                        <h2 id={`${section.id}-heading`}>{section.heading}</h2>
-                        {section.data.length === 0 ? (
-                            <p className={styles.notice}>{t.classificationUnpublished}</p>
-                        ) : section.table === 'qualifying' ? (
-                            <QualifyingTable results={section.data} links={links} caption={`${title} ${t.qualifying}`} lang={lang} />
-                        ) : (
-                            <ClassificationTable results={section.data} links={links} caption={`${title} ${section.heading}`} lang={lang} />
-                        )}
-                    </section>
-                ))}
+                <section id="results" className={styles.block} aria-labelledby="results-heading">
+                    <h2 id="results-heading">{t.raceResult}</h2>
+                    {raceResults.length === 0
+                        ? <p className={styles.notice}>{raceRun ? t.classificationUnpublished : t.sessionNotRun}</p>
+                        : <ClassificationTable results={raceResults} links={links} caption={`${title} ${t.raceResult}`} lang={lang} />}
+                </section>
 
-                {raceRun && event.meetingKey != null && (
-                    <Suspense fallback={<p className={styles.notice}>{t.loadingTyreStrategy}</p>}>
-                        <Strategy
-                            meetingKey={event.meetingKey}
-                            finishingOrder={(results.race || []).map((row) => row.number)}
-                            lang={lang}
-                        />
-                    </Suspense>
-                )}
+                <section id="qualifying" className={styles.block} aria-labelledby="qualifying-heading">
+                    <h2 id="qualifying-heading">{t.qualifying}</h2>
+                    {qualifyingResults.length === 0
+                        ? <p className={styles.notice}>{t.sessionNotRun}</p>
+                        : <QualifyingTable results={qualifyingResults} links={links} caption={`${title} ${t.qualifying}`} lang={lang} />}
+                </section>
+
+                <section id="sprint" className={styles.block} aria-labelledby="sprint-heading">
+                    <h2 id="sprint-heading">{t.sprintResult}</h2>
+                    {sprintResults.length === 0
+                        ? <p className={styles.notice}>{t.sessionNotRun}</p>
+                        : <ClassificationTable results={sprintResults} links={links} caption={`${title} ${t.sprintResult}`} lang={lang} />}
+                </section>
+
+                <Suspense fallback={<section id="strategy" className={styles.block}><h2>{t.tyreStrategy}</h2><p className={styles.notice}>{t.loadingTyreStrategy}</p></section>}>
+                    <Strategy
+                        meetingKey={event.meetingKey}
+                        raceStart={event.raceStart}
+                        finishingOrder={raceResults.filter((row) => Number(row.laps) > 0).map((row) => row.number)}
+                        lang={lang}
+                        enabled={raceRun}
+                    />
+                </Suspense>
             </div>
 
             <RaceMap circuitId={event.circuit.id} lang={lang} />
@@ -279,7 +309,7 @@ export default async function RaceDetailPage({ params }) {
     const resolved = await loadEvent(key);
     const now = requestTime();
     const title = eventTitle(resolved, lang);
-    const path = `/race/${key}`;
+    const path = resolved.kind === 'race' ? `/race/${resolved.event.routeKey}` : `/race/${key}`;
 
     return (
         <div className={styles.raceDetail}>

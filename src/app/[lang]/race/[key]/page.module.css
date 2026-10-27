@@ -387,3 +387,117 @@
         grid-row: 2;
     }
 }
+
+.sectionTabs {
+    position: sticky;
+    inset-block-start: var(--header-height);
+    z-index: 10;
+    display: flex;
+    gap: var(--space-xs);
+    overflow-x: auto;
+    padding-block: var(--space-sm);
+    border-bottom: 1px solid var(--border);
+    background: var(--bg);
+    scrollbar-width: thin;
+}
+
+.sectionTab {
+    flex: 0 0 auto;
+    padding: 0.4rem 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface-1);
+    color: var(--text-2);
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.sectionTab:hover,
+.sectionTab:focus-visible {
+    color: var(--text-1);
+    border-color: var(--border-strong);
+}
+
+.block {
+    scroll-margin-top: calc(var(--header-height) + 3.5rem);
+}
+
+.podiumStep {
+    border-block-start: 2px solid var(--podium-color);
+}
+
+.podiumStep:first-child {
+    border-color: var(--border);
+    border-block-start-color: var(--podium-color);
+}
+
+.podiumPos,
+.podiumStep:first-child .podiumPos {
+    color: var(--podium-color);
+}
+
+.teamRow > :first-child {
+    border-inline-start: 3px solid var(--team-color);
+}
+
+.cutLine td {
+    padding-block: var(--space-xs);
+    border-top: 1px solid var(--border-strong);
+    background: var(--surface-2);
+    color: var(--text-2);
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.tyreAxisRow {
+    display: grid;
+    grid-template-columns: 56px 1fr;
+    align-items: end;
+    gap: var(--space-md);
+    margin-bottom: var(--space-xs);
+}
+
+.tyreAxisLabel {
+    color: var(--text-2);
+    font-size: 0.7rem;
+}
+
+.tyreAxisTrack {
+    display: flex;
+    justify-content: space-between;
+    direction: ltr;
+    color: var(--text-2);
+    font-size: 0.7rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.tyreBar {
+    position: relative;
+    direction: ltr;
+}
+
+.tyreStint {
+    position: absolute;
+    inset-block: 0;
+    inset-inline-start: var(--stint-start);
+    width: var(--stint-width);
+    outline-offset: -2px;
+}
+
+.tyrePitMarker {
+    position: absolute;
+    inset-block: 0;
+    inset-inline-start: var(--pit-position);
+    z-index: 1;
+    width: 2px;
+    background: var(--text-1);
+    outline-offset: 2px;
+}
+
+@media (max-width: 640px) {
+    .sectionTab {
+        padding-inline: var(--space-sm);
+        font-size: 0.8rem;
+    }
+}

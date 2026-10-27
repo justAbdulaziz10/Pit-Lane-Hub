@@ -100,6 +100,22 @@ a.raceCard:focus-visible {
     margin-bottom: var(--space-sm);
 }
 
+.cardTags {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-xs);
+}
+
+.sprintTag {
+    display: inline-block;
+    padding: 2px var(--space-sm);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    color: var(--text-1);
+    font-size: 0.7rem;
+    font-weight: 700;
+}
+
 .round {
     font-size: 0.75rem;
     font-weight: 600;
@@ -138,6 +154,64 @@ a.raceCard:focus-visible {
     color: var(--text-1);
 }
 
+.cardTimes {
+    margin-top: auto;
+    padding-top: var(--space-md);
+}
+
+.cardTimes .dates {
+    margin-top: 0;
+    padding-top: 0;
+}
+
+.countdown {
+    display: flex;
+    gap: var(--space-md);
+    margin-block-start: var(--space-md);
+}
+
+.countdownUnit {
+    display: grid;
+    gap: 2px;
+}
+
+.countdownValue {
+    font-family: var(--font-display);
+    font-stretch: var(--stretch-display);
+    font-variant-numeric: tabular-nums;
+}
+
+.countdownLabel {
+    color: var(--text-2);
+    font-size: 0.65rem;
+}
+
+.sessionTimes {
+    display: grid;
+    gap: var(--space-xs);
+    list-style: none;
+    padding: var(--space-sm) 0 0;
+    margin-top: var(--space-sm);
+    border-top: 1px solid var(--border);
+    font-size: 0.8rem;
+}
+
+.sessionTimes li {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    column-gap: var(--space-sm);
+    color: var(--text-2);
+}
+
+.sessionTimes li > :last-child {
+    color: var(--text-1);
+    font-family: var(--font-display);
+    font-stretch: var(--stretch-display);
+    font-variant-numeric: tabular-nums;
+}
+
 .dateLabel {
     font-size: 0.7rem;
     color: var(--text-3);
@@ -156,7 +230,7 @@ a.raceCard:focus-visible {
 }
 
 .status_live {
-    background: var(--accent);
+    background: var(--accent-hover);
     color: var(--text-1);
 }
 
@@ -173,6 +247,11 @@ a.raceCard:focus-visible {
 .status_cancelled {
     background: transparent;
     border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.status_next {
+    border: 1px solid var(--accent);
+    color: var(--text-1);
 }
 
 /* Testing and cancelled */
@@ -192,6 +271,12 @@ a.raceCard:focus-visible {
     gap: var(--space-md);
     padding: var(--space-md) var(--space-lg);
     background: var(--surface-1);
+    color: inherit;
+    text-decoration: none;
+}
+
+a.meetingRow:hover {
+    background: var(--surface-2);
 }
 
 .meetingRow + .meetingRow {
@@ -212,6 +297,59 @@ a.meetingName:hover {
     color: var(--text-2);
 }
 
+.completedList {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+}
+
+.completedList > li + li {
+    border-top: 1px solid var(--border);
+}
+
+.completedRow {
+    display: grid;
+    grid-template-columns: 5.5rem minmax(10rem, 1fr) minmax(14rem, 0.9fr);
+    align-items: center;
+    gap: var(--space-md);
+    padding: var(--space-sm) var(--space-md);
+    border-inline-start: 3px solid var(--winner-color);
+    background: var(--surface-1);
+    color: inherit;
+    text-decoration: none;
+}
+
+.completedRow:hover {
+    background: var(--surface-2);
+}
+
+.completedRound,
+.winnerLabel {
+    color: var(--text-2);
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.completedRace {
+    font-weight: 600;
+}
+
+.completedWinner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--space-xs) var(--space-sm);
+    min-width: 0;
+}
+
+.winnerTeam {
+    color: var(--text-2);
+    font-size: 0.8rem;
+}
+
 @media (max-width: 640px) {
     .grid {
         grid-template-columns: 1fr;
@@ -219,6 +357,16 @@ a.meetingName:hover {
 
     .meetingRow {
         grid-template-columns: 1fr auto;
+    }
+
+    .completedRow {
+        grid-template-columns: auto minmax(0, 1fr);
+        gap: var(--space-xs) var(--space-sm);
+        padding-inline: var(--space-sm);
+    }
+
+    .completedWinner {
+        grid-column: 2;
     }
 
     .meetingDates {

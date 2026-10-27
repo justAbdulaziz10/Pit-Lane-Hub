@@ -5,10 +5,11 @@ import { pick } from '@/lib/i18n/messages';
 import { notFound } from 'next/navigation';
 import { cache } from 'react';
 
-/** Resolve a meeting key once per request; unknown or malformed keys 404. */
+/** Resolve a stable year-round key or a legacy numeric meeting key; unknown keys 404. */
 export const loadEvent = cache(async (key) => {
-    if (!/^\d{1,7}$/.test(String(key || ''))) notFound();
-    const resolved = await getEventByMeetingKey(key);
+    const value = String(key || '');
+    if (!/^\d{4}-\d{1,2}$/.test(value) && !/^\d{1,7}$/.test(value)) notFound();
+    const resolved = await getEventByMeetingKey(value);
     if (!resolved) notFound();
     return resolved;
 });
