@@ -1,3 +1,4 @@
+import { metadataOrNotFound } from '@/lib/i18n/metadata';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { connection } from 'next/server';
@@ -39,23 +40,25 @@ async function loadTeam(params) {
 export async function generateMetadata({ params }) {
     await connection();
     const { lang } = await params;
-    const { id, name, current } = await loadTeam(params);
-    const t = pick(teamsMessages, lang);
-    const path = `/team/${encodeURIComponent(id)}`;
-    const title = fill(t.metadataDetailTitle, { name });
-    const description = fill(current ? t.currentTeamDescription : t.historicalTeamDescription, { name });
-    return {
-        title,
-        description,
-        alternates: localeAlternates(lang, path),
-        openGraph: {
+    return metadataOrNotFound(lang, async () => {
+        const { id, name, current } = await loadTeam(params);
+        const t = pick(teamsMessages, lang);
+        const path = `/team/${encodeURIComponent(id)}`;
+        const title = fill(t.metadataDetailTitle, { name });
+        const description = fill(current ? t.currentTeamDescription : t.historicalTeamDescription, { name });
+        return {
             title,
             description,
-            url: localePath(lang, path),
-            images: [localePath(lang, '/opengraph-image')],
-            locale: lang === 'ar' ? 'ar_SA' : 'en_US',
-        },
-    };
+            alternates: localeAlternates(lang, path),
+            openGraph: {
+                title,
+                description,
+                url: localePath(lang, path),
+                images: [localePath(lang, '/opengraph-image')],
+                locale: lang === 'ar' ? 'ar_SA' : 'en_US',
+            },
+        };
+    });
 }
 
 export default async function TeamDetailPage({ params }) {

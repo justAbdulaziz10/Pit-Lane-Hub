@@ -25,6 +25,7 @@ import { SITE_URL } from '@/lib/site';
 import { fill, pick } from '@/lib/i18n/messages';
 import driverMessages from '@/lib/i18n/messages/drivers';
 import { localeAlternates, localePath } from '@/lib/i18n/config';
+import { metadataOrNotFound } from '@/lib/i18n/metadata';
 import { formatNumber } from '@/lib/i18n/format';
 import { nationalityName, raceName } from '@/lib/i18n/f1-names';
 import { finishLabel, getDriverSeasonResults, gridFinishDelta, resolveDriverRoute } from './driver-data';
@@ -49,23 +50,25 @@ function describe(driver, lang) {
 
 export async function generateMetadata({ params }) {
     const { number, lang } = await params;
-    const route = await resolveDriverRoute(number);
-    if (!route) notFound();
-    const { driver, path } = route;
-    const description = describe(driver, lang);
-    return {
-        title: driver.fullName,
-        description,
-        alternates: localeAlternates(lang, path),
-        openGraph: {
+    return metadataOrNotFound(lang, async () => {
+        const route = await resolveDriverRoute(number);
+        if (!route) notFound();
+        const { driver, path } = route;
+        const description = describe(driver, lang);
+        return {
             title: driver.fullName,
             description,
-            url: localePath(lang, path),
-            images: [localePath(lang, `${path}/opengraph-image`)],
-            locale: lang === 'ar' ? 'ar_SA' : 'en_US',
-            type: 'profile',
-        },
-    };
+            alternates: localeAlternates(lang, path),
+            openGraph: {
+                title: driver.fullName,
+                description,
+                url: localePath(lang, path),
+                images: [localePath(lang, `${path}/opengraph-image`)],
+                locale: lang === 'ar' ? 'ar_SA' : 'en_US',
+                type: 'profile',
+            },
+        };
+    });
 }
 
 async function currentStanding(driverId, year) {
@@ -141,17 +144,26 @@ export default async function DriverPage({ params }) {
 
     const year = getSeasonYear();
     const driverId = driver.driverId;
+    // Each section degrades on its own when the results service is throttled or down, so the
+    // page still renders the driver instead of an error.
+    let unavailable = false;
+    const settle = (promise, fallback) => Promise.resolve(promise).catch(() => {
+        unavailable = true;
+        return fallback;
+    });
     const [career, results, profile, standing, qualifying] = driverId
         ? await Promise.all([
-            getCareerStats(driverId),
-            getDriverResults(driverId),
-            driver.current ? getAllTimeDriver(driverId) : driver,
-            driver.current ? currentStanding(driverId, year) : null,
-            getDriverQualifyingResults(driverId),
+            settle(getCareerStats(driverId), null),
+            settle(getDriverResults(driverId), { results: [] }),
+            driver.current ? settle(getAllTimeDriver(driverId), driver) : driver,
+            driver.current ? settle(currentStanding(driverId, year), null) : null,
+            settle(getDriverQualifyingResults(driverId), []),
         ])
         : [null, { results: [] }, null, null, []];
     const span = careerSummary(results.results);
-    const recent = driverId ? await recentResults(driver, results.results, lang, t) : { rows: [] };
+    const recent = driverId
+        ? await settle(recentResults(driver, results.results, lang, t), { rows: [] })
+        : { rows: [] };
     const teammate = await teammateHeadToHead(driver, year, results.results, qualifying);
     const photoUrl = getHighQualityPhoto(driver.headshot);
 
@@ -276,6 +288,12 @@ export default async function DriverPage({ params }) {
                     </div>
                 </div>
             </section>
+
+            {unavailable ? (
+                <div className="container">
+                    <p className={styles.coverageNote} role="status">{t.dataUnavailableMessage}</p>
+                </div>
+            ) : null}
 
             {career ? (
                 <section className={styles.statsSection} aria-labelledby="career-heading">
