@@ -8,10 +8,30 @@ on:
 jobs:
   verify:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: pit_lane_hub_shadow
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     env:
       AUTH_SECRET: ci-only-placeholder-secret
       POSTGRES_PRISMA_URL: postgresql://postgres:postgres@localhost:5432/pit_lane_hub?schema=public
       POSTGRES_URL_NON_POOLING: postgresql://postgres:postgres@localhost:5432/pit_lane_hub?schema=public
+      SHADOW_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/pit_lane_hub_shadow?schema=public
+      # Real-database tests for the email-merge migration, webhook ordering and the Postgres
+      # rate limiter. Each uses its own database and resets it.
+      MIGRATION_TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/plh_migration_test
+      WEBHOOK_TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/plh_webhook_test
+      RATE_LIMIT_TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/plh_ratelimit_test
     steps:
       - uses: actions/checkout@v4
 
@@ -25,6 +45,17 @@ jobs:
 
       - name: Validate Prisma schema
         run: npx prisma validate
+
+      - name: Check migrations match the schema
+        run: npx prisma migrate diff --from-migrations prisma/migrations --to-schema-datamodel prisma/schema.prisma --shadow-database-url "$SHADOW_DATABASE_URL" --exit-code
+
+      - name: Create test databases
+        env:
+          PGPASSWORD: postgres
+        run: |
+          psql -h localhost -U postgres -c "CREATE DATABASE plh_migration_test"
+          psql -h localhost -U postgres -c "CREATE DATABASE plh_webhook_test"
+          psql -h localhost -U postgres -c "CREATE DATABASE plh_ratelimit_test"
 
       - name: Audit production dependencies
         run: npm audit --omit=dev --audit-level=high

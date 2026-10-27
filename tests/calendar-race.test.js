@@ -110,6 +110,25 @@ describe('ics generator', () => {
         const encoder = new TextEncoder();
         for (const line of ics.split('\r\n')) expect(encoder.encode(line).length).toBeLessThanOrEqual(75);
     });
+
+    it('cannot inject calendar properties through a CRLF in the meeting key or URL', () => {
+        const injected = '1298\r\nATTENDEE:mailto:victim@example.com\r\nX-EVIL:1';
+        const events = sessionEvents([{ ...event, meetingKey: injected }], {
+            siteUrl: 'https://example.com', domain: 'example.com',
+        });
+        expect(events.every((item) => item.url === null)).toBe(true);
+
+        const ics = buildCalendar({
+            name: 'F1',
+            events: [{ ...events[0], url: `https://example.com/race/${injected}` }],
+            now: Date.parse('2026-10-27T00:00:00Z'),
+        });
+        const lines = unfold(ics).split('\r\n');
+        expect(lines.some((line) => line.startsWith('ATTENDEE'))).toBe(false);
+        expect(lines.some((line) => line.startsWith('X-EVIL'))).toBe(false);
+        expect(ics).not.toMatch(/[^\r]\n/);
+        expect(lines.filter((line) => line.startsWith('URL:'))).toEqual([]);
+    });
 });
 
 const jolpicaRow = (position, overrides = {}) => ({

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isProStatus, isValidEmail, normalizeEmail, validatePassword } from '@/lib/validation';
+import { isProStatus, isValidEmail, normalizeEmail, safeRedirectPath, validatePassword } from '@/lib/validation';
 
 describe('normalizeEmail', () => {
     it('trims whitespace and lowercases', () => {
@@ -50,5 +50,37 @@ describe('isProStatus', () => {
         expect(isProStatus('canceled')).toBe(false);
         expect(isProStatus('revoked')).toBe(false);
         expect(isProStatus(null)).toBe(false);
+    });
+});
+
+describe('safeRedirectPath', () => {
+    const origin = 'https://pitlane.example';
+
+    it('keeps same-origin paths with their query and hash', () => {
+        expect(safeRedirectPath('/profile', origin)).toBe('/profile');
+        expect(safeRedirectPath('/race/1234?tab=results#top', origin)).toBe('/race/1234?tab=results#top');
+        expect(safeRedirectPath(`${origin}/standings`, origin)).toBe('/standings');
+        expect(safeRedirectPath('/', origin)).toBe('/');
+    });
+
+    it.each([
+        '//evil.com',
+        '/.//evil.com',
+        '/./\\evil.com',
+        '/\\evil.com',
+        '\\\\evil.com',
+        `${origin}//evil.com`,
+        '/%2F%2Fevil.com',
+        '/%2f%2fevil.com',
+        '/%5Cevil.com',
+        '/%252F%252Fevil.com',
+        '/.%2F%2Fevil.com',
+        'https://evil.com/profile',
+        'javascript:alert(1)',
+        '/\t/evil.com',
+        '',
+        null,
+    ])('sends %s to /', (value) => {
+        expect(safeRedirectPath(value, origin)).toBe('/');
     });
 });

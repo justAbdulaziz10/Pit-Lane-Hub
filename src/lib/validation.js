@@ -20,6 +20,63 @@ export function isProStatus(status) {
     return status === "active" || status === "trialing";
 }
 
+const SAFE_PATHNAME = /^\/(?:$|[^/\\])/;
+const MAX_DECODE_ROUNDS = 5;
+
+/** Percent-decodes until stable; returns null if the value never settles or is malformed. */
+function fullyDecode(value) {
+    let current = value;
+    for (let round = 0; round < MAX_DECODE_ROUNDS; round += 1) {
+        let next;
+        try {
+            next = decodeURIComponent(current);
+        } catch {
+            return null;
+        }
+        if (next === current) return current;
+        current = next;
+    }
+    return null;
+}
+
+/**
+ * Post-login destination: a same-origin path only, else "/". The resolved pathname must be "/"
+ * or start with one "/" followed by a character other than "/" or "\", also after
+ * percent-decoding, so "//host", "/.//host", "/\host" and "/%2F%2Fhost" can never become a
+ * protocol-relative URL in the browser or a downstream redirect.
+ */
+export function safeRedirectPath(value, origin) {
+    if (typeof value !== "string" || !value) return "/";
+    // Backslashes and control characters are normalised inconsistently by URL parsers.
+    if (/[\\\u0000-\u001f\u007f]/.test(value)) return "/";
+
+    let base;
+    let target;
+    try {
+        base = new URL(origin);
+        target = new URL(value, base.origin);
+    } catch {
+        return "/";
+    }
+    if (target.origin !== base.origin) return "/";
+
+    if (!SAFE_PATHNAME.test(target.pathname)) return "/";
+
+    // Re-check the decoded form, resolved again, so encoded dot segments and slashes cannot
+    // turn into "//host" if a later hop decodes the path.
+    const decodedPath = fullyDecode(target.pathname);
+    if (decodedPath === null || /[\\\u0000-\u001f\u007f]/.test(decodedPath)) return "/";
+    if (!SAFE_PATHNAME.test(decodedPath)) return "/";
+    try {
+        const reparsed = new URL(decodedPath, base.origin);
+        if (reparsed.origin !== base.origin || !SAFE_PATHNAME.test(reparsed.pathname)) return "/";
+    } catch {
+        return "/";
+    }
+
+    return `${target.pathname}${target.search}${target.hash}`;
+}
+
 /**
  * Validate password strength. Requires at least 8 characters with both a
  * letter and a number.

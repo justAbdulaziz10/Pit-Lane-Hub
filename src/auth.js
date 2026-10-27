@@ -37,6 +37,7 @@ adapter.updateUser = async (user) => {
             data.passwordHash = null;
             data.emailVerificationTokenHash = null;
             data.emailVerificationTokenExpires = null;
+            data.emailVerificationPasswordDigest = null;
         }
         return transaction.user.update({ where: { id }, data });
     });
@@ -84,6 +85,61 @@ export const authCallbacks = {
     },
 };
 
+// Compared against when no usable password hash exists, so every rejected sign-in costs one
+// bcrypt comparison and response time does not reveal whether an account exists or is verified.
+const DUMMY_PASSWORD_HASH = "$2b$10$CFQ8W3JJN2v6TZXERzjM1O3g/RvuvylIe5v/MpKNgUTtd2MYG5xX2";
+const CREDENTIALS_WINDOW_MS = 15 * 60 * 1000;
+const CREDENTIALS_IP_LIMIT = 10;
+const CREDENTIALS_EMAIL_FAILURE_LIMIT = 10;
+
+/**
+ * Credentials sign-in.
+ *
+ * Rate limits: the per-IP limit is primary and counts every attempt. The per-email limit only
+ * counts failed attempts and is checked without consuming, so the account owner signing in
+ * successfully never uses it up. Tradeoff: someone who knows an address can still lock its
+ * password sign-in for one window by failing ten times from several IPs; that is accepted to stop
+ * distributed guessing against one account, and the email magic link keeps working meanwhile.
+ */
+export async function authorizeCredentials(credentials, request) {
+    try {
+        const email = normalizeEmail(credentials?.email);
+        const password = typeof credentials?.password === "string" ? credentials.password : "";
+        if (!isValidEmail(email) || !password) return null;
+
+        const ip = getClientIp(request?.headers ?? new Headers());
+        const failureKey = `auth:credentials-email-failures:${email}`;
+        const failureOptions = { limit: CREDENTIALS_EMAIL_FAILURE_LIMIT, windowMs: CREDENTIALS_WINDOW_MS };
+
+        const ipLimit = await rateLimit(`auth:credentials:${ip}`, {
+            limit: CREDENTIALS_IP_LIMIT,
+            windowMs: CREDENTIALS_WINDOW_MS,
+        });
+        if (!ipLimit.success) return null;
+
+        const emailLimit = await rateLimit(failureKey, { ...failureOptions, consume: false });
+        if (!emailLimit.success) return null;
+
+        const user = await prisma.user.findUnique({ where: { email } });
+        const usableHash = user?.passwordHash && user.emailVerified ? user.passwordHash : null;
+        const passwordValid = await bcrypt.compare(password, usableHash ?? DUMMY_PASSWORD_HASH);
+
+        if (!usableHash || !passwordValid) {
+            await rateLimit(failureKey, failureOptions);
+            return null;
+        }
+
+        return {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            image: user.image,
+        };
+    } catch {
+        return null;
+    }
+}
+
 const { handlers, auth, signIn, signOut } = NextAuth({
     adapter,
     providers: [
@@ -104,35 +160,7 @@ const { handlers, auth, signIn, signOut } = NextAuth({
                 email: { label: "Email", type: "email" },
                 password: { label: "Password", type: "password" },
             },
-            authorize: async (credentials, request) => {
-                try {
-                    const email = normalizeEmail(credentials?.email);
-                    if (!isValidEmail(email) || !credentials?.password) return null;
-
-                    const ip = getClientIp(request?.headers ?? new Headers());
-                    const limitOptions = { limit: 10, windowMs: 15 * 60 * 1000 };
-                    const [ipLimit, emailLimit] = await Promise.all([
-                        rateLimit(`auth:credentials:${ip}`, limitOptions),
-                        rateLimit(`auth:credentials-email:${email}`, limitOptions),
-                    ]);
-                    if (!ipLimit.success || !emailLimit.success) return null;
-
-                    const user = await prisma.user.findUnique({ where: { email } });
-                    if (!user?.passwordHash || !user.emailVerified) return null;
-
-                    const passwordValid = await bcrypt.compare(credentials.password, user.passwordHash);
-                    if (!passwordValid) return null;
-
-                    return {
-                        id: user.id,
-                        email: user.email,
-                        name: user.name,
-                        image: user.image,
-                    };
-                } catch {
-                    return null;
-                }
-            },
+            authorize: authorizeCredentials,
         }),
     ],
     session: { strategy: "jwt" },

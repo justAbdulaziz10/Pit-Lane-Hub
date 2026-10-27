@@ -5,9 +5,11 @@ const mocks = vi.hoisted(() => ({
     create: vi.fn(),
     createPolar: vi.fn(),
     rateLimit: vi.fn(),
+    findUnique: vi.fn(),
 }));
 
 vi.mock('@/auth', () => ({ auth: mocks.auth }));
+vi.mock('@/lib/prisma', () => ({ prisma: { user: { findUnique: mocks.findUnique } } }));
 vi.mock('@polar-sh/sdk/2026-10', () => ({ createPolar: mocks.createPolar }));
 vi.mock('@/lib/rate-limit', () => ({
     getClientIp: () => '203.0.113.5',
@@ -29,6 +31,7 @@ describe('Polar checkout route', () => {
         mocks.auth.mockResolvedValue({ user: { id: 'user_123', email: 'racer@example.com' } });
         mocks.create.mockResolvedValue({ url: 'https://checkout.polar.test/session_123' });
         mocks.rateLimit.mockResolvedValue({ success: true });
+        mocks.findUnique.mockResolvedValue({ email: 'racer@example.com', subscriptionStatus: null });
     });
 
     it('calls checkouts.create with the product, user identity, and request-origin URLs', async () => {
@@ -86,5 +89,33 @@ describe('Polar checkout route', () => {
 
         expect(response.status).toBe(429);
         expect(mocks.create).not.toHaveBeenCalled();
+    });
+
+    it.each(['active', 'trialing'])('refuses a second purchase with 409 when the stored subscription is %s', async (status) => {
+        // The session claims free; the database says Pro.
+        mocks.auth.mockResolvedValue({ user: { id: 'user_123', email: 'racer@example.com', isPro: false } });
+        mocks.findUnique.mockResolvedValue({ email: 'racer@example.com', subscriptionStatus: status });
+
+        const response = await POST(request());
+
+        expect(response.status).toBe(409);
+        expect(await response.json()).toEqual({
+            error: 'You already have an active Pit Lane Pro subscription.',
+            portalUrl: '/api/polar/portal',
+        });
+        expect(mocks.findUnique).toHaveBeenCalledWith({
+            where: { id: 'user_123' },
+            select: { email: true, subscriptionStatus: true },
+        });
+        expect(mocks.create).not.toHaveBeenCalled();
+    });
+
+    it('allows a new checkout after the previous subscription ended', async () => {
+        mocks.findUnique.mockResolvedValue({ email: 'racer@example.com', subscriptionStatus: 'canceled' });
+
+        const response = await POST(request());
+
+        expect(response.status).toBe(200);
+        expect(mocks.create).toHaveBeenCalledOnce();
     });
 });
