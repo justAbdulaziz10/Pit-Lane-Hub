@@ -45,7 +45,7 @@ async function sendResendEmail({ to, subject, text }) {
             "Content-Type": "application/json",
         },
         body: JSON.stringify({
-            from: process.env.EMAIL_FROM || "onboarding@resend.dev",
+            from: process.env.EMAIL_FROM || process.env.AUTH_EMAIL_FROM || "onboarding@resend.dev",
             to: [to],
             subject,
             text,

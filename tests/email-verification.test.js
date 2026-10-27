@@ -89,6 +89,7 @@ describe('email verification route', () => {
             where: { id: 'user_123', emailVerificationTokenHash: sha256(token), passwordHash: 'hash' },
             data: {
                 emailVerified: expect.any(Date),
+                password: null,
                 emailVerificationTokenHash: null,
                 emailVerificationTokenExpires: null,
                 emailVerificationPasswordDigest: null,

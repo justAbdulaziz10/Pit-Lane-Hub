@@ -134,6 +134,9 @@ export async function POST(request) {
             },
             data: {
                 emailVerified: new Date(),
+                // Legacy column: once cleared, a verified row still holding it was verified by the
+                // previous deployment's magic link (see scripts/post-deploy-sync.sql).
+                password: null,
                 emailVerificationTokenHash: null,
                 emailVerificationTokenExpires: null,
                 emailVerificationPasswordDigest: null,
