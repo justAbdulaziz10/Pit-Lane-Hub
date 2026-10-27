@@ -5,6 +5,7 @@ import {
     fetchJolpicaPages,
 } from './http';
 import { getOpenF1GridData } from './openf1-data';
+import { getLastRace } from './season';
 import { canonicalTeamName } from './team-utils';
 import { getSeasonYear } from './year';
 
@@ -102,6 +103,23 @@ async function loadSeasonDrivers(year) {
     return drivers.map(mapJolpicaDriver);
 }
 
+async function loadLatestRaceGridResults(year) {
+    const latestRace = await getLastRace(year);
+    if (!latestRace) return [];
+    return fetchJolpicaPages(`${Number(year)}/${latestRace.round}/results`, {
+        select: (mrData) => mrData?.RaceTable?.Races?.[0]?.Results || [],
+        revalidate: 300,
+        tags: [F1_CACHE_TAGS.grid],
+    });
+}
+
+const cachedLatestRaceGridResults = cacheF1Data(
+    loadLatestRaceGridResults,
+    ['latest-race-grid-results'],
+    300,
+    [F1_CACHE_TAGS.grid],
+);
+
 const cachedSeasonDrivers = cacheF1Data(
     loadSeasonDrivers,
     ['season-drivers'],
@@ -114,42 +132,100 @@ export function getSeasonDriverList(year = getSeasonYear()) {
 }
 
 async function loadGrid(year) {
-    let [openData, seasonDrivers] = await Promise.all([
+    const [openResult, seasonResult] = await Promise.allSettled([
         getOpenF1GridData(year),
         getSeasonDriverList(year),
     ]);
-    // Before the first session of a season neither source has the new year yet:
-    // fall back to the previous season so the grid is never empty.
-    if (openData.drivers.length === 0) openData = await getOpenF1GridData(Number(year) - 1);
-    if (seasonDrivers.length === 0) seasonDrivers = await getSeasonDriverList(Number(year) - 1);
-    return openData.drivers
-        .map((openDriver) => {
-            // A debutant may reach OpenF1 before Jolpica; keep them with OpenF1 data only.
-            const jolpica = findJolpicaDriver(openDriver, seasonDrivers);
-            const nationality = jolpica?.nationality || null;
-            const iso = nationalityInfo(nationality, openDriver.country_code);
-            const racingNumber = Number(openDriver.driver_number);
-            const firstName = jolpica?.firstName || openDriver.first_name || '';
-            const lastName = jolpica?.lastName || openDriver.last_name || '';
-            return {
-                driverId: jolpica?.driverId || null,
-                racingNumber: Number.isFinite(racingNumber) ? racingNumber : null,
-                number: Number.isFinite(racingNumber) ? racingNumber : null,
-                code: jolpica?.code || openDriver.name_acronym || openDriver.code || null,
-                firstName,
-                lastName,
-                fullName: [firstName, lastName].filter(Boolean).join(' ') || openDriver.full_name || null,
-                nationality,
-                nationalityCode: iso.code,
-                countryCode: iso.code,
-                flag: iso.flag,
-                headshot: openDriver.headshot_url || null,
-                team: canonicalTeamName(openDriver.team_name),
-                teamColour: openDriver.team_colour ? `#${String(openDriver.team_colour).replace(/^#/, '')}` : null,
-                sessionKey: openData.session?.session_key ?? null,
-            };
-        })
-        .sort((a, b) => (a.racingNumber ?? Infinity) - (b.racingNumber ?? Infinity));
+    if (seasonResult.status === 'rejected') throw seasonResult.reason;
+    let seasonDrivers = seasonResult.value;
+    let openData = openResult.status === 'fulfilled' ? openResult.value : null;
+    let gridYear = Number(year);
+
+    // Before the first season entry list is published, use Jolpica's prior
+    // season list. OpenF1 remains an optional annotation source.
+    if (seasonDrivers.length === 0) {
+        gridYear -= 1;
+        seasonDrivers = await getSeasonDriverList(gridYear);
+        openData = null;
+    }
+
+    let latestResults = [];
+    try {
+        latestResults = await cachedLatestRaceGridResults(gridYear);
+    } catch (error) {
+        console.warn(`Latest Jolpica race results unavailable: ${error?.status ? `HTTP ${error.status}` : error?.message || 'request failed'}`);
+    }
+    const resultByDriver = new Map(latestResults
+        .filter((row) => row?.Driver?.driverId)
+        .map((row) => [row.Driver.driverId, {
+            number: row.number != null && row.number !== '' && Number.isFinite(Number(row.number))
+                ? Number(row.number)
+                : null,
+            team: row.Constructor
+                ? canonicalTeamName(row.Constructor.name, row.Constructor.constructorId)
+                : null,
+        }]));
+    const openByDriver = new Map();
+    const openOnlyDrivers = [];
+    for (const openDriver of openData?.drivers || []) {
+        const jolpica = findJolpicaDriver(openDriver, seasonDrivers);
+        if (jolpica) openByDriver.set(jolpica.driverId, openDriver);
+        else openOnlyDrivers.push(openDriver);
+    }
+
+    const grid = seasonDrivers.map((jolpica) => {
+        const openDriver = openByDriver.get(jolpica.driverId);
+        const result = resultByDriver.get(jolpica.driverId);
+        const number = result?.number ?? jolpica.number;
+        const iso = nationalityInfo(jolpica.nationality, null);
+        return {
+            driverId: jolpica.driverId,
+            racingNumber: number,
+            number,
+            code: jolpica.code,
+            firstName: jolpica.firstName,
+            lastName: jolpica.lastName,
+            fullName: jolpica.fullName || null,
+            nationality: jolpica.nationality,
+            nationalityCode: iso.code,
+            countryCode: iso.code,
+            flag: iso.flag,
+            headshot: openDriver?.headshot_url || null,
+            team: result?.team || (openDriver ? canonicalTeamName(openDriver.team_name) : null),
+            teamColour: openDriver?.team_colour ? `#${String(openDriver.team_colour).replace(/^#/, '')}` : null,
+            sessionKey: openData?.session?.session_key ?? null,
+            inLatestSession: openData?.session
+                ? Boolean(openByDriver.has(jolpica.driverId))
+                : null,
+        };
+    });
+
+    for (const openDriver of openOnlyDrivers) {
+        const racingNumber = Number(openDriver.driver_number);
+        const firstName = openDriver.first_name || '';
+        const lastName = openDriver.last_name || '';
+        const iso = nationalityInfo(null, openDriver.country_code);
+        grid.push({
+            driverId: null,
+            racingNumber: Number.isFinite(racingNumber) ? racingNumber : null,
+            number: Number.isFinite(racingNumber) ? racingNumber : null,
+            code: openDriver.name_acronym || openDriver.code || null,
+            firstName,
+            lastName,
+            fullName: [firstName, lastName].filter(Boolean).join(' ') || openDriver.full_name || null,
+            nationality: null,
+            nationalityCode: iso.code,
+            countryCode: iso.code,
+            flag: iso.flag,
+            headshot: openDriver.headshot_url || null,
+            team: canonicalTeamName(openDriver.team_name),
+            teamColour: openDriver.team_colour ? `#${String(openDriver.team_colour).replace(/^#/, '')}` : null,
+            sessionKey: openData?.session?.session_key ?? null,
+            inLatestSession: true,
+        });
+    }
+
+    return grid.sort((a, b) => (a.racingNumber ?? Infinity) - (b.racingNumber ?? Infinity));
 }
 
 const cachedGrid = cacheF1Data(loadGrid, ['grid'], 900, [F1_CACHE_TAGS.grid, F1_CACHE_TAGS.drivers]);

@@ -1,4 +1,4 @@
-import { fetchOpenF1Json, UpstreamError } from './http';
+import { fetchOpenF1Json, logOpenF1Failure, UpstreamError } from './http';
 
 function timestamp(session) {
     const value = Date.parse(session?.date_start || '');
@@ -24,13 +24,17 @@ export function selectGridSessions(sessions, now = Date.now()) {
 export async function getOpenF1GridData(year) {
     const sessions = await fetchOpenF1Json(`sessions?year=${encodeURIComponent(year)}`);
     if (!Array.isArray(sessions)) {
-        throw new UpstreamError('OpenF1 returned an invalid season session list', { source: 'OpenF1' });
+        const error = new UpstreamError('OpenF1 returned an invalid season session list', { source: 'OpenF1' });
+        logOpenF1Failure(error);
+        throw error;
     }
-    const candidates = selectGridSessions(sessions);
+    const candidates = selectGridSessions(sessions).slice(0, 3);
     for (const session of candidates) {
         const drivers = await fetchOpenF1Json(`drivers?session_key=${encodeURIComponent(session.session_key)}`);
         if (!Array.isArray(drivers)) {
-            throw new UpstreamError('OpenF1 returned an invalid driver list', { source: 'OpenF1' });
+            const error = new UpstreamError('OpenF1 returned an invalid driver list', { source: 'OpenF1' });
+            logOpenF1Failure(error);
+            throw error;
         }
         if (drivers.length > 0) return { session, drivers };
     }

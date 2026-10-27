@@ -1,7 +1,9 @@
 import { unstable_cache } from 'next/cache';
+import { SITE_URL } from '../site';
 
 export const JOLPICA_BASE_URL = 'https://api.jolpi.ca/ergast/f1';
 export const OPENF1_BASE_URL = 'https://api.openf1.org/v1';
+export const F1_USER_AGENT = `PitLaneHub/1.0 (+${SITE_URL})`;
 
 export const F1_CACHE_TAGS = Object.freeze({
     calendar: 'f1-calendar',
@@ -74,7 +76,11 @@ export async function fetchJson(url, {
         const timeout = nativeSetTimeout(() => controller.abort(), timeoutMs);
         let response;
         try {
-            response = await fetch(url, { ...fetchOptions, signal: controller.signal });
+            const headers = {
+                ...(fetchOptions.headers || {}),
+                'User-Agent': F1_USER_AGENT,
+            };
+            response = await fetch(url, { ...fetchOptions, headers, signal: controller.signal });
             if (response.status === 429 && attempt < retries && !throttled) {
                 const wait = retryDelay(response, 0);
                 if (wait <= MAX_THROTTLE_WAIT_MS) {
@@ -176,43 +182,103 @@ export function cacheF1Data(fn, keyParts, revalidate, tags) {
     return unstable_cache(fn, ['pit-lane-hub-f1-v1', ...keyParts], { revalidate, tags });
 }
 
+const OPENF1_TOKEN_CACHE = '__pitLaneOpenF1TokenCache';
+
+function openF1TokenState() {
+    return globalThis[OPENF1_TOKEN_CACHE] ||= { token: null, expiresAt: 0, refreshAt: 0, inFlight: null };
+}
+
+export function logOpenF1Failure(error) {
+    const reason = error?.status != null
+        ? `HTTP ${error.status}`
+        : error?.message || 'request failed';
+    console.warn(`OpenF1 request failed: ${reason}`);
+    if (error && typeof error === 'object') error.openF1WarningLogged = true;
+}
+
 export async function getOpenF1Token() {
     const username = process.env.OPENF1_USERNAME;
     const password = process.env.OPENF1_PASSWORD;
     if (!username || !password) return null;
 
+    const state = openF1TokenState();
+    if (state.token && Date.now() < state.refreshAt) return state.token;
+    if (state.inFlight) return state.inFlight;
+
     const body = new URLSearchParams({ username, password });
-    const tokenPayload = await fetchJson('https://api.openf1.org/token', {
-        source: 'OpenF1 authentication',
-        fetchOptions: {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body,
-            cache: 'no-store',
-        },
-    });
-    const token = tokenPayload?.access_token || tokenPayload?.token;
-    if (!token) {
-        throw new UpstreamError('OpenF1 authentication response did not include a token', {
-            source: 'OpenF1 authentication',
-            url: 'https://api.openf1.org/token',
-        });
+    const request = (async () => {
+        try {
+            const tokenPayload = await fetchJson('https://api.openf1.org/token', {
+                source: 'OpenF1 authentication',
+                timeoutMs: 5000,
+                fetchOptions: {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body,
+                    cache: 'no-store',
+                },
+            });
+            const token = tokenPayload?.access_token || tokenPayload?.token;
+            if (!token) {
+                throw new UpstreamError('OpenF1 authentication response did not include a token', {
+                    source: 'OpenF1 authentication',
+                    url: 'https://api.openf1.org/token',
+                });
+            }
+            const reportedExpiry = Number(tokenPayload?.expires_in);
+            const expiresInSeconds = Number.isFinite(reportedExpiry) && reportedExpiry > 0
+                ? reportedExpiry
+                : 3600;
+            state.token = token;
+            state.expiresAt = Date.now() + expiresInSeconds * 1000;
+            state.refreshAt = Math.max(Date.now(), state.expiresAt - 300000);
+            return token;
+        } catch (error) {
+            logOpenF1Failure(error);
+            throw error;
+        }
+    })();
+    state.inFlight = request;
+    try {
+        return await request;
+    } finally {
+        if (state.inFlight === request) state.inFlight = null;
     }
-    return token;
 }
 
-export async function fetchOpenF1Json(path, { token, timeoutMs = 8000 } = {}) {
+export async function fetchOpenF1Json(path, { token, timeoutMs = 5000 } = {}) {
     const url = path.startsWith('http') ? path : `${OPENF1_BASE_URL}/${String(path).replace(/^\/+/, '')}`;
-    const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
+    let requestToken;
     try {
-        return await fetchJson(url, {
+        requestToken = token ?? await getOpenF1Token();
+        const request = (authToken) => fetchJson(url, {
             source: 'OpenF1',
             timeoutMs,
-            fetchOptions: { headers, cache: 'no-store' },
+            fetchOptions: {
+                headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
+                cache: 'no-store',
+            },
         });
+        try {
+            return await request(requestToken);
+        } catch (error) {
+            if (error instanceof UpstreamError && error.status === 401 && requestToken
+                && process.env.OPENF1_USERNAME && process.env.OPENF1_PASSWORD) {
+                const state = openF1TokenState();
+                if (state.token === requestToken) {
+                    state.token = null;
+                    state.expiresAt = 0;
+                    state.refreshAt = 0;
+                }
+                requestToken = await getOpenF1Token();
+                return await request(requestToken);
+            }
+            throw error;
+        }
     } catch (error) {
         // OpenF1 answers 404 "No results found." for an empty query result.
-        if (error instanceof UpstreamError && error.status === 404) return [];
+        if (error instanceof UpstreamError && error.status === 404 && error.source === 'OpenF1') return [];
+        if (!error?.openF1WarningLogged) logOpenF1Failure(error);
         throw error;
     }
 }

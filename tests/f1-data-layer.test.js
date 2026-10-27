@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('next/cache', () => ({ unstable_cache: (callback) => callback }));
 
@@ -111,6 +111,11 @@ function installCalendarFetch({ races, meetings, sessions }) {
     });
 }
 
+beforeEach(() => {
+    vi.stubEnv('OPENF1_USERNAME', '');
+    vi.stubEnv('OPENF1_PASSWORD', '');
+});
+
 afterEach(() => {
     vi.unstubAllGlobals();
     vi.unstubAllEnvs();
@@ -170,6 +175,20 @@ describe('Jolpica HTTP core', () => {
 });
 
 describe('season calendar', () => {
+    it('reproduces the cold-cache calendar failure when OpenF1 returns 401', async () => {
+        const { races } = calendarFixture();
+        vi.stubGlobal('fetch', vi.fn(async (input) => {
+            const url = new URL(input);
+            if (url.hostname === 'api.jolpi.ca') {
+                return jsonResponse(mrData(races.length, { RaceTable: { Races: races } }));
+            }
+            return jsonResponse({ message: 'unauthorized' }, { status: 401 });
+        }));
+
+        const calendar = await getCalendar(2026);
+        expect(calendar.rounds).toHaveLength(2);
+    });
+
     it('excludes cancelled meetings, preserves Jolpica round 18, and never joins testing', async () => {
         vi.setSystemTime(new Date('2026-10-23T20:00:00Z'));
         installCalendarFetch(calendarFixture());
@@ -241,6 +260,54 @@ describe('season calendar', () => {
         expect((await getCalendar(2026)).rounds[0].status).toBe('live');
     });
 
+    it('uses Jolpica session starts for 60-minute live windows and stable route keys', async () => {
+        vi.setSystemTime(new Date('2026-10-27T11:59:00Z'));
+        installCalendarFetch({
+            races: [{
+                season: '2026',
+                round: '1',
+                raceName: 'Australian Grand Prix',
+                date: '2026-11-01',
+                time: '05:00:00Z',
+                FirstPractice: { date: '2026-10-27', time: '11:00:00Z' },
+                Circuit: { circuitId: 'albert_park', circuitName: 'Albert Park', Location: { country: 'Australia' } },
+            }],
+            meetings: [],
+            sessions: [],
+        });
+
+        const calendar = await getCalendar(2026);
+        expect(calendar.rounds[0]).toMatchObject({ meetingKey: null, routeKey: '2026-1', status: 'live' });
+        expect(calendar.rounds[0].sessionWindows).toContainEqual({
+            session: 'firstPractice',
+            start: '2026-10-27T11:00:00.000Z',
+            end: '2026-10-27T12:00:00.000Z',
+        });
+        expect(await getEventByMeetingKey('2026-1')).toMatchObject({ kind: 'race', event: { round: 1 } });
+    });
+
+    it('maps Jolpica 2023 SprintShootout to sprint qualifying', async () => {
+        const race = {
+            season: '2023',
+            round: '4',
+            raceName: 'Azerbaijan Grand Prix',
+            date: '2023-04-30',
+            time: '11:00:00Z',
+            SprintShootout: { date: '2023-04-29', time: '09:30:00Z' },
+            Circuit: { circuitId: 'baku', circuitName: 'Baku City Circuit', Location: { country: 'Azerbaijan' } },
+        };
+        installFetch((url) => {
+            if (url.hostname === 'api.jolpi.ca' && url.pathname.endsWith('/2023/races.json')) {
+                return mrData(1, { RaceTable: { Races: [race] } });
+            }
+            if (url.hostname === 'api.openf1.org') return [];
+            throw new Error(`Unexpected test request: ${url}`);
+        });
+
+        expect((await getCalendar(2023)).rounds[0].sessions.sprintQualifying)
+            .toBe('2023-04-29T09:30:00.000Z');
+    });
+
     it('targets the Race session start for the next race countdown', async () => {
         vi.setSystemTime(new Date('2026-10-23T20:00:00Z'));
         installCalendarFetch(calendarFixture());
@@ -269,13 +336,28 @@ describe('grid and driver resolution', () => {
             driver('norris', 'NOR', 1, 'Lando', 'Norris', 'British'),
             driver('max_verstappen', 'VER', 3, 'Max', 'Verstappen', 'Dutch'),
         ];
+        const latestRace = {
+            season: '2026',
+            round: '1',
+            raceName: 'Australian Grand Prix',
+            date: '2026-10-25',
+            time: '19:00:00Z',
+            Circuit: { circuitId: 'albert_park', circuitName: 'Albert Park', Location: { country: 'Australia' } },
+        };
+        const latestResults = [
+            { number: '1', Driver: seasonDrivers[0], Constructor: { constructorId: 'mclaren', name: 'McLaren' } },
+            { number: '3', Driver: seasonDrivers[1], Constructor: { constructorId: 'red_bull', name: 'Red Bull Racing' } },
+        ];
         const fetchMock = installFetch((url) => {
+            if (url.hostname === 'api.openf1.org' && url.pathname.endsWith('/meetings')) return [];
             if (url.hostname === 'api.openf1.org' && url.pathname.endsWith('/sessions')) return sessions;
             if (url.hostname === 'api.openf1.org' && url.pathname.endsWith('/drivers')) {
                 expect(url.searchParams.get('session_key')).toBe('200');
                 return openDrivers;
             }
-            if (url.hostname === 'api.jolpi.ca') return mrData(3, { DriverTable: { Drivers: seasonDrivers } });
+            if (url.pathname.endsWith('/2026/races.json')) return mrData(1, { RaceTable: { Races: [latestRace] } });
+            if (url.pathname.endsWith('/2026/1/results.json')) return mrData(2, { RaceTable: { Races: [{ Results: latestResults }] } });
+            if (url.pathname.endsWith('/2026/drivers.json')) return mrData(seasonDrivers.length, { DriverTable: { Drivers: seasonDrivers } });
             throw new Error(`Unexpected test request: ${url}`);
         });
 
@@ -284,6 +366,7 @@ describe('grid and driver resolution', () => {
         const verstappen = await resolveDriver(3, 2026);
 
         expect(grid.map((entry) => entry.racingNumber)).toEqual([1, 3]);
+        expect(grid.map((entry) => entry.inLatestSession)).toEqual([true, true]);
         expect(norris).toMatchObject({ driverId: 'norris', nationalityCode: 'GBR', countryCode: 'GBR', flag: '🇬🇧' });
         expect(verstappen.driverId).toBe('max_verstappen');
         expect(fetchMock.mock.calls.some(([input]) => String(input).includes('session_key=300'))).toBe(false);
@@ -307,9 +390,23 @@ describe('teams and career/history data', () => {
             // Scored for Racing Bulls earlier in the season, since replaced.
             driver('lawson', 'LAW', 30, 'Liam', 'Lawson', 'New Zealander'),
         ];
+        const latestRace = {
+            season: '2026',
+            round: '1',
+            raceName: 'Australian Grand Prix',
+            date: '2026-10-25',
+            time: '19:00:00Z',
+            Circuit: { circuitId: 'albert_park', circuitName: 'Albert Park', Location: { country: 'Australia' } },
+        };
         installFetch((url) => {
+            if (url.hostname === 'api.openf1.org' && url.pathname.endsWith('/meetings')) return [];
             if (url.hostname === 'api.openf1.org' && url.pathname.endsWith('/sessions')) return [{ session_key: 200, session_name: 'Race', date_start: '2026-10-25T19:00:00Z' }];
             if (url.hostname === 'api.openf1.org' && url.pathname.endsWith('/drivers')) return openDrivers;
+            if (url.hostname === 'api.jolpi.ca' && url.pathname.endsWith('/2026/races.json')) return mrData(1, { RaceTable: { Races: [latestRace] } });
+            if (url.hostname === 'api.jolpi.ca' && url.pathname.endsWith('/2026/1/results.json')) return mrData(2, { RaceTable: { Races: [{ Results: [
+                { number: '3', Driver: seasonDrivers[0], Constructor: constructors[0] },
+                { number: '22', Driver: seasonDrivers[1], Constructor: constructors[1] },
+            ] }] } });
             if (url.hostname === 'api.jolpi.ca' && url.pathname.endsWith('/2026/constructors.json')) return mrData(2, { ConstructorTable: { Constructors: constructors } });
             if (url.hostname === 'api.jolpi.ca' && url.pathname.endsWith('/2026/drivers.json')) return mrData(3, { DriverTable: { Drivers: seasonDrivers } });
             if (url.hostname === 'api.jolpi.ca' && url.pathname.endsWith('/2026/driverstandings.json')) {

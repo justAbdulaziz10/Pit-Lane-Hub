@@ -3,19 +3,30 @@ import {
     F1_CACHE_TAGS,
     fetchJolpicaPages,
     fetchOpenF1Json,
+    logOpenF1Failure,
     UpstreamError,
 } from './http';
 import { getSeasonYear } from './year';
 
 const SESSION_FIELDS = [
-    ['firstPractice', 'FirstPractice', ['practice 1', 'first practice']],
-    ['secondPractice', 'SecondPractice', ['practice 2', 'second practice']],
-    ['thirdPractice', 'ThirdPractice', ['practice 3', 'third practice']],
-    ['sprintQualifying', 'SprintQualifying', ['sprint qualifying', 'sprint shootout']],
-    ['sprint', 'Sprint', ['sprint']],
-    ['qualifying', 'Qualifying', ['qualifying']],
-    ['race', 'Race', ['race']],
+    ['firstPractice', ['FirstPractice'], ['practice 1', 'first practice']],
+    ['secondPractice', ['SecondPractice'], ['practice 2', 'second practice']],
+    ['thirdPractice', ['ThirdPractice'], ['practice 3', 'third practice']],
+    ['sprintQualifying', ['SprintQualifying', 'SprintShootout'], ['sprint qualifying', 'sprint shootout']],
+    ['sprint', ['Sprint'], ['sprint']],
+    ['qualifying', ['Qualifying'], ['qualifying']],
+    ['race', ['Race'], ['race']],
 ];
+
+const SESSION_DURATION_MS = Object.freeze({
+    firstPractice: 60 * 60 * 1000,
+    secondPractice: 60 * 60 * 1000,
+    thirdPractice: 60 * 60 * 1000,
+    sprintQualifying: 44 * 60 * 1000,
+    qualifying: 60 * 60 * 1000,
+    sprint: 60 * 60 * 1000,
+    race: 3 * 60 * 60 * 1000,
+});
 
 const CIRCUIT_NAME_ALIASES = {
     albert_park: ['albert park', 'melbourne'],
@@ -149,17 +160,34 @@ function mapRace(race, year, meetings, sessions) {
         ? sessions.filter((session) => String(session.meeting_key) === String(meeting.meeting_key))
         : [];
     const starts = {};
-    for (const [key, jolpicaField] of SESSION_FIELDS) {
+    for (const [key, jolpicaFields] of SESSION_FIELDS) {
         // Jolpica puts the Race start on the race object itself, other sessions in sub-objects.
-        const source = key === 'race' ? (race.Race || race) : race[jolpicaField];
+        const source = key === 'race'
+            ? (race.Race || race)
+            : jolpicaFields.map((field) => race[field]).find(Boolean);
         const jolpicaStart = toIsoUtc(source?.date, source?.time);
         const openF1Session = sessionForRace(eventSessions, key);
         starts[key] = jolpicaStart || toIsoUtc(openF1Session?.date_start, null);
     }
 
     const sessionWindows = eventSessions
-        .map((session) => ({ start: session.date_start || null, end: session.date_end || null }))
+        .map((session) => ({
+            session: sessionType(session),
+            start: session.date_start || null,
+            end: session.date_end || null,
+        }))
         .filter((window) => window.start && window.end);
+    for (const [key] of SESSION_FIELDS) {
+        const hasOpenF1Window = sessionWindows.some((window) => window.session === key);
+        if (hasOpenF1Window || !starts[key] || !SESSION_DURATION_MS[key]) continue;
+        const start = Date.parse(starts[key]);
+        if (!Number.isFinite(start)) continue;
+        sessionWindows.push({
+            session: key,
+            start: starts[key],
+            end: new Date(start + SESSION_DURATION_MS[key]).toISOString(),
+        });
+    }
     const circuit = race.Circuit || {};
 
     return {
@@ -173,6 +201,7 @@ function mapRace(race, year, meetings, sessions) {
             country: circuit.Location?.country || null,
         },
         meetingKey: meeting?.meeting_key ?? null,
+        routeKey: meeting?.meeting_key ?? `${Number(year)}-${Number(race.round)}`,
         raceStart: starts.race,
         // Jolpica has no start time for most races before 2005.
         raceDate: (race.Race || race).date || null,
@@ -196,22 +225,57 @@ function mapMeeting(meeting) {
     };
 }
 
+async function loadOpenF1Meetings(year) {
+    const meetings = await fetchOpenF1Json(`meetings?year=${encodeURIComponent(year)}`);
+    if (!Array.isArray(meetings)) {
+        const error = new UpstreamError('OpenF1 returned an invalid meeting list', { source: 'OpenF1' });
+        logOpenF1Failure(error);
+        throw error;
+    }
+    return meetings;
+}
+
+async function loadOpenF1Sessions(year) {
+    const sessions = await fetchOpenF1Json(`sessions?year=${encodeURIComponent(year)}`);
+    if (!Array.isArray(sessions)) {
+        const error = new UpstreamError('OpenF1 returned an invalid session list', { source: 'OpenF1' });
+        logOpenF1Failure(error);
+        throw error;
+    }
+    return sessions;
+}
+
+const cachedOpenF1Meetings = cacheF1Data(
+    loadOpenF1Meetings,
+    ['openf1-meetings'],
+    86400,
+    [F1_CACHE_TAGS.calendar],
+);
+const cachedOpenF1Sessions = cacheF1Data(
+    loadOpenF1Sessions,
+    ['openf1-calendar-sessions'],
+    86400,
+    [F1_CACHE_TAGS.calendar],
+);
+
 async function loadCalendar(year) {
     const openF1Available = Number(year) >= 2018;
-    const [races, meetings, sessions] = await Promise.all([
+    const [raceResult, meetingsResult, sessionsResult] = await Promise.allSettled([
         fetchJolpicaPages(`${year}/races`, {
             select: getMRDataRows,
             revalidate: 3600,
             tags: [F1_CACHE_TAGS.calendar],
         }),
-        openF1Available ? fetchOpenF1Json(`meetings?year=${encodeURIComponent(year)}`) : Promise.resolve([]),
-        openF1Available ? fetchOpenF1Json(`sessions?year=${encodeURIComponent(year)}`) : Promise.resolve([]),
+        openF1Available ? cachedOpenF1Meetings(Number(year)) : Promise.resolve([]),
+        openF1Available ? cachedOpenF1Sessions(Number(year)) : Promise.resolve([]),
     ]);
-    if (!Array.isArray(meetings) || !Array.isArray(sessions)) {
-        throw new UpstreamError('OpenF1 returned an invalid calendar response', {
-            source: 'OpenF1',
-        });
-    }
+    if (raceResult.status === 'rejected') throw raceResult.reason;
+    const races = raceResult.value;
+    // Meetings and their session windows must be interpreted together. If
+    // either enrichment fails, Jolpica remains the complete calendar source.
+    const openF1Succeeded = meetingsResult.status === 'fulfilled' && sessionsResult.status === 'fulfilled';
+    const meetings = openF1Succeeded ? meetingsResult.value : [];
+    const sessions = openF1Succeeded ? sessionsResult.value : [];
 
     const canonicalRaces = races.filter((race) => {
         const raceStart = raceDateAnchor(race);
@@ -242,7 +306,17 @@ const RACE_DURATION_MS = 3 * 60 * 60 * 1000;
 
 /** Status is computed per call so a cached calendar never reports a stale state. */
 export function eventStatus(event, now = Date.now()) {
-    const isLive = (event.sessionWindows || []).some((window) => {
+    const windows = [...(event.sessionWindows || [])];
+    const representedSessions = new Set(windows.map((window) => window.session).filter(Boolean));
+    for (const [session, startValue] of Object.entries(event.sessions || {})) {
+        if (representedSessions.has(session) || !SESSION_DURATION_MS[session] || !startValue) continue;
+        if (windows.some((window) => Date.parse(window.start || '') === Date.parse(startValue))) continue;
+        const start = Date.parse(startValue);
+        if (Number.isFinite(start)) {
+            windows.push({ start: startValue, end: new Date(start + SESSION_DURATION_MS[session]).toISOString() });
+        }
+    }
+    const isLive = windows.some((window) => {
         const start = Date.parse(window.start);
         const end = Date.parse(window.end);
         return now >= start && now <= end;
@@ -295,7 +369,12 @@ export async function getLastRace(year = getSeasonYear(), now = Date.now()) {
 
 async function meetingYear(key) {
     const meetings = await fetchOpenF1Json(`meetings?meeting_key=${encodeURIComponent(key)}`);
-    const year = Array.isArray(meetings) ? Number(meetings[0]?.year) : NaN;
+    if (!Array.isArray(meetings)) {
+        const error = new UpstreamError('OpenF1 returned an invalid meeting list', { source: 'OpenF1' });
+        logOpenF1Failure(error);
+        throw error;
+    }
+    const year = Number(meetings[0]?.year);
     return Number.isFinite(year) ? year : null;
 }
 
@@ -306,11 +385,15 @@ const cachedMeetingYear = cacheF1Data(meetingYear, ['meeting-year'], 86400, [F1_
  * { kind: 'testing' | 'cancelled', meeting } or null when the key is unknown.
  */
 export async function getEventByMeetingKey(key, year = null) {
-    if (key == null || !/^\d+$/.test(String(key))) return null;
-    const resolvedYear = year ?? await cachedMeetingYear(String(key));
+    if (key == null) return null;
+    const routeKey = /^(\d{4})-(\d+)$/.exec(String(key));
+    if (!/^\d+$/.test(String(key)) && !routeKey) return null;
+    const resolvedYear = routeKey ? Number(routeKey[1]) : year ?? await cachedMeetingYear(String(key));
     if (!resolvedYear) return null;
     const calendar = await getCalendar(resolvedYear);
-    const event = calendar.rounds.find((item) => String(item.meetingKey) === String(key));
+    const event = routeKey
+        ? calendar.rounds.find((item) => item.round === Number(routeKey[2]))
+        : calendar.rounds.find((item) => String(item.meetingKey) === String(key));
     if (event) return { kind: 'race', event };
     const testing = calendar.testing.find((item) => String(item.meetingKey) === String(key));
     if (testing) return { kind: 'testing', meeting: testing };
