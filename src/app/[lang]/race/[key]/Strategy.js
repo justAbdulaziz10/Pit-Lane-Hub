@@ -1,11 +1,26 @@
 import { getRaceStrategy } from '@/lib/f1/results';
 import { getCompound, stintsByDriver } from '@/lib/f1/tyres';
+import { formatNumber } from '@/lib/i18n/format';
+import raceMessages from '@/lib/i18n/messages/race';
+import { pick } from '@/lib/i18n/messages';
 import styles from './page.module.css';
 
 const COMPOUNDS = ['SOFT', 'MEDIUM', 'HARD', 'INTERMEDIATE', 'WET'];
+const COMPOUND_KEYS = {
+    SOFT: 'compoundSoft',
+    MEDIUM: 'compoundMedium',
+    HARD: 'compoundHard',
+    INTERMEDIATE: 'compoundIntermediate',
+    WET: 'compoundWet',
+};
+
+function compoundLabel(compound, t) {
+    return t[COMPOUND_KEYS[String(compound).toUpperCase()] || 'compoundUnknown'];
+}
 
 /** Tyre stints and pit stops of a finished race, ordered like the classification. */
-export default async function Strategy({ meetingKey, finishingOrder }) {
+export default async function Strategy({ meetingKey, finishingOrder, lang }) {
+    const t = pick(raceMessages, lang);
     let strategy;
     try {
         strategy = await getRaceStrategy(meetingKey);
@@ -13,8 +28,8 @@ export default async function Strategy({ meetingKey, finishingOrder }) {
         console.error('Race strategy failed', error);
         return (
             <section className={styles.block} aria-labelledby="strategy-heading">
-                <h2 id="strategy-heading">Tyre strategy</h2>
-                <p className={styles.notice}>Tyre and pit stop data is unavailable right now. Reload to try again.</p>
+                <h2 id="strategy-heading">{t.tyreStrategy}</h2>
+                <p className={styles.notice}>{t.strategyUnavailable}</p>
             </section>
         );
     }
@@ -32,7 +47,7 @@ export default async function Strategy({ meetingKey, finishingOrder }) {
     return (
         <>
             <section className={styles.block} aria-labelledby="strategy-heading">
-                <h2 id="strategy-heading">Tyre strategy</h2>
+                <h2 id="strategy-heading">{t.tyreStrategy}</h2>
                 <ul className={styles.tyreGrid}>
                     {rows.map((row) => (
                         <li key={row.driverNumber} className={styles.tyreRow}>
@@ -45,10 +60,10 @@ export default async function Strategy({ meetingKey, finishingOrder }) {
                                             key={stint.stint_number ?? stint.lap_start}
                                             className={styles.tyreStint}
                                             style={{ width: `${(stint.laps / maxLap) * 100}%`, background: compound.color }}
-                                            title={`${compound.label}: ${stint.laps} laps`}
+                                            title={`${compoundLabel(stint.compound, t)}: ${formatNumber(lang, stint.laps)} ${t.laps}`}
                                         >
                                             {compound.short}
-                                            <span className={styles.srOnly}> {compound.label}, {stint.laps} laps</span>
+                                            <span className={styles.srOnly}> {compoundLabel(stint.compound, t)}, <bdi dir="ltr">{formatNumber(lang, stint.laps)}</bdi> {t.laps}</span>
                                         </span>
                                     );
                                 })}
@@ -56,13 +71,13 @@ export default async function Strategy({ meetingKey, finishingOrder }) {
                         </li>
                     ))}
                 </ul>
-                <ul className={styles.tyreLegend} aria-label="Compounds">
+                <ul className={styles.tyreLegend} aria-label={t.compounds}>
                     {COMPOUNDS.map((name) => {
                         const compound = getCompound(name);
                         return (
                             <li key={name} className={styles.legendItem}>
                                 <span className={styles.legendDot} style={{ background: compound.color }} />
-                                {compound.label}
+                                {compoundLabel(name, t)}
                             </li>
                         );
                     })}
@@ -71,22 +86,22 @@ export default async function Strategy({ meetingKey, finishingOrder }) {
 
             {pitStops.length > 0 && (
                 <section className={styles.block} aria-labelledby="pits-heading">
-                    <h2 id="pits-heading">Pit stops</h2>
+                    <h2 id="pits-heading">{t.pitStops}</h2>
                     <div className={styles.tableScroll}>
                         <table className={styles.table}>
                             <thead>
                                 <tr>
-                                    <th scope="col">Driver</th>
-                                    <th scope="col" className={styles.num}>Lap</th>
-                                    <th scope="col" className={styles.num}>Pit lane time</th>
+                                    <th scope="col">{t.driver}</th>
+                                    <th scope="col" className={styles.num}>{t.lap}</th>
+                                    <th scope="col" className={styles.num}>{t.pitLaneTime}</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {pitStops.map((stop) => (
                                     <tr key={`${stop.driverNumber}-${stop.lap}`}>
-                                        <th scope="row">{nameByNumber.get(stop.driverNumber) || `#${stop.driverNumber}`}</th>
-                                        <td className={styles.num}>{stop.lap ?? '—'}</td>
-                                        <td className={`${styles.num} ${styles.mono}`}>{Number.isFinite(stop.duration) ? `${stop.duration.toFixed(1)}s` : '—'}</td>
+                                        <th scope="row"><bdi dir="ltr">{nameByNumber.get(stop.driverNumber) || `#${stop.driverNumber}`}</bdi></th>
+                                        <td className={styles.num}><bdi dir="ltr">{stop.lap == null ? '—' : formatNumber(lang, stop.lap)}</bdi></td>
+                                        <td className={`${styles.num} ${styles.mono}`}><bdi dir="ltr">{Number.isFinite(stop.duration) ? `${stop.duration.toFixed(1)}s` : '—'}</bdi></td>
                                     </tr>
                                 ))}
                             </tbody>

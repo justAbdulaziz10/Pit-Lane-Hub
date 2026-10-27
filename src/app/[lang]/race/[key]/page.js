@@ -1,10 +1,16 @@
-import { STATUS_LABELS, meetingStatus, requestTime } from '@/app/[lang]/schedule/status';
+import { meetingStatus, requestTime, statusLabel } from '@/app/[lang]/schedule/status';
 import LocalTime from '@/components/LocalTime';
 import { getDriverNumbers, getWeekendResults, sessionDone } from '@/lib/f1/results';
 import { getSeasonYear } from '@/lib/f1/year';
 import { ICS_SESSIONS } from '@/lib/ics';
 import { jsonLdScript } from '@/lib/jsonld';
 import { SITE_URL } from '@/lib/site';
+import { countryName } from '@/lib/i18n/f1-names';
+import { localeAlternates, localePath } from '@/lib/i18n/config';
+import { formatNumber } from '@/lib/i18n/format';
+import raceMessages from '@/lib/i18n/messages/race';
+import { fill, pick } from '@/lib/i18n/messages';
+import { sessionLabel } from '@/lib/i18n/messages/time';
 import Link from 'next/link';
 import { connection } from 'next/server';
 import { Suspense } from 'react';
@@ -16,25 +22,39 @@ import styles from './page.module.css';
 
 export async function generateMetadata({ params }) {
     await connection();
-    const { key } = await params;
+    const { key, lang } = await params;
+    const t = pick(raceMessages, lang);
     const resolved = await loadEvent(key);
-    const title = eventTitle(resolved);
+    const title = eventTitle(resolved, lang);
     const path = `/race/${key}`;
     let description;
     if (resolved.kind === 'race') {
         const { event } = resolved;
-        description = `Round ${event.round} of the ${event.year} Formula 1 season at ${event.circuit.name}: session times, results, grid and tyre strategy.`;
+        description = fill(t.roundDescription, {
+            round: formatNumber(lang, event.round),
+            year: String(event.year),
+            circuit: event.circuit.name,
+        });
     } else if (resolved.kind === 'testing') {
-        description = `${title} at ${resolved.meeting.circuitShortName || resolved.meeting.country}: dates and circuit.`;
+        description = fill(t.testingDescription, {
+            title,
+            place: resolved.meeting.circuitShortName || countryName(resolved.meeting.country, lang),
+        });
     } else {
-        description = `The ${title} was cancelled and is not part of the ${eventYear(resolved)} championship.`;
+        description = fill(t.cancelledDescription, { title, year: String(eventYear(resolved)) });
     }
-    const displayTitle = resolved.kind === 'cancelled' ? `${title} (cancelled)` : title;
+    const displayTitle = resolved.kind === 'cancelled' ? `${title}${t.cancelledSuffix}` : title;
     return {
         title: displayTitle,
         description,
-        alternates: { canonical: path },
-        openGraph: { title: displayTitle, description, url: path, type: 'website' },
+        alternates: localeAlternates(lang, path),
+        openGraph: {
+            title: displayTitle,
+            description,
+            url: localePath(lang, path),
+            type: 'website',
+            locale: lang === 'ar' ? 'ar_SA' : 'en_US',
+        },
     };
 }
 
@@ -47,13 +67,14 @@ function sessionWindow(event, session, now) {
     return 'upcoming';
 }
 
-function sportsEventJsonLd(resolved, title, path) {
+function sportsEventJsonLd(resolved, path, lang) {
     const base = {
         '@context': 'https://schema.org',
         '@type': 'SportsEvent',
-        name: title,
+        name: resolved.kind === 'race' ? resolved.event.raceName : resolved.meeting.name,
         sport: 'Formula 1',
-        url: `${SITE_URL}${path}`,
+        url: `${SITE_URL}${localePath(lang, path)}`,
+        inLanguage: lang,
     };
     if (resolved.kind === 'race') {
         const { event } = resolved;
@@ -90,47 +111,52 @@ function sportsEventJsonLd(resolved, title, path) {
     };
 }
 
-function StatusBadge({ status }) {
-    return <span className={`${styles.status} ${styles[`status_${status}`] || ''}`}>{STATUS_LABELS[status]}</span>;
+function StatusBadge({ status, lang }) {
+    return <span className={`${styles.status} ${styles[`status_${status}`] || ''}`}>{statusLabel(status, lang)}</span>;
 }
 
-function MeetingPage({ resolved, title, now }) {
+function MeetingPage({ resolved, title, now, lang }) {
+    const t = pick(raceMessages, lang);
     const { meeting } = resolved;
     const status = resolved.kind === 'cancelled' ? 'cancelled' : meetingStatus(meeting, now);
     return (
         <>
             <header className={styles.hero}>
                 <div className={styles.heroContent}>
-                    <Link href="/schedule" className={styles.backLink}>Calendar</Link>
+                    <Link href={localePath(lang, '/schedule')} className={styles.backLink}>{t.backToCalendar}</Link>
                     <div className={styles.heroMeta}>
-                        <span className={styles.round}>{resolved.kind === 'testing' ? 'Testing' : 'Not held'}</span>
-                        <StatusBadge status={status} />
+                        <span className={styles.round}>{resolved.kind === 'testing' ? t.testing : t.notHeld}</span>
+                        <StatusBadge status={status} lang={lang} />
                     </div>
                     <h1>{title}</h1>
-                    <p className={styles.circuit}>{[meeting.circuitShortName, meeting.country].filter(Boolean).join(', ')}</p>
+                    <p className={styles.circuit}>
+                        {meeting.circuitShortName && <bdi dir="ltr">{meeting.circuitShortName}</bdi>}
+                        {meeting.circuitShortName && meeting.country ? (lang === 'ar' ? '، ' : ', ') : ''}
+                        {countryName(meeting.country, lang)}
+                    </p>
                     <p className={styles.date}>
                         <LocalTime iso={meeting.dateStart} format="date" />
-                        {meeting.dateEnd ? <> to <LocalTime iso={meeting.dateEnd} format="date" /></> : null}
+                        {meeting.dateEnd ? <> {t.dateRangeTo} <LocalTime iso={meeting.dateEnd} format="date" /></> : null}
                     </p>
                 </div>
             </header>
             <div className="container">
                 {resolved.kind === 'cancelled' ? (
                     <section className={styles.block}>
-                        <h2>Cancelled</h2>
+                        <h2>{t.cancelled}</h2>
                         <p className={styles.notice}>
-                            This Grand Prix was cancelled and does not count as a round of the {eventYear(resolved)} championship.
+                            {fill(t.cancelledNotice, { year: String(eventYear(resolved)) })}
                         </p>
-                        <p><Link href="/schedule" className={styles.entity}>See the {eventYear(resolved)} calendar</Link></p>
+                        <p><Link href={localePath(lang, '/schedule')} className={styles.entity}>{fill(t.seeCalendar, { year: String(eventYear(resolved)) })}</Link></p>
                     </section>
                 ) : (
                     <section className={styles.block}>
-                        <h2>Pre-season testing</h2>
-                        <p className={styles.notice}>No points or race classification.</p>
+                        <h2>{t.preSeasonTesting}</h2>
+                        <p className={styles.notice}>{t.noPointsOrClassification}</p>
                         <p>
-                            <Link href="/live" className={styles.entity}>Live timing</Link>
+                            <Link href={localePath(lang, '/live')} className={styles.entity}>{t.liveTiming}</Link>
                             {' · '}
-                            <Link href="/schedule" className={styles.entity}>{eventYear(resolved)} calendar</Link>
+                            <Link href={localePath(lang, '/schedule')} className={styles.entity}>{fill(t.yearCalendar, { year: String(eventYear(resolved)) })}</Link>
                         </p>
                     </section>
                 )}
@@ -139,7 +165,8 @@ function MeetingPage({ resolved, title, now }) {
     );
 }
 
-async function RaceWeekend({ resolved, title, now }) {
+async function RaceWeekend({ resolved, title, now, lang }) {
+    const t = pick(raceMessages, lang);
     const { event } = resolved;
     const isCurrentSeason = event.year === getSeasonYear();
     const [results, driverNumbers] = await Promise.all([
@@ -152,25 +179,29 @@ async function RaceWeekend({ resolved, title, now }) {
     const highlights = `https://www.youtube.com/results?search_query=${encodeURIComponent(`F1 ${event.year} ${event.raceName} highlights`)}`;
 
     const resultSections = [
-        { id: 'race', heading: 'Race result', data: results.race, table: 'race' },
-        { id: 'sprint', heading: 'Sprint result', data: results.sprint, table: 'race' },
-        { id: 'qualifying', heading: 'Qualifying', data: results.qualifying, table: 'qualifying' },
+        { id: 'race', heading: t.raceResult, data: results.race, table: 'race' },
+        { id: 'sprint', heading: t.sprintResult, data: results.sprint, table: 'race' },
+        { id: 'qualifying', heading: t.qualifying, data: results.qualifying, table: 'qualifying' },
     ].filter((section) => section.data !== null);
 
     return (
         <>
             <header className={styles.hero}>
                 <div className={styles.heroContent}>
-                    <Link href="/schedule" className={styles.backLink}>Calendar</Link>
+                    <Link href={localePath(lang, '/schedule')} className={styles.backLink}>{t.backToCalendar}</Link>
                     <div className={styles.heroMeta}>
-                        <span className={styles.round}>Round {event.round}</span>
-                        <StatusBadge status={event.status} />
+                        <span className={styles.round}><bdi dir="auto">{fill(t.round, { round: formatNumber(lang, event.round) })}</bdi></span>
+                        <StatusBadge status={event.status} lang={lang} />
                     </div>
                     <h1>{title}</h1>
-                    <p className={styles.circuit}>{event.circuit.name}</p>
-                    <p className={styles.location}>{[event.circuit.locality, event.circuit.country].filter(Boolean).join(', ')}</p>
+                    <p className={styles.circuit}><bdi dir="ltr">{event.circuit.name}</bdi></p>
+                    <p className={styles.location}>
+                        {event.circuit.locality && <bdi dir="ltr">{event.circuit.locality}</bdi>}
+                        {event.circuit.locality && event.circuit.country ? (lang === 'ar' ? '، ' : ', ') : ''}
+                        {countryName(event.circuit.country, lang)}
+                    </p>
                     <p className={styles.date}>
-                        <span className={styles.dateLabel}>Race</span> <LocalTime iso={event.raceStart} format="datetime" />
+                        <span className={styles.dateLabel}>{t.raceStart}</span> <LocalTime iso={event.raceStart} format="datetime" />
                     </p>
                 </div>
             </header>
@@ -178,28 +209,28 @@ async function RaceWeekend({ resolved, title, now }) {
             <div className="container">
                 {results.race?.length > 0 && (
                     <section className={styles.block} aria-labelledby="podium-heading">
-                        <h2 id="podium-heading">Podium</h2>
-                        <Podium results={results.race} links={links} />
+                        <h2 id="podium-heading">{t.podium}</h2>
+                        <Podium results={results.race} links={links} lang={lang} />
                     </section>
                 )}
 
                 <section className={styles.block} aria-labelledby="sessions-heading">
-                    <h2 id="sessions-heading">Weekend schedule</h2>
+                    <h2 id="sessions-heading">{t.weekendSchedule}</h2>
                     {scheduled.length > 0 ? (
                         <ol className={styles.sessions}>
                             {scheduled.map((session) => {
                                 const status = sessionWindow(event, session, now);
                                 return (
                                     <li key={session.key} className={`${styles.session} ${status === 'live' ? styles.sessionLive : ''}`}>
-                                        <span className={styles.sessionName}>{session.label}</span>
+                                        <span className={styles.sessionName}>{sessionLabel(session.key, lang)}</span>
                                         <LocalTime iso={event.sessions[session.key]} format="datetime" className={styles.sessionTime} />
-                                        <StatusBadge status={status} />
+                                        <StatusBadge status={status} lang={lang} />
                                     </li>
                                 );
                             })}
                         </ol>
                     ) : (
-                        <p className={styles.notice}>Session times have not been published yet.</p>
+                        <p className={styles.notice}>{t.sessionTimesUnpublished}</p>
                     )}
                 </section>
 
@@ -207,32 +238,33 @@ async function RaceWeekend({ resolved, title, now }) {
                     <section key={section.id} className={styles.block} aria-labelledby={`${section.id}-heading`}>
                         <h2 id={`${section.id}-heading`}>{section.heading}</h2>
                         {section.data.length === 0 ? (
-                            <p className={styles.notice}>The classification has not been published yet.</p>
+                            <p className={styles.notice}>{t.classificationUnpublished}</p>
                         ) : section.table === 'qualifying' ? (
-                            <QualifyingTable results={section.data} links={links} caption={`${title} qualifying`} />
+                            <QualifyingTable results={section.data} links={links} caption={`${title} ${t.qualifying}`} lang={lang} />
                         ) : (
-                            <ClassificationTable results={section.data} links={links} caption={`${title} ${section.heading.toLowerCase()}`} />
+                            <ClassificationTable results={section.data} links={links} caption={`${title} ${section.heading}`} lang={lang} />
                         )}
                     </section>
                 ))}
 
                 {raceRun && event.meetingKey != null && (
-                    <Suspense fallback={<p className={styles.notice}>Loading tyre strategy</p>}>
+                    <Suspense fallback={<p className={styles.notice}>{t.loadingTyreStrategy}</p>}>
                         <Strategy
                             meetingKey={event.meetingKey}
                             finishingOrder={(results.race || []).map((row) => row.number)}
+                            lang={lang}
                         />
                     </Suspense>
                 )}
             </div>
 
-            <RaceMap circuitId={event.circuit.id} />
+            <RaceMap circuitId={event.circuit.id} lang={lang} />
 
             {raceRun && (
                 <div className="container">
                     <p className={styles.externalLinks}>
                         <a href={highlights} target="_blank" rel="noopener noreferrer" className={styles.entity}>
-                            Highlights on YouTube<span className={styles.srOnly}> (opens in a new tab)</span>
+                            {t.highlightsOnYoutube}<span className={styles.srOnly}> {t.opensNewTab}</span>
                         </a>
                     </p>
                 </div>
@@ -243,21 +275,21 @@ async function RaceWeekend({ resolved, title, now }) {
 
 export default async function RaceDetailPage({ params }) {
     await connection();
-    const { key } = await params;
+    const { key, lang } = await params;
     const resolved = await loadEvent(key);
     const now = requestTime();
-    const title = eventTitle(resolved);
+    const title = eventTitle(resolved, lang);
     const path = `/race/${key}`;
 
     return (
         <div className={styles.raceDetail}>
             <script
                 type="application/ld+json"
-                dangerouslySetInnerHTML={{ __html: jsonLdScript(sportsEventJsonLd(resolved, title, path)) }}
+                dangerouslySetInnerHTML={{ __html: jsonLdScript(sportsEventJsonLd(resolved, path, lang)) }}
             />
             {resolved.kind === 'race'
-                ? <RaceWeekend resolved={resolved} title={title} now={now} />
-                : <MeetingPage resolved={resolved} title={title} now={now} />}
+                ? <RaceWeekend resolved={resolved} title={title} now={now} lang={lang} />
+                : <MeetingPage resolved={resolved} title={title} now={now} lang={lang} />}
         </div>
     );
 }

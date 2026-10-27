@@ -128,7 +128,7 @@
 .table th,
 .table td {
     padding: 0.6rem 0.75rem;
-    text-align: left;
+    text-align: start;
     border-bottom: 1px solid var(--border);
     white-space: nowrap;
 }
@@ -151,6 +151,7 @@
 .pos {
     width: 3rem;
     font-weight: 700;
+    text-align: end;
     font-variant-numeric: tabular-nums;
 }
 
@@ -199,6 +200,7 @@
 
 .mono {
     font-variant-numeric: tabular-nums;
+    text-align: end;
 }
 
 .muted {
@@ -243,7 +245,7 @@
     gap: 0.2rem;
     padding: 0.7rem 0.9rem;
     border-bottom: 1px solid var(--border);
-    border-left: 3px solid transparent;
+    border-inline-start: 3px solid transparent;
     font-size: 0.88rem;
 }
 
@@ -253,20 +255,20 @@
 
 .message[data-flag='YELLOW'],
 .message[data-flag='DOUBLE YELLOW'] {
-    border-left-color: var(--caution);
+    border-inline-start-color: var(--caution);
 }
 
 .message[data-flag='RED'] {
-    border-left-color: var(--accent);
+    border-inline-start-color: var(--accent);
 }
 
 .message[data-flag='GREEN'],
 .message[data-flag='CLEAR'] {
-    border-left-color: #2fb36d;
+    border-inline-start-color: #2fb36d;
 }
 
 .message[data-flag='CHEQUERED'] {
-    border-left-color: var(--text-1);
+    border-inline-start-color: var(--text-1);
 }
 
 .messageMeta {

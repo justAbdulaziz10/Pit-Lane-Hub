@@ -28,6 +28,10 @@
     content: '\2190\00a0';
 }
 
+:global([dir='rtl']) .backLink::before {
+    content: '\2192\00a0';
+}
+
 .backLink:hover {
     color: var(--text-1);
 }
@@ -248,7 +252,7 @@
 .table th,
 .table td {
     padding: var(--space-sm) var(--space-md);
-    text-align: left;
+    text-align: start;
     white-space: nowrap;
 }
 
@@ -271,18 +275,20 @@
 }
 
 .num {
-    text-align: right !important;
+    text-align: end !important;
     font-variant-numeric: tabular-nums;
 }
 
 .mono {
     font-variant-numeric: tabular-nums;
+    text-align: end;
 }
 
 .pos {
     font-family: var(--font-display);
     font-stretch: var(--stretch-display);
     font-weight: 700;
+    text-align: end;
 }
 
 .points {
@@ -341,7 +347,7 @@
     font-size: 0.7rem;
     font-weight: 700;
     color: #0d0d0d;
-    border-right: 1px solid rgba(0, 0, 0, 0.3);
+    border-inline-end: 1px solid rgba(0, 0, 0, 0.3);
 }
 
 .tyreLegend {
