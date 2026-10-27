@@ -15,7 +15,9 @@ describe('localized time and session labels', () => {
 
     it('keeps the local time zone offset readable inside Arabic text', () => {
         const arabic = formatInstant('2026-11-01T20:00:00Z', 'datetime', { local: true, locale: 'ar' });
-        expect(arabic).toMatch(/\u2066[^\u2069]+\u2069/);
+        // Only the numeric offset is isolated (e.g. "غرينتش\u2066+3\u2069"), or UTC has no offset.
+        expect(arabic).toMatch(/\u2066[+\-\u2212]\d[\d:]*\u2069$|غرينتش$|UTC$/);
+        expect(arabic).not.toMatch(/\u2066[^+\-\u2212]/);
         expect(formatInstant('2026-11-01T20:00:00Z', 'datetime', { local: true })).not.toContain('\u2066');
     });
 

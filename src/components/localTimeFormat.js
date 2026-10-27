@@ -25,10 +25,12 @@ export function formatInstant(iso, format = 'datetime', { local = false, locale 
             ...options,
             ...(hasTime(options) ? { timeZoneName: 'short' } : {}),
         }).formatToParts(date);
-        // In right-to-left text an offset such as "غرينتش+3" would show its sign on the wrong
-        // side; a left-to-right isolate keeps the zone name and offset together and in order.
+        // After Arabic letters the bidi algorithm treats "+3" as an Arabic number and shows
+        // "3+"; a left-to-right isolate around just the offset keeps its sign in front.
         return parts.map(({ type, value }) => (
-            type === 'timeZoneName' && locale === 'ar' ? `\u2066${value}\u2069` : value
+            type === 'timeZoneName' && locale === 'ar'
+                ? value.replace(/([+\-\u2212]\d[\d:]*)$/, '\u2066$1\u2069')
+                : value
         )).join('');
     }
     const text = new Intl.DateTimeFormat(intlLocale(locale), { ...options, timeZone: 'UTC' }).format(date);
