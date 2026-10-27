@@ -541,11 +541,12 @@ describe('circuit mapping', () => {
 describe('live snapshot', () => {
     it('returns live positions, gaps, last laps, stints, weather, and race control without cache', async () => {
         vi.setSystemTime(new Date('2026-10-27T12:00:00Z'));
-        vi.stubEnv('OPENF1_USERNAME', '');
-        vi.stubEnv('OPENF1_PASSWORD', '');
+        vi.stubEnv('OPENF1_USERNAME', 'fixture-user');
+        vi.stubEnv('OPENF1_PASSWORD', 'fixture-password');
         const requested = [];
         installFetch((url, options) => {
             requested.push({ url, options });
+            if (url.pathname.endsWith('/token')) return { access_token: 'fixture-token' };
             if (url.pathname.endsWith('/sessions')) return [{ session_key: 500, session_name: 'Race', date_start: '2026-10-27T11:00:00Z', date_end: '2026-10-27T14:00:00Z' }];
             if (url.pathname.endsWith('/drivers')) return [{ driver_number: 1, name_acronym: 'NOR', full_name: 'Lando Norris', team_name: 'McLaren', team_colour: 'FF8000' }];
             if (url.pathname.endsWith('/position')) return [
@@ -560,6 +561,7 @@ describe('live snapshot', () => {
             if (url.pathname.endsWith('/stints')) return [{ driver_number: 1, stint_number: 1, compound: 'SOFT', tyre_age_at_start: 0, lap_start: 1, lap_end: 20 }];
             if (url.pathname.endsWith('/weather')) return [{ date: '2026-10-27T11:00:00Z', air_temperature: 23 }, { date: '2026-10-27T12:00:00Z', air_temperature: 25 }];
             if (url.pathname.endsWith('/race_control')) return [{ date: '2026-10-27T11:59:00Z', message: 'Earlier' }, { date: '2026-10-27T12:00:00Z', message: 'Latest' }];
+            if (url.pathname.endsWith('/session_result')) return [];
             throw new Error(`Unexpected test request: ${url}`);
         });
 
@@ -585,11 +587,12 @@ describe('live snapshot', () => {
 
     it('ranks practice and qualifying by best lap and skips race intervals', async () => {
         vi.setSystemTime(new Date('2026-10-27T12:00:00Z'));
-        vi.stubEnv('OPENF1_USERNAME', '');
-        vi.stubEnv('OPENF1_PASSWORD', '');
+        vi.stubEnv('OPENF1_USERNAME', 'fixture-user');
+        vi.stubEnv('OPENF1_PASSWORD', 'fixture-password');
         const requested = [];
         installFetch((url) => {
             requested.push(url);
+            if (url.pathname.endsWith('/token')) return { access_token: 'fixture-token' };
             if (url.pathname.endsWith('/sessions')) return [{ session_key: 501, session_name: 'Qualifying', session_type: 'Qualifying', date_start: '2026-10-27T11:00:00Z', date_end: '2026-10-27T13:00:00Z' }];
             if (url.pathname.endsWith('/drivers')) return [
                 { driver_number: 1, name_acronym: 'NOR', team_name: 'McLaren' },
@@ -605,7 +608,7 @@ describe('live snapshot', () => {
                 { driver_number: 1, lap_number: 2, lap_duration: 78.9 },
                 { driver_number: 1, lap_number: 3, lap_duration: 79.4 },
             ];
-            if (/\/(stints|race_control|weather)$/.test(url.pathname)) return [];
+            if (/\/(stints|race_control|weather|session_result)$/.test(url.pathname)) return [];
             throw new Error(`Unexpected test request: ${url}`);
         });
 

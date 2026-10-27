@@ -22,6 +22,14 @@ describe('live formatting', () => {
         expect(pollInterval({ isLive: false })).toBe(60000);
     });
 
+    it('backs off transient failures and stops polling permanent states', () => {
+        expect(pollInterval({ isLive: true }, 1)).toBe(5000);
+        expect(pollInterval({ isLive: false }, 2)).toBe(10000);
+        expect(pollInterval({ isLive: false }, 10)).toBe(60000);
+        expect(pollInterval({ unavailable: 'auth' }, 1)).toBeNull();
+        expect(pollInterval({ unavailable: 'rate-limited' }, 1)).toBeNull();
+    });
+
     it('derives the session phase', () => {
         const session = { start: '2026-11-01T20:00:00Z' };
         expect(sessionPhase(null, false)).toBe('none');

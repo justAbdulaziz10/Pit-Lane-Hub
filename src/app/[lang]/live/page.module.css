@@ -1,11 +1,11 @@
 .live {
     min-height: 100vh;
-    padding-bottom: var(--space-3xl);
+    padding-block-end: var(--space-3xl);
 }
 
 .header {
     padding: var(--space-2xl) 0 var(--space-lg);
-    border-bottom: 1px solid var(--border);
+    border-block-end: 1px solid var(--border);
 }
 
 .headerRow {
@@ -20,7 +20,7 @@
     display: flex;
     align-items: center;
     gap: var(--space-sm);
-    margin-bottom: var(--space-xs);
+    margin-block-end: var(--space-xs);
     color: var(--text-2);
     font-size: 0.8rem;
     font-weight: 600;
@@ -56,7 +56,7 @@
 
 .weekendLink {
     display: inline-block;
-    margin-top: var(--space-sm);
+    margin-block-start: var(--space-sm);
     color: var(--text-2);
     font-size: 0.9rem;
     text-decoration: underline;
@@ -66,6 +66,41 @@
 .updated {
     color: var(--text-2);
     font-size: 0.85rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.stateBanner {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: var(--space-lg);
+    margin-block-start: var(--space-lg);
+    padding: var(--space-md) var(--space-lg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--surface-1);
+}
+
+.stateCopy h2 {
+    margin-block-end: var(--space-xs);
+    font-size: 1rem;
+}
+
+.stateCopy p {
+    color: var(--text-2);
+}
+
+.nextCountdown {
+    flex-shrink: 0;
+    color: var(--text-2);
+    font-size: var(--text-sm);
+    text-align: end;
+}
+
+.countdown {
+    color: var(--text-1);
+    font-family: var(--font-display);
+    font-size: 1.25rem;
     font-variant-numeric: tabular-nums;
 }
 
@@ -97,13 +132,13 @@
     display: grid;
     grid-template-columns: minmax(0, 1fr) 20rem;
     gap: var(--space-xl);
-    padding-top: var(--space-xl);
+    padding-block-start: var(--space-xl);
 }
 
 .sectionTitle {
     font-size: 1rem;
     color: var(--text-2);
-    margin-bottom: var(--space-md);
+    margin-block-end: var(--space-md);
 }
 
 .empty {
@@ -129,7 +164,7 @@
 .table td {
     padding: 0.6rem 0.75rem;
     text-align: start;
-    border-bottom: 1px solid var(--border);
+    border-block-end: 1px solid var(--border);
     white-space: nowrap;
 }
 
@@ -141,7 +176,11 @@
 }
 
 .table tbody tr:last-child > * {
-    border-bottom: none;
+    border-block-end: none;
+}
+
+.table tbody .retiredDivider > * {
+    border-block-start: 2px solid var(--border-strong);
 }
 
 .table tbody tr:hover {
@@ -244,37 +283,56 @@
     display: grid;
     gap: 0.2rem;
     padding: 0.7rem 0.9rem;
-    border-bottom: 1px solid var(--border);
-    border-inline-start: 3px solid transparent;
+    border-block-end: 1px solid var(--border);
     font-size: 0.88rem;
 }
 
 .message:last-child {
-    border-bottom: none;
-}
-
-.message[data-flag='YELLOW'],
-.message[data-flag='DOUBLE YELLOW'] {
-    border-inline-start-color: var(--caution);
-}
-
-.message[data-flag='RED'] {
-    border-inline-start-color: var(--accent);
-}
-
-.message[data-flag='GREEN'],
-.message[data-flag='CLEAR'] {
-    border-inline-start-color: #2fb36d;
-}
-
-.message[data-flag='CHEQUERED'] {
-    border-inline-start-color: var(--text-1);
+    border-block-end: none;
 }
 
 .messageMeta {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--space-xs);
     color: var(--text-2);
     font-size: 0.75rem;
     font-variant-numeric: tabular-nums;
+}
+
+.flagChip {
+    display: inline-flex;
+    align-items: center;
+    min-height: 1.25rem;
+    padding-inline: 0.4rem;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    color: var(--text-1);
+    font-size: 0.68rem;
+    font-weight: 600;
+}
+
+.flagChip[data-flag='YELLOW'],
+.flagChip[data-flag='DOUBLE YELLOW'] {
+    border-color: var(--caution);
+    color: var(--caution);
+}
+
+.flagChip[data-flag='RED'] {
+    border-color: var(--accent);
+    color: var(--accent-text);
+}
+
+.flagChip[data-flag='GREEN'],
+.flagChip[data-flag='CLEAR'] {
+    border-color: #2fb36d;
+    color: #6cce99;
+}
+
+.flagChip[data-flag='BLUE'] {
+    border-color: #438ad8;
+    color: #79adf0;
 }
 
 @media (max-width: 960px) {
@@ -284,6 +342,16 @@
 }
 
 @media (max-width: 640px) {
+    .stateBanner {
+        align-items: stretch;
+        flex-direction: column;
+        padding: var(--space-md);
+    }
+
+    .nextCountdown {
+        text-align: start;
+    }
+
     .fullName,
     .team,
     .optional {
