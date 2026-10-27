@@ -60,7 +60,14 @@ export function dynamicEntries({ calendar, grid, teams }, now = new Date()) {
             changeFrequency: 'weekly',
             priority: 0.6,
         }));
-    return [...races, ...drivers, ...teamEntries];
+    const circuitIds = [...new Set(calendar.rounds.map((event) => event.circuit?.id).filter(Boolean))];
+    const circuits = circuitIds.map((circuitId) => ({
+        url: `${SITE_URL}/tracks/${circuitId}`,
+        lastModified: now,
+        changeFrequency: 'yearly',
+        priority: 0.5,
+    }));
+    return [...races, ...drivers, ...teamEntries, ...circuits];
 }
 
 export default async function sitemap() {

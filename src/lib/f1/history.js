@@ -5,6 +5,7 @@ import {
 } from './http';
 import CHAMPIONS_HISTORY from './data/champions-history.json';
 import { getCalendar } from './season';
+import { canonicalTeamNameForId } from './team-utils';
 import { getSeasonYear } from './year';
 
 function standingsLists(mrData) {
@@ -40,7 +41,10 @@ function mapDriverStanding(item) {
             nationality: item.Driver?.nationality || null,
         },
         team: item.Constructors?.[0]
-            ? { id: item.Constructors[0].constructorId, name: item.Constructors[0].name }
+            ? {
+                id: item.Constructors[0].constructorId,
+                name: canonicalTeamNameForId(item.Constructors[0].constructorId, item.Constructors[0].name),
+            }
             : null,
     };
 }
@@ -52,7 +56,7 @@ function mapConstructorStanding(item) {
         wins: Number(item.wins),
         team: {
             id: item.Constructor?.constructorId,
-            name: item.Constructor?.name,
+            name: canonicalTeamNameForId(item.Constructor?.constructorId, item.Constructor?.name),
             nationality: item.Constructor?.nationality || null,
         },
     };

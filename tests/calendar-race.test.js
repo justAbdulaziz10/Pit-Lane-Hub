@@ -244,7 +244,7 @@ describe('schedule helpers', () => {
 });
 
 describe('sitemap entries', () => {
-    it('lists races by meeting key, current drivers by number and teams by id', () => {
+    it('lists races by meeting key, current drivers by number, teams by id and circuits once', () => {
         const now = new Date('2026-10-27T00:00:00Z');
         const entries = dynamicEntries({
             calendar: { rounds: [{ ...event, status: 'upcoming' }, { ...event, meetingKey: null }] },
@@ -252,7 +252,7 @@ describe('sitemap entries', () => {
             teams: [{ constructorId: 'mercedes' }],
         }, now);
         const paths = entries.map((entry) => new URL(entry.url).pathname);
-        expect(paths).toEqual(['/race/1298', '/driver/12', '/team/mercedes']);
+        expect(paths).toEqual(['/race/1298', '/driver/12', '/team/mercedes', `/tracks/${event.circuit.id}`]);
         expect(staticEntries(now).map((entry) => new URL(entry.url).pathname)).toContain('/schedule');
     });
 });
