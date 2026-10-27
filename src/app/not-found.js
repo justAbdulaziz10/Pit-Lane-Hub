@@ -11,11 +11,12 @@ export default function NotFound() {
             <p className={styles.code}>404</p>
             <h1 className={styles.title}>Lost in the gravel trap</h1>
             <p className={styles.message}>
-                The page you’re looking for has gone off track. Let’s get you back on the racing line.
+                This page could not be found. Pick a race weekend, check the standings, or explore the drivers.
             </p>
             <div className={styles.actions}>
-                <Link href="/" className="btn btn-primary">Back to Home</Link>
-                <Link href="/standings" className="btn btn-secondary">View Standings</Link>
+                <Link href="/schedule" className="btn btn-primary">Calendar</Link>
+                <Link href="/standings" className="btn btn-secondary">Standings</Link>
+                <Link href="/drivers" className="btn btn-secondary">Drivers</Link>
             </div>
         </div>
     );

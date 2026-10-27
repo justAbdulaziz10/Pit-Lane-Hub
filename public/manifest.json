@@ -1,7 +1,7 @@
 {
   "name": "Pit Lane Hub",
   "short_name": "Pit Lane",
-  "description": "Live F1 racing data, driver standings, and real-time timing",
+  "description": "Follow every Formula 1 race with the season calendar, driver and team standings, live timing, circuit details, and championship history.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0D0D0D",

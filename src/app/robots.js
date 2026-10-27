@@ -1,10 +1,12 @@
+import { SITE_URL } from '@/lib/site';
+
 export default function robots() {
-    return {
-        rules: {
-            userAgent: '*',
-            allow: '/',
-            disallow: '/private/',
-        },
-        sitemap: 'https://f1-xi-weld.vercel.app/sitemap.xml',
-    }
+  return {
+    rules: {
+      userAgent: '*',
+      allow: '/',
+      disallow: ['/api/', '/profile'],
+    },
+    sitemap: `${SITE_URL}/sitemap.xml`,
+  };
 }
