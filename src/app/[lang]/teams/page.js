@@ -5,6 +5,8 @@ import { currentGridDrivers, getConstructorStandings } from '@/lib/f1/standings'
 import { getTeams } from '@/lib/f1/teams';
 import { getSeasonYear } from '@/lib/f1/year';
 import { getHighQualityPhoto } from '@/lib/photos';
+import { DriverPortrait } from '@/components/DriverCard';
+import { driverPath } from '@/app/[lang]/driver/[number]/driver-data';
 import { fill, pick } from '@/lib/i18n/messages';
 import teamsMessages from '@/lib/i18n/messages/teams';
 import { formatNumber } from '@/lib/i18n/format';
@@ -19,12 +21,18 @@ function DriverRow({ driver, lang }) {
     const key = number ?? driver.driverId;
     const content = (
         <>
-            {photo ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={photo} alt={driver.fullName || driver.lastName} className={styles.driverPhoto} loading="lazy" />
-            ) : (
-                <span className={styles.driverPhotoPlaceholder} aria-hidden="true"><bdi dir="ltr">{number == null ? '' : formatNumber(lang, number)}</bdi></span>
-            )}
+            <DriverPortrait
+                src={photo}
+                alt={driver.fullName || driver.lastName}
+                width={80}
+                height={80}
+                className={styles.driverPhoto}
+                imgClassName={styles.driverImage}
+                fallbackClassName={styles.driverPhotoPlaceholder}
+                loading="lazy"
+            >
+                <bdi dir="ltr">{(driver.code || `${driver.firstName?.[0] || ''}${driver.lastName?.[0] || ''}`).toUpperCase()}</bdi>
+            </DriverPortrait>
             <span className={styles.driverDetails}>
                 <bdi dir="ltr" className={styles.driverName}>
                     {driver.firstName} <strong>{driver.lastName}</strong>
@@ -33,10 +41,11 @@ function DriverRow({ driver, lang }) {
             </span>
         </>
     );
-    if (key == null) return <li className={styles.driverRow}>{content}</li>;
+    const href = driverPath(driver);
+    if (!href || key == null) return <li className={styles.driverRow}>{content}</li>;
     return (
         <li>
-            <Link href={localePath(lang, `/driver/${encodeURIComponent(key)}`)} className={styles.driverRow}>{content}</Link>
+            <Link href={localePath(lang, href)} className={styles.driverRow}>{content}</Link>
         </li>
     );
 }
@@ -91,7 +100,7 @@ export default async function TeamsPage({ params }) {
                                             </div>
                                         )}
                                         <h2 className={styles.teamName}>
-                                            <Link href={localePath(lang, `/team/${encodeURIComponent(team.constructorId)}`)}>{team.name}</Link>
+                                            <Link href={localePath(lang, `/team/${encodeURIComponent(team.constructorId)}`)}><bdi dir="auto">{team.name}</bdi></Link>
                                         </h2>
                                         <ul className={styles.driversList} aria-label={fill(t.teamDrivers, { team: team.name })}>
                                             {currentGridDrivers(team, grid).map((driver) => (

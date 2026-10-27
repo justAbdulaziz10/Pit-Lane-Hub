@@ -1,3 +1,5 @@
+import { getSeasonYear } from './year';
+
 const TEAM_NAME_ALIASES = new Map([
     ['red bull', 'Red Bull Racing'],
     ['red bull racing', 'Red Bull Racing'],
@@ -65,7 +67,11 @@ export function canonicalTeamName(name, constructorId = null) {
     return TEAM_NAME_ALIASES.get(key) || String(name || '').trim() || 'Unknown team';
 }
 
-export function canonicalTeamNameForId(constructorId, fallbackName) {
+export function canonicalTeamNameForId(constructorId, fallbackName, season = getSeasonYear()) {
+    if (Number(season) < getSeasonYear()) {
+        const historicName = String(fallbackName || '').trim();
+        return historicName || TEAM_NAMES_BY_CONSTRUCTOR_ID[String(constructorId || '').toLowerCase()] || 'Unknown team';
+    }
     return canonicalTeamName(fallbackName, constructorId);
 }
 

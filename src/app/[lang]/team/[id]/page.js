@@ -11,14 +11,18 @@ import {
     getConstructorStandings,
 } from '@/lib/f1/standings';
 import { getTeams } from '@/lib/f1/teams';
+import { driverPath } from '@/app/[lang]/driver/[number]/driver-data';
 import { getSeasonYear } from '@/lib/f1/year';
+import { getHighQualityPhoto } from '@/lib/photos';
 import { jsonLdScript } from '@/lib/jsonld';
 import { SITE_URL } from '@/lib/site';
+import { DriverPortrait } from '@/components/DriverCard';
 import { fill, pick } from '@/lib/i18n/messages';
 import teamsMessages from '@/lib/i18n/messages/teams';
 import { localeAlternates, localePath } from '@/lib/i18n/config';
 import { formatNumber } from '@/lib/i18n/format';
 import { nationalityName } from '@/lib/i18n/f1-names';
+import { viewHref } from '@/app/[lang]/history/history-utils';
 import styles from './page.module.css';
 
 async function loadTeam(params) {
@@ -44,13 +48,14 @@ export async function generateMetadata({ params }) {
         title,
         description,
         alternates: localeAlternates(lang, path),
-        openGraph: { title, description, url: localePath(lang, path), locale: lang === 'ar' ? 'ar_SA' : 'en_US' },
+        openGraph: {
+            title,
+            description,
+            url: localePath(lang, path),
+            images: [localePath(lang, '/opengraph-image')],
+            locale: lang === 'ar' ? 'ar_SA' : 'en_US',
+        },
     };
-}
-
-function driverHref(driver) {
-    const key = driver.racingNumber ?? driver.number ?? driver.driverId;
-    return key == null ? null : `/driver/${encodeURIComponent(key)}`;
 }
 
 export default async function TeamDetailPage({ params }) {
@@ -82,7 +87,7 @@ export default async function TeamDetailPage({ params }) {
             athlete: drivers.map((driver) => ({
                 '@type': 'Person',
                 name: driver.fullName || `${driver.firstName} ${driver.lastName}`.trim(),
-                ...(driverHref(driver) ? { url: `${SITE_URL}${localePath(lang, driverHref(driver))}` } : {}),
+                ...(driverPath(driver) ? { url: `${SITE_URL}${localePath(lang, driverPath(driver))}` } : {}),
             })),
         } : {}),
     };
@@ -96,7 +101,7 @@ export default async function TeamDetailPage({ params }) {
                 <div className={styles.heroContent}>
                     <Link href={localePath(lang, '/teams')} className={styles.backLink}>{t.allTeams}</Link>
                     <span className={styles.colorStripe} aria-hidden="true"></span>
-                    <h1>{name}</h1>
+                    <h1><bdi dir="auto">{name}</bdi></h1>
                     {info.nationality && <p className={styles.nationality}>{nationalityName(info.nationality, lang)}</p>}
                 </div>
             </div>
@@ -131,10 +136,22 @@ export default async function TeamDetailPage({ params }) {
                         <h2 id="drivers-heading" className={styles.sectionTitle}>{fill(t.seasonDrivers, { year: formatNumber(lang, year, { useGrouping: false }) })}</h2>
                         <ul className={styles.driversGrid}>
                             {drivers.map((driver) => {
-                                const href = driverHref(driver);
+                                const href = driverPath(driver);
                                 const number = driver.racingNumber ?? driver.number;
                                 const content = (
                                     <>
+                                        <DriverPortrait
+                                            src={getHighQualityPhoto(driver.headshot)}
+                                            alt={driver.fullName || `${driver.firstName} ${driver.lastName}`.trim()}
+                                            width={80}
+                                            height={80}
+                                            className={styles.driverPortrait}
+                                            imgClassName={styles.driverImage}
+                                            fallbackClassName={styles.driverFallback}
+                                            loading="lazy"
+                                        >
+                                            <bdi dir="ltr">{(driver.code || `${driver.firstName?.[0] || ''}${driver.lastName?.[0] || ''}`).toUpperCase()}</bdi>
+                                        </DriverPortrait>
                                         <span className={styles.driverNumber}><bdi dir="ltr">{number == null ? '' : formatNumber(lang, number)}</bdi></span>
                                         <bdi dir="ltr" className={styles.driverName}>
                                             {driver.firstName} <strong>{driver.lastName}</strong>
@@ -181,7 +198,7 @@ export default async function TeamDetailPage({ params }) {
                             <ul className={styles.yearList}>
                                 {titleYears.map((titleYear) => (
                                     <li key={titleYear}>
-                                        <Link href={localePath(lang, `/history?year=${titleYear}`)}><bdi dir="ltr">{formatNumber(lang, titleYear, { useGrouping: false })}</bdi></Link>
+                                        <Link href={viewHref(titleYear, 'races', lang)}><bdi dir="ltr">{formatNumber(lang, titleYear, { useGrouping: false })}</bdi></Link>
                                     </li>
                                 ))}
                             </ul>

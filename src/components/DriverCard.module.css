@@ -135,6 +135,19 @@
     margin-bottom: var(--space-sm);
 }
 
+.standing {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-sm);
+    font-size: var(--text-sm);
+    font-variant-numeric: tabular-nums;
+    color: var(--text-1);
+}
+
+.standing span {
+    color: var(--text-2);
+}
+
 .country {
     display: flex;
     align-items: center;
@@ -148,11 +161,72 @@
 }
 
 @media (max-width: 768px) {
+    .card {
+        display: grid;
+        grid-template-columns: 48px minmax(0, 1fr);
+        align-items: center;
+        min-height: 76px;
+    }
+
     .photoContainer {
-        height: 180px;
+        grid-column: 1;
+        grid-row: 1;
+        width: 48px;
+        height: 48px;
+        margin-inline-start: var(--space-md);
+        border-radius: var(--radius-sm);
     }
 
     .photoCode {
-        font-size: 3rem;
+        font-size: 1.1rem;
+    }
+
+    .info {
+        grid-column: 2;
+        padding: var(--space-sm) var(--space-md);
+        min-width: 0;
+    }
+
+    .number {
+        display: inline-block;
+        margin: 0;
+        margin-inline-end: var(--space-xs);
+        font-size: var(--text-sm);
+    }
+
+    .name {
+        display: inline;
+        margin: 0;
+    }
+
+    .cardLink,
+    .cardLink > bdi {
+        display: inline;
+    }
+
+    .firstName {
+        display: none;
+    }
+
+    .lastName {
+        font-size: 1rem;
+        text-transform: none;
+    }
+
+    .team {
+        overflow: hidden;
+        margin: 0;
+        font-size: var(--text-xs);
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .country {
+        display: none;
+    }
+
+    .standing {
+        gap: var(--space-xs);
+        font-size: var(--text-xs);
     }
 }

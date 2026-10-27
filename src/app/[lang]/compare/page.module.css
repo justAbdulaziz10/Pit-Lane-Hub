@@ -26,6 +26,11 @@
     border-radius: var(--radius-lg);
 }
 
+.profilePicker {
+    position: relative;
+    margin-top: var(--space-md);
+}
+
 .pickerLabel {
     display: block;
     font-size: 0.75rem;
@@ -66,6 +71,10 @@
     background: var(--surface-1);
 }
 
+.pickerResults[hidden] {
+    display: none;
+}
+
 .pickerResults ul {
     list-style: none;
     margin: 0;
@@ -94,7 +103,8 @@
 }
 
 .pickerResults button:hover,
-.pickerResults button:focus-visible {
+.pickerResults button:focus-visible,
+.pickerResults .activeOption {
     background: var(--surface-1);
     outline: none;
     border-inline-start-color: var(--driver-color, var(--accent));

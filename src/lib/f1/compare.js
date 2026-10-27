@@ -5,6 +5,7 @@ import {
     cacheF1Data,
     F1_CACHE_TAGS,
     fetchJolpicaPage,
+    fetchJolpicaPages,
     UpstreamError,
 } from './http';
 
@@ -138,11 +139,88 @@ export function getDriverResults(driverId) {
     return isActiveDriver(driverId).then((active) => cachedDriverResults[active ? 'active' : 'retired'](driverId));
 }
 
+async function fetchDriverQualifyingResults(driverId, revalidate) {
+    const races = await fetchJolpicaPages(`drivers/${driverId}/qualifying`, {
+        select: (mrData) => mrData?.RaceTable?.Races || [],
+        revalidate,
+        tags: resultTags,
+    });
+    return races.flatMap((race) => (race.QualifyingResults || []).map((result) => ({
+        season: Number(race.season),
+        round: Number(race.round),
+        raceName: race.raceName,
+        position: result.position == null ? null : String(result.position),
+        constructorId: result.Constructor?.constructorId || null,
+        team: result.Constructor?.name || null,
+    })));
+}
+
+const cachedDriverQualifying = {
+    active: cacheF1Data(
+        (driverId) => fetchDriverQualifyingResults(driverId, ACTIVE_RESULTS_REVALIDATE),
+        ['driver-qualifying-active-v1'],
+        ACTIVE_RESULTS_REVALIDATE,
+        resultTags,
+    ),
+    retired: cacheF1Data(
+        (driverId) => fetchDriverQualifyingResults(driverId, RETIRED_RESULTS_REVALIDATE),
+        ['driver-qualifying-retired-v1'],
+        RETIRED_RESULTS_REVALIDATE,
+        resultTags,
+    ),
+};
+
+/** One driver's season-by-season qualifying classification, including actual P1 results. */
+export function getDriverQualifyingResults(driverId) {
+    if (!isValidDriverId(driverId)) throw new TypeError('A valid Jolpica driverId is required');
+    return isActiveDriver(driverId).then((active) => cachedDriverQualifying[active ? 'active' : 'retired'](driverId));
+}
+
+async function fetchDriverSprintResults(driverId, revalidate) {
+    return fetchJolpicaPages(`drivers/${driverId}/sprint`, {
+        select: (mrData) => (mrData?.RaceTable?.Races || []).flatMap((race) => (
+            race.SprintResults || []
+        ).map((result) => ({
+            season: Number(race.season),
+            round: Number(race.round),
+            points: Number(result.points) || 0,
+        }))),
+        revalidate,
+        tags: resultTags,
+    });
+}
+
+const cachedDriverSprints = {
+    active: cacheF1Data(
+        (driverId) => fetchDriverSprintResults(driverId, ACTIVE_RESULTS_REVALIDATE),
+        ['driver-sprints-active-v1'],
+        ACTIVE_RESULTS_REVALIDATE,
+        resultTags,
+    ),
+    retired: cacheF1Data(
+        (driverId) => fetchDriverSprintResults(driverId, RETIRED_RESULTS_REVALIDATE),
+        ['driver-sprints-retired-v1'],
+        RETIRED_RESULTS_REVALIDATE,
+        resultTags,
+    ),
+};
+
+/** Sprint classifications are separate in Jolpica; include their points in career totals. */
+export function getDriverSprintResults(driverId) {
+    if (!isValidDriverId(driverId)) throw new TypeError('A valid Jolpica driverId is required');
+    return isActiveDriver(driverId).then((active) => cachedDriverSprints[active ? 'active' : 'retired'](driverId));
+}
+
 /** Starts, wins, podiums, poles, fastest laps, titles and seasons, from the cached result list. */
 export function getCareerStats(driverId) {
     if (!isValidDriverId(driverId)) throw new TypeError('A valid Jolpica driverId is required');
-    return Promise.all([getDriverResults(driverId), getChampionshipCount(driverId)])
-        .then(([{ results }, championships]) => careerTotals(driverId, results, championships));
+    return Promise.all([
+        getDriverResults(driverId),
+        getChampionshipCount(driverId),
+        getDriverQualifyingResults(driverId),
+    ]).then(([{ results }, championships, qualifyingResults]) => (
+        careerTotals(driverId, results, championships, qualifyingResults)
+    ));
 }
 
 function raceKey(row) {
@@ -205,14 +283,38 @@ export function headToHead(resultsA, resultsB) {
     return summary;
 }
 
+/** Compare qualifying positions in rounds both drivers entered. */
+export function qualifyingHeadToHead(resultsA, resultsB) {
+    const byRound = (results) => new Map(results.map((row) => [
+        raceKey(row),
+        { ...row, position: Number(row.position) || null },
+    ]));
+    const aByRound = byRound(resultsA);
+    const bByRound = byRound(resultsB);
+    const summary = { races: 0, aheadA: 0, aheadB: 0, first: null, last: null };
+    const shared = [...aByRound.keys()].filter((key) => bByRound.has(key)).sort();
+    for (const key of shared) {
+        const a = aByRound.get(key);
+        const b = bByRound.get(key);
+        if (a.position == null || b.position == null || a.position === b.position) continue;
+        summary.races += 1;
+        if (a.position < b.position) summary.aheadA += 1;
+        else summary.aheadB += 1;
+        const race = { season: a.season, round: a.round, raceName: a.raceName };
+        if (!summary.first) summary.first = race;
+        summary.last = race;
+    }
+    return summary;
+}
+
 /** Career span and teams in the order the driver first raced for them. */
-export function careerSummary(results) {
+export function careerSummary(results, sprintResults = []) {
     const sorted = [...results].sort((x, y) => x.season - y.season || x.round - y.round);
     const teams = [];
     for (const row of sorted) {
         if (row.team && !teams.includes(row.team)) teams.push(row.team);
     }
-    const points = sorted.reduce((sum, row) => sum + row.points, 0);
+    const points = [ ...sorted, ...sprintResults ].reduce((sum, row) => sum + (Number(row.points) || 0), 0);
     return {
         firstSeason: sorted[0]?.season ?? null,
         lastSeason: sorted.at(-1)?.season ?? null,
@@ -230,17 +332,22 @@ export async function compareDrivers(idA, idB) {
     if (!isValidDriverId(idA) || !isValidDriverId(idB)) throw new TypeError('Valid Jolpica driverIds are required');
     const [driverA, driverB] = await Promise.all([getAllTimeDriver(idA), getAllTimeDriver(idB)]);
     if (!driverA || !driverB) return null;
-    const [resultsA, resultsB, statsA, statsB] = await Promise.all([
+    const [resultsA, resultsB, statsA, statsB, sprintsA, sprintsB, qualifyingA, qualifyingB] = await Promise.all([
         getDriverResults(idA),
         getDriverResults(idB),
         getCareerStats(idA),
         getCareerStats(idB),
+        getDriverSprintResults(idA),
+        getDriverSprintResults(idB),
+        getDriverQualifyingResults(idA),
+        getDriverQualifyingResults(idB),
     ]);
     return {
         drivers: [
-            { ...driverA, ...careerSummary(resultsA.results), stats: statsA },
-            { ...driverB, ...careerSummary(resultsB.results), stats: statsB },
+            { ...driverA, ...careerSummary(resultsA.results, sprintsA), stats: statsA },
+            { ...driverB, ...careerSummary(resultsB.results, sprintsB), stats: statsB },
         ],
         headToHead: headToHead(resultsA.results, resultsB.results),
+        qualifyingHeadToHead: qualifyingHeadToHead(qualifyingA, qualifyingB),
     };
 }

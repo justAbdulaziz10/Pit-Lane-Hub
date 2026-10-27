@@ -22,11 +22,14 @@ export default function DriversGrid({ drivers, initialQuery = '' }) {
     const { favorites } = useFavorites();
     const [query, setQuery] = useState(initialQuery);
     const [team, setTeam] = useState('');
-    const [view, setView] = useState('number');
+    const [view, setView] = useState('championship');
 
     const teams = useMemo(() => [...new Set(drivers.map((driver) => driver.team))].sort(), [drivers]);
     const visible = useMemo(() => filterDrivers(drivers, { query, team }), [drivers, query, team]);
-    const ordered = useMemo(() => favouritesFirst(visible, favorites), [visible, favorites]);
+    const ordered = useMemo(() => {
+        if (view !== 'number') return visible;
+        return favouritesFirst([...visible].sort((a, b) => (a.number ?? Infinity) - (b.number ?? Infinity)), favorites);
+    }, [visible, favorites, view]);
     const groups = useMemo(() => (view === 'team' ? groupByTeam(visible) : []), [visible, view]);
 
     return (
@@ -54,6 +57,7 @@ export default function DriversGrid({ drivers, initialQuery = '' }) {
                     <span className={styles.label} aria-hidden="true">{t.arrange}</span>
                     <div className={styles.segmented}>
                         <button type="button" aria-pressed={view === 'number'} onClick={() => setView('number')}>{t.byNumber}</button>
+                        <button type="button" aria-pressed={view === 'championship'} onClick={() => setView('championship')}>{t.byChampionship}</button>
                         <button type="button" aria-pressed={view === 'team'} onClick={() => setView('team')}>{t.byTeam}</button>
                     </div>
                 </div>
@@ -76,7 +80,7 @@ export default function DriversGrid({ drivers, initialQuery = '' }) {
                     <section key={group.team} className={styles.group} style={{ '--team-color': group.colour }}>
                         <h2 className={styles.groupTitle}>{group.team === 'Unknown team' ? t.unknownTeam : group.team}</h2>
                         <div className={styles.grid}>
-                            {group.drivers.map((driver) => <DriverCard key={driver.key} driver={driver} />)}
+                            {group.drivers.map((driver) => <DriverCard key={driver.key} driver={driver} headingLevel={3} />)}
                         </div>
                     </section>
                 ))

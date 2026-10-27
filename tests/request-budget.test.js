@@ -68,15 +68,23 @@ describe('all-time drivers', () => {
 });
 
 describe('driver results cache lifetime', () => {
-    it('caches retired drivers for a month and active drivers for hours, with no per-stat requests', async () => {
+    it('caches driver race and qualifying data for retired and active drivers', async () => {
         const calls = installJolpica();
         await getCareerStats('senna');
-        const senna = calls.filter((call) => call.path.startsWith('drivers/senna/'));
-        expect(senna).toEqual([{ path: 'drivers/senna/results', revalidate: RETIRED_RESULTS_REVALIDATE }]);
+        const senna = calls.filter((call) => call.path.startsWith('drivers/senna/'))
+            .sort((a, b) => a.path.localeCompare(b.path));
+        expect(senna).toEqual([
+            { path: 'drivers/senna/qualifying', revalidate: RETIRED_RESULTS_REVALIDATE },
+            { path: 'drivers/senna/results', revalidate: RETIRED_RESULTS_REVALIDATE },
+        ]);
 
         await getCareerStats('norris');
-        const norris = calls.filter((call) => call.path.startsWith('drivers/norris/'));
-        expect(norris).toEqual([{ path: 'drivers/norris/results', revalidate: ACTIVE_RESULTS_REVALIDATE }]);
+        const norris = calls.filter((call) => call.path.startsWith('drivers/norris/'))
+            .sort((a, b) => a.path.localeCompare(b.path));
+        expect(norris).toEqual([
+            { path: 'drivers/norris/qualifying', revalidate: ACTIVE_RESULTS_REVALIDATE },
+            { path: 'drivers/norris/results', revalidate: ACTIVE_RESULTS_REVALIDATE },
+        ]);
     });
 });
 

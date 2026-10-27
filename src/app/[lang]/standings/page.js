@@ -18,8 +18,8 @@ import {
     ConstructorStandingsTable,
     DriverStandingsTable,
     standingsStyles,
-    YearPicker,
 } from './_components/StandingsTables';
+import YearPicker from './_components/YearPicker';
 import { loadCurrentSeasonLookups, lookupsForSeason } from './_components/lookups';
 import styles from './page.module.css';
 
@@ -28,15 +28,15 @@ async function resolveYear(searchParams) {
     const current = getSeasonYear();
     const year = parseSeasonYear(raw, { current });
     if (year === null) notFound();
-    return { year, current };
+    return { year, current, explicitYear: raw !== undefined };
 }
 
 export async function generateMetadata({ params, searchParams }) {
     await connection();
     const { lang } = await params;
     const t = pick(standingsMessages, lang);
-    const { year, current } = await resolveYear(searchParams);
-    const path = year === current ? '/standings' : `/standings?year=${year}`;
+    const { year, current, explicitYear } = await resolveYear(searchParams);
+    const path = explicitYear ? `/standings?year=${year}` : '/standings';
     const title = hasConstructorsChampionship(year)
         ? fill(t.metadataTitleBoth, { year: formatNumber(lang, year, { useGrouping: false }) })
         : fill(t.metadataTitleDrivers, { year: formatNumber(lang, year, { useGrouping: false }) });
@@ -47,7 +47,13 @@ export async function generateMetadata({ params, searchParams }) {
         title,
         description,
         alternates: localeAlternates(lang, path),
-        openGraph: { title, description, url: localePath(lang, path), locale: lang === 'ar' ? 'ar_SA' : 'en_US' },
+        openGraph: {
+            title,
+            description,
+            url: localePath(lang, path),
+            images: [localePath(lang, '/opengraph-image')],
+            locale: lang === 'ar' ? 'ar_SA' : 'en_US',
+        },
     };
 }
 

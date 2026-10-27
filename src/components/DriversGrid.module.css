@@ -56,8 +56,9 @@
 }
 
 .segmented button[aria-pressed='true'] {
-    background: var(--accent);
-    color: var(--text-1);
+    background: #c00500;
+    color: #ffffff;
+    font-weight: 600;
 }
 
 .count {

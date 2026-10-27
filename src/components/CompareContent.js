@@ -8,6 +8,8 @@ import compareMessages from '@/lib/i18n/messages/compare';
 import { formatNumber } from '@/lib/i18n/format';
 import { nationalityName } from '@/lib/i18n/f1-names';
 import { localePath } from '@/lib/i18n/config';
+import { driverPath } from '@/app/[lang]/driver/[number]/driver-path';
+import { FULL_POLE_DATA_FROM, POLE_DATA_FROM } from '@/lib/f1/career';
 import styles from '@/app/[lang]/compare/page.module.css';
 
 const COLOURS = ['#FF4D45', '#4FC3F7'];
@@ -21,12 +23,13 @@ function errorMessage(error, t) {
     })[error] || t.serviceUnavailable;
 }
 
-function DriverPicker({ index, label, selected, onSelect, t, locale }) {
+function DriverPicker({ index, label, selected, onSelect, t, locale, embedded = false }) {
     const inputId = useId();
     const listId = useId();
     const [query, setQuery] = useState('');
     const [results, setResults] = useState([]);
     const [status, setStatus] = useState('idle');
+    const [activeIndex, setActiveIndex] = useState(0);
     const latest = useRef(0);
 
     useEffect(() => {
@@ -44,6 +47,7 @@ function DriverPicker({ index, label, selected, onSelect, t, locale }) {
             if (requestId !== latest.current) return;
             if (response.ok) {
                 setResults(response.drivers);
+                setActiveIndex(0);
                 setStatus(response.drivers.length ? 'done' : 'empty');
             } else {
                 setResults([]);
@@ -54,56 +58,79 @@ function DriverPicker({ index, label, selected, onSelect, t, locale }) {
     }, [query]);
 
     const open = query.trim().length >= 2;
+    const activeOption = results[activeIndex];
+
+    function selectDriver(driver) {
+        setQuery('');
+        setResults([]);
+        setStatus('idle');
+        onSelect(driver);
+    }
 
     return (
-        <div className={styles.picker} style={{ '--driver-color': COLOURS[index] }}>
+        <div className={embedded ? styles.profilePicker : styles.picker} style={{ '--driver-color': COLOURS[index] }}>
             <label htmlFor={inputId} className={styles.pickerLabel}>{label}</label>
-            <p className={styles.pickerSelected}>{selected?.fullName || selected?.driverId
+            {!embedded ? <p className={styles.pickerSelected}>{selected?.fullName || selected?.driverId
                 ? <bdi dir="ltr">{selected.fullName || selected.driverId}</bdi>
-                : t.noneSelected}</p>
+                : t.noneSelected}</p> : null}
             <input
                 id={inputId}
                 type="search"
+                role="combobox"
                 className={styles.pickerInput}
                 value={query}
-                onChange={(event) => setQuery(event.target.value)}
+                onChange={(event) => {
+                    setQuery(event.target.value);
+                    setActiveIndex(0);
+                }}
+                onKeyDown={(event) => {
+                    if (event.key === 'ArrowDown' && results.length) {
+                        event.preventDefault();
+                        setActiveIndex((value) => (value + 1) % results.length);
+                    } else if (event.key === 'ArrowUp' && results.length) {
+                        event.preventDefault();
+                        setActiveIndex((value) => (value - 1 + results.length) % results.length);
+                    } else if (event.key === 'Enter' && activeOption) {
+                        event.preventDefault();
+                        selectDriver(activeOption);
+                    } else if (event.key === 'Escape') {
+                        setQuery('');
+                        setResults([]);
+                    }
+                }}
                 placeholder={t.searchDriver}
                 aria-label={t.searchDriver}
                 autoComplete="off"
                 aria-controls={listId}
+                aria-expanded={open && results.length > 0}
+                aria-autocomplete="list"
+                aria-activedescendant={open && activeOption ? `${listId}-option-${activeOption.driverId}` : undefined}
             />
-            {open ? (
-                <div id={listId} className={styles.pickerResults} aria-live="polite">
-                    {status === 'loading' && results.length === 0 ? <p className={styles.pickerNote}>{t.searching}</p> : null}
-                    {status === 'empty' ? <p className={styles.pickerNote}>{t.noDriversFound}</p> : null}
-                    {['invalid', 'not-found', 'rate-limited', 'unavailable'].includes(status)
-                        ? <p className={styles.pickerNote}>{errorMessage(status, t)}</p>
-                        : null}
-                    {results.length > 0 ? (
-                        <ul>
-                            {results.map((driver) => (
-                                <li key={driver.driverId}>
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            setQuery('');
-                                            setResults([]);
-                                            onSelect(driver);
-                                        }}
-                                    >
-                                        <span>{driver.fullName}</span>
-                                        <span className={styles.pickerMeta}>
-                                            {driver.code ? <bdi dir="ltr">{driver.code}</bdi> : null}
-                                            {driver.code && driver.nationality ? ' · ' : ''}
-                                            {nationalityName(driver.nationality, locale)}
-                                        </span>
-                                    </button>
-                                </li>
-                            ))}
-                        </ul>
-                    ) : null}
-                </div>
-            ) : null}
+            {open && status === 'loading' && results.length === 0 ? <p className={styles.pickerNote} role="status">{t.searching}</p> : null}
+            {open && status === 'empty' ? <p className={styles.pickerNote} role="status">{t.noDriversFound}</p> : null}
+            {open && ['invalid', 'not-found', 'rate-limited', 'unavailable'].includes(status)
+                ? <p className={styles.pickerNote} role="status">{errorMessage(status, t)}</p>
+                : null}
+            <div id={listId} className={styles.pickerResults} role="listbox" hidden={!open || results.length === 0}>
+                {results.map((driver, optionIndex) => (
+                    <button
+                        key={driver.driverId}
+                        id={`${listId}-option-${driver.driverId}`}
+                        type="button"
+                        role="option"
+                        aria-selected={optionIndex === activeIndex}
+                        className={optionIndex === activeIndex ? styles.activeOption : undefined}
+                        onClick={() => selectDriver(driver)}
+                    >
+                        <bdi dir="ltr">{driver.fullName}</bdi>
+                        <span className={styles.pickerMeta}>
+                            {driver.code ? <bdi dir="ltr">{driver.code}</bdi> : null}
+                            {driver.code && driver.nationality ? ' · ' : ''}
+                            {nationalityName(driver.nationality, locale)}
+                        </span>
+                    </button>
+                ))}
+            </div>
         </div>
     );
 }
@@ -131,18 +158,31 @@ function fastestLapRow(a, b, t, locale) {
     return [label, valueA, valueB, null, () => [missing(a) ? '—' : valueA, missing(b) ? '—' : valueB]];
 }
 
+function coverageLabel(coverage, t, locale) {
+    if (coverage === 'full') return t.statPolePositions;
+    const template = coverage === 'none' ? t.poleCoverageNone : t.poleCoveragePartial;
+    const [before, after = ''] = template.split('{year}');
+    const year = coverage === 'none' ? POLE_DATA_FROM : FULL_POLE_DATA_FROM;
+    return <>{before}<bdi dir="ltr">{formatNumber(locale, year, { useGrouping: false })}</bdi>{after}</>;
+}
+
 function statRows([a, b], t, locale) {
+    const poleCoverage = [a.stats.poleCoverage, b.stats.poleCoverage].every((coverage) => coverage === 'none')
+        ? 'none'
+        : [a.stats.poleCoverage, b.stats.poleCoverage].some((coverage) => coverage !== 'full') ? 'partial' : 'full';
+    const polesUnavailableA = a.stats.poleCoverage === 'none';
+    const polesUnavailableB = b.stats.poleCoverage === 'none';
     return [
         [t.championships, a.stats.championships, b.stats.championships],
-        [t.statStarts, a.stats.starts, b.stats.starts],
+        [t.statEntries, a.stats.entries, b.stats.entries],
         [t.statWins, a.stats.wins, b.stats.wins],
         [t.statPodiums, a.stats.podiums, b.stats.podiums],
-        [t.statPolePositions, a.stats.poles, b.stats.poles],
+        [coverageLabel(poleCoverage, t, locale), polesUnavailableA ? -1 : a.stats.poles, polesUnavailableB ? -1 : b.stats.poles, null, () => [polesUnavailableA ? '—' : a.stats.poles, polesUnavailableB ? '—' : b.stats.poles]],
         fastestLapRow(a, b, t, locale),
         [t.statSeasons, a.stats.seasons, b.stats.seasons],
         [t.statPoints, a.points, b.points, (value) => formatPoints(value, locale)],
-        [t.winRate, a.stats.wins / (a.stats.starts || 1), b.stats.wins / (b.stats.starts || 1), null, () => [rate(a.stats.wins, a.stats.starts, locale), rate(b.stats.wins, b.stats.starts, locale)]],
-        [t.podiumRate, a.stats.podiums / (a.stats.starts || 1), b.stats.podiums / (b.stats.starts || 1), null, () => [rate(a.stats.podiums, a.stats.starts, locale), rate(b.stats.podiums, b.stats.starts, locale)]],
+        [t.winRate, a.stats.wins / (a.stats.entries || 1), b.stats.wins / (b.stats.entries || 1), null, () => [rate(a.stats.wins, a.stats.entries, locale), rate(b.stats.wins, b.stats.entries, locale)]],
+        [t.podiumRate, a.stats.podiums / (a.stats.entries || 1), b.stats.podiums / (b.stats.entries || 1), null, () => [rate(a.stats.podiums, a.stats.entries, locale), rate(b.stats.podiums, b.stats.entries, locale)]],
     ];
 }
 
@@ -153,7 +193,7 @@ export function span(driver, locale) {
     return driver.firstSeason === driver.lastSeason ? first : `${first}–${last}`;
 }
 
-function Comparison({ comparison, t, locale }) {
+function Comparison({ comparison, t, locale, selected, onChoose }) {
     const [a, b] = comparison.drivers;
     const h2h = comparison.headToHead;
     return (
@@ -161,14 +201,21 @@ function Comparison({ comparison, t, locale }) {
             <div className={styles.driversRow}>
                 {comparison.drivers.map((driver, index) => (
                     <div key={driver.driverId} className={styles.driverProfile} style={{ '--driver-color': COLOURS[index] }}>
-                        <h2>
-                            <Link href={`/driver/${driver.driverId}`}><bdi dir="ltr">{driver.fullName}</bdi></Link>
-                        </h2>
+                        <h2><Link href={driverPath(driver)}><bdi dir="ltr">{driver.fullName}</bdi></Link></h2>
                         <p className={styles.profileMeta}>
                             {nationalityName(driver.nationality, locale)}
                             {driver.firstSeason ? <> · <bdi dir="ltr">{span(driver, locale)}</bdi></> : null}
                         </p>
-                        {driver.teams.length > 0 ? <p className={styles.profileTeams}>{driver.teams.join(', ')}</p> : null}
+                        {driver.teams.length > 0 ? <p className={styles.profileTeams}><bdi dir="auto">{driver.teams.join(', ')}</bdi></p> : null}
+                        <DriverPicker
+                            index={index}
+                            label={index === 0 ? t.driverA : t.driverB}
+                            selected={selected[index]}
+                            onSelect={(next) => onChoose(index, next)}
+                            t={t}
+                            locale={locale}
+                            embedded
+                        />
                     </div>
                 ))}
             </div>
@@ -194,6 +241,12 @@ function Comparison({ comparison, t, locale }) {
                                     : fill(t.asTeammates, { aName: a.lastName, aCount: h2h.teammateAheadA, bName: b.lastName, bCount: h2h.teammateAheadB, count: h2h.teammateRaces, raceWord: h2h.teammateRaces === 1 ? t.race : t.races })}
                             </p>
                         ) : null}
+                        {comparison.qualifyingHeadToHead?.races > 0 ? (
+                            <p className={styles.h2hNote}>
+                                {t.qualifyingHeadToHead}:{' '}
+                                <bdi dir="ltr">{formatNumber(locale, comparison.qualifyingHeadToHead.aheadA)}–{formatNumber(locale, comparison.qualifyingHeadToHead.aheadB)}</bdi>
+                            </p>
+                        ) : null}
                     </>
                 ) : (
                     <p className={styles.h2hNote}>{locale === 'ar'
@@ -213,10 +266,10 @@ function Comparison({ comparison, t, locale }) {
                         </tr>
                     </thead>
                     <tbody>
-                        {statRows(comparison.drivers, t, locale).map(([label, valueA, valueB, format, display]) => {
+                        {statRows(comparison.drivers, t, locale).map(([label, valueA, valueB, format, display], index) => {
                             const [textA, textB] = display ? display() : [format ? format(valueA) : formatNumber(locale, valueA), format ? format(valueB) : formatNumber(locale, valueB)];
                             return (
-                                <tr key={label}>
+                                <tr key={typeof label === 'string' ? label : `pole-coverage-${index}`}>
                                     <th scope="row">{label}</th>
                                     <td className={valueA > valueB ? styles.leader : undefined}><bdi dir="ltr">{textA}</bdi></td>
                                     <td className={valueB > valueA ? styles.leader : undefined}><bdi dir="ltr">{textB}</bdi></td>
@@ -280,11 +333,13 @@ export default function CompareContent({ initialIds, initialComparison = null, i
 
     return (
         <div className="container">
-            <div className={styles.selectorGrid}>
-                <DriverPicker index={0} label={t.driverA} selected={selected[0]} onSelect={(driver) => choose(0, driver)} t={t} locale={locale} />
-                <div className={styles.versus} aria-hidden="true">{t.versus}</div>
-                <DriverPicker index={1} label={t.driverB} selected={selected[1]} onSelect={(driver) => choose(1, driver)} t={t} locale={locale} />
-            </div>
+            {!comparison ? (
+                <div className={styles.selectorGrid}>
+                    <DriverPicker index={0} label={t.driverA} selected={selected[0]} onSelect={(driver) => choose(0, driver)} t={t} locale={locale} />
+                    <div className={styles.versus} aria-hidden="true">{t.versus}</div>
+                    <DriverPicker index={1} label={t.driverB} selected={selected[1]} onSelect={(driver) => choose(1, driver)} t={t} locale={locale} />
+                </div>
+            ) : null}
 
             <div aria-live="polite" aria-busy={loading}>
                 {loading ? (
@@ -305,7 +360,7 @@ export default function CompareContent({ initialIds, initialComparison = null, i
 
             {!error && comparison ? (
                 <div className={loading ? styles.stale : undefined}>
-                    <Comparison comparison={comparison} t={t} locale={locale} />
+                    <Comparison comparison={comparison} t={t} locale={locale} selected={selected} onChoose={choose} />
                 </div>
             ) : null}
         </div>

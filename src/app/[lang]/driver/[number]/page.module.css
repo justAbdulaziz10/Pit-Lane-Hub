@@ -58,6 +58,17 @@
     object-fit: cover;
 }
 
+.portraitFrame {
+    width: 100%;
+    height: 100%;
+}
+
+.portraitImage {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
 .photoPlaceholder {
     width: 100%;
     height: 100%;
@@ -207,7 +218,7 @@
     align-items: center;
     gap: var(--space-sm);
     padding: var(--space-md) var(--space-xl);
-    background: var(--accent);
+    background: #c00500;
     border-radius: var(--radius-md);
     font-family: var(--font-display);
     font-stretch: var(--stretch-display);
@@ -218,7 +229,7 @@
 }
 
 .compareBtn:hover {
-    background: var(--accent-hover);
+    background: #a90400;
     color: var(--on-accent);
 }
 
@@ -307,6 +318,43 @@
     color: var(--text-3);
 }
 
+.coverageNote {
+    margin-top: var(--space-md);
+    color: var(--text-2);
+    font-size: var(--text-sm);
+}
+
+.teammateSection {
+    padding: var(--space-xl) 0;
+    background: var(--surface-1);
+}
+
+.teammateStats {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-md);
+    margin: 0;
+}
+
+.teammateStats > div {
+    padding: var(--space-md);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+}
+
+.teammateStats dt {
+    color: var(--text-2);
+    font-size: var(--text-sm);
+}
+
+.teammateStats dd {
+    margin: var(--space-xs) 0 0;
+    font-family: var(--font-display);
+    font-stretch: var(--stretch-display);
+    font-size: 1.75rem;
+    font-weight: 800;
+}
+
 /* Results table */
 .tableWrap {
     overflow-x: auto;
@@ -343,7 +391,7 @@
     font-family: var(--font-display);
     font-stretch: var(--stretch-display);
     font-weight: 700;
-    color: var(--team-color, var(--accent));
+    color: var(--accent-text);
     text-align: end;
 }
 
