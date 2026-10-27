@@ -24,7 +24,38 @@ export const TRACK_COORDS = {
     'las vegas': { lat: 36.1147, lng: -115.173, country: 'USA', title: 'Las Vegas Strip Circuit' },
     lusail: { lat: 25.49, lng: 51.4542, country: 'Qatar', title: 'Lusail International Circuit' },
     'yas marina': { lat: 24.4672, lng: 54.6031, country: 'UAE', title: 'Yas Marina Circuit' },
+    sepang: { lat: 2.7608, lng: 101.7382, country: 'Malaysia', title: 'Sepang International Circuit' },
 };
+
+// Track key → Jolpica circuitId, so callers can fetch geometry for the same circuit.
+const TRACK_KEY_TO_CIRCUIT_ID = Object.freeze({
+    bahrain: 'bahrain',
+    jeddah: 'jeddah',
+    melbourne: 'albert_park',
+    suzuka: 'suzuka',
+    shanghai: 'shanghai',
+    miami: 'miami',
+    imola: 'imola',
+    monaco: 'monaco',
+    montreal: 'villeneuve',
+    barcelona: 'catalunya',
+    madrid: 'madring',
+    spielberg: 'red_bull_ring',
+    silverstone: 'silverstone',
+    budapest: 'hungaroring',
+    spa: 'spa',
+    zandvoort: 'zandvoort',
+    monza: 'monza',
+    baku: 'baku',
+    singapore: 'marina_bay',
+    austin: 'americas',
+    mexico: 'rodriguez',
+    'sao paulo': 'interlagos',
+    'las vegas': 'vegas',
+    lusail: 'losail',
+    'yas marina': 'yas_marina',
+    sepang: 'sepang',
+});
 
 const CIRCUIT_ID_TO_TRACK_KEY = Object.freeze({
     bahrain: 'bahrain',
@@ -55,6 +86,7 @@ const CIRCUIT_ID_TO_TRACK_KEY = Object.freeze({
     las_vegas: 'las vegas',
     losail: 'lusail',
     yas_marina: 'yas marina',
+    sepang: 'sepang',
 });
 
 const OPENF1_CIRCUIT_SHORT_NAME_TO_TRACK_KEY = Object.freeze({
@@ -90,6 +122,8 @@ const OPENF1_CIRCUIT_SHORT_NAME_TO_TRACK_KEY = Object.freeze({
     'las vegas': 'las vegas',
     lusail: 'lusail',
     'yas marina': 'yas marina',
+    sepang: 'sepang',
+    'kuala lumpur': 'sepang',
 });
 
 function exactKey(value) {
@@ -107,5 +141,6 @@ export function getTrackInfo(raceName, circuitKey) {
     const trackKey = CIRCUIT_ID_TO_TRACK_KEY[circuitId]
         || OPENF1_CIRCUIT_SHORT_NAME_TO_TRACK_KEY[shortName]
         || OPENF1_CIRCUIT_SHORT_NAME_TO_TRACK_KEY[openF1Name];
-    return trackKey ? TRACK_COORDS[trackKey] || null : null;
+    if (!trackKey || !TRACK_COORDS[trackKey]) return null;
+    return { ...TRACK_COORDS[trackKey], circuitId: TRACK_KEY_TO_CIRCUIT_ID[trackKey] };
 }

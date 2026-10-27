@@ -1,0 +1,26 @@
+.section {
+    padding: var(--space-2xl) 0;
+}
+
+.head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-md);
+    flex-wrap: wrap;
+    margin-bottom: var(--space-md);
+}
+
+.head h2 {
+    margin: 0;
+}
+
+.head p {
+    color: var(--silver-chrome);
+}
+
+.head a {
+    color: var(--checkered-white);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}

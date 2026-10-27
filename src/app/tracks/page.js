@@ -1,105 +1,43 @@
-'use client';
-
-import { TRACK_COORDS } from '@/lib/tracks';
-import dynamic from 'next/dynamic';
-import { useState } from 'react';
+import Link from 'next/link';
+import { connection } from 'next/server';
+import { getCircuitView } from '@/lib/f1/circuits';
+import { getCalendar } from '@/lib/f1/season';
 import styles from './page.module.css';
 
-// Dynamic import for Three.js component to avoid SSR issues
-const Track3D = dynamic(() => import('@/components/Track3D'), { ssr: false });
-
-export default function TracksPage() {
-    const [selectedTrack, setSelectedTrack] = useState(null);
-    const [viewMode, setViewMode] = useState('ring'); // 'ring', 'cockpit', 'map'
-
-    const openTrack = (track) => {
-        setSelectedTrack(track);
-        setViewMode('ring'); // Default to the new 3D Ring view as requested
-    };
-
-    const closeTrack = () => {
-        setSelectedTrack(null);
-    };
+export default async function TracksPage() {
+    await connection();
+    const calendar = await getCalendar();
+    const seen = new Set();
+    const circuits = calendar.rounds
+        .filter((event) => event.circuit?.id && !seen.has(event.circuit.id) && seen.add(event.circuit.id))
+        .map((event) => ({ event, view: getCircuitView(event.circuit.id) }));
 
     return (
         <div className={styles.tracksPage}>
-            {/* Header */}
-            <div className={styles.header}>
-                <div className="container">
-                    <span className={styles.badge}>🏁 INTERACTIVE MAPS</span>
-                    <h1>F1 Circuits 3D</h1>
-                    <p>Experience every track with our new CSS/JS 3D Render Engine</p>
-                </div>
-            </div>
-
-            {/* Tracks Grid */}
-            <div className="container">
-                <div className={styles.grid}>
-                    {Object.entries(TRACK_COORDS).map(([key, track]) => (
-                        <div key={key} className={styles.trackCard} onClick={() => openTrack({ ...track, key })}>
-                            <div className={styles.cardContent}>
-                                <div className={styles.cardHeader}>
-                                    <span className={styles.country}>📍 {track.country}</span>
-                                </div>
-                                <h3 className={styles.trackName}>{track.title}</h3>
-                                <div className={styles.viewBtn}>View 3D Ring →</div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </div>
-
-            {/* Map Modal */}
-            {selectedTrack && (
-                <div className={styles.overlay} onClick={closeTrack}>
-                    <div className={styles.modal} onClick={e => e.stopPropagation()}>
-                        <button className={styles.closeBtn} onClick={closeTrack}>×</button>
-
-                        <div className={`${styles.modalContent} ${viewMode === 'ring' ? styles.is3D : ''}`}>
-                            <div className={styles.mapContainer}>
-                                {viewMode === 'ring' && (
-                                    <div className={styles.webglWrapper}>
-                                        <Track3D trackKey={selectedTrack.title} />
-                                        <div className={styles.overlayText}>Interactive 3D Render</div>
-                                    </div>
-                                )}
-
-                                {viewMode === 'map' && (
-                                    <div className={styles.mapWrapper}>
-                                        <iframe
-                                            src={`https://www.openstreetmap.org/export/embed.html?bbox=${selectedTrack.lng - 0.03}%2C${selectedTrack.lat - 0.03}%2C${selectedTrack.lng + 0.03}%2C${selectedTrack.lat + 0.03}&layer=mapnik&marker=${selectedTrack.lat}%2C${selectedTrack.lng}`}
-                                            className={styles.mapFrame}
-                                            loading="lazy"
-                                        ></iframe>
-                                    </div>
-                                )}
-                            </div>
-
-                            <div className={styles.modalFooter}>
-                                <div className={styles.trackInfo}>
-                                    <h2>{selectedTrack.title}</h2>
-                                    <p>{selectedTrack.location}</p>
-                                </div>
-
-                                <div className={styles.controls}>
-                                    <button
-                                        className={`${styles.controlBtn} ${viewMode === 'ring' ? styles.active : ''}`}
-                                        onClick={() => setViewMode('ring')}
-                                    >
-                                        🧊 3D Ring
-                                    </button>
-                                    <button
-                                        className={`${styles.controlBtn} ${viewMode === 'map' ? styles.active : ''}`}
-                                        onClick={() => setViewMode('map')}
-                                    >
-                                        🗺️ Map
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
+            <header className="container">
+                <h1 className={styles.title}>{calendar.year} circuits</h1>
+            </header>
+            <ol className={`container ${styles.grid}`}>
+                {circuits.map(({ event, view }) => (
+                    <li key={event.circuit.id}>
+                        <Link href={`/tracks/${event.circuit.id}`} className={styles.card}>
+                            <span className={styles.round}>Round {event.round}</span>
+                            {view ? (
+                                <svg viewBox={view.outline.viewBox} className={styles.outline} aria-hidden="true">
+                                    <path d={`${view.outline.d} Z`} />
+                                </svg>
+                            ) : (
+                                <span className={styles.outline} aria-hidden="true" />
+                            )}
+                            <span className={styles.name}>{event.circuit.name}</span>
+                            <span className={styles.meta}>
+                                {[event.circuit.locality, event.circuit.country].filter(Boolean).join(', ')}
+                                {view?.length && ` · ${view.length}`}
+                            </span>
+                        </Link>
+                    </li>
+                ))}
+            </ol>
         </div>
     );
 }

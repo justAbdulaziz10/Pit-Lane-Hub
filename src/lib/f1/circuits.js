@@ -1,3 +1,4 @@
+import { circuitOutline, formatCircuitLength } from './circuit-svg';
 import circuitData from '../f1-circuits.json';
 
 if (typeof window !== 'undefined') throw new Error('Circuit geometry is available only on the server.');
@@ -61,3 +62,18 @@ export function getCircuitGeometry(circuitId) {
     };
 }
 
+
+/** Everything a circuit view needs, already projected on the server. */
+export function getCircuitView(circuitId) {
+    const geometry = getCircuitGeometry(circuitId);
+    const outline = geometry ? circuitOutline(geometry.coordinates) : null;
+    if (!outline) return null;
+    return {
+        circuitId: String(circuitId).toLowerCase(),
+        name: geometry.name,
+        length: formatCircuitLength(geometry.length),
+        outline: { d: outline.d, viewBox: outline.viewBox, start: outline.start },
+        center: outline.center,
+        coordinates: geometry.coordinates,
+    };
+}

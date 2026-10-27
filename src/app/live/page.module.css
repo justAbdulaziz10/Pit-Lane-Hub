@@ -1,273 +1,301 @@
 .live {
     min-height: 100vh;
+    padding-bottom: var(--space-3xl);
 }
 
-/* Header */
 .header {
-    padding: var(--space-3xl) 0 var(--space-2xl);
-    text-align: center;
-    background: linear-gradient(to bottom, rgba(225, 6, 0, 0.15) 0%, transparent 100%);
+    padding: var(--space-2xl) 0 var(--space-lg);
+    border-bottom: 1px solid var(--carbon-border);
+}
+
+.headerRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: var(--space-lg);
+    flex-wrap: wrap;
+}
+
+.eyebrow {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-xs);
+    color: var(--silver-chrome);
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
 }
 
 .liveBadge {
-    display: inline-block;
-    padding: var(--space-xs) var(--space-md);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4em;
+    padding: 0.15rem 0.6rem;
     background: var(--racing-red);
-    border-radius: var(--radius-full);
-    font-size: 0.75rem;
-    font-weight: 700;
-    letter-spacing: 0.1em;
-    animation: pulse 1.5s ease infinite;
-    margin-bottom: var(--space-lg);
-}
-
-@keyframes pulse {
-
-    0%,
-    100% {
-        opacity: 1;
-    }
-
-    50% {
-        opacity: 0.6;
-    }
-}
-
-.header h1 {
-    margin-bottom: var(--space-sm);
-}
-
-.header p {
-    color: rgba(255, 255, 255, 0.6);
-    font-size: 1.1rem;
-}
-
-/* Session Info */
-.sessionInfo {
-    padding: var(--space-lg) 0;
-}
-
-.sessionCard {
-    background: var(--carbon-surface);
-    border: 1px solid var(--carbon-border);
-    border-radius: var(--radius-xl);
-    padding: var(--space-xl);
-}
-
-.sessionMain {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--space-lg);
-    margin-bottom: var(--space-lg);
-    flex-wrap: wrap;
-}
-
-.sessionMain h2 {
-    font-size: 1.5rem;
-}
-
-.sessionType {
-    padding: var(--space-sm) var(--space-md);
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: var(--radius-md);
-    font-family: var(--font-display);
-    font-weight: 600;
-}
-
-.sessionDetails {
-    display: flex;
-    gap: var(--space-2xl);
-    flex-wrap: wrap;
-}
-
-.sessionDetail {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-}
-
-.detailLabel {
-    font-size: 0.75rem;
-    color: rgba(255, 255, 255, 0.5);
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-}
-
-.detailValue {
-    font-family: var(--font-display);
-    font-size: 1.1rem;
-    font-weight: 600;
-}
-
-/* No Session */
-.noSession {
-    text-align: center;
-    padding: var(--space-xl);
-}
-
-.noSessionIcon {
-    font-size: 3rem;
-    display: block;
-    margin-bottom: var(--space-md);
-    opacity: 0.6;
-}
-
-.noSession h3 {
-    margin-bottom: var(--space-sm);
-}
-
-.noSession p {
-    color: rgba(255, 255, 255, 0.5);
-}
-
-/* Content */
-.content {
-    padding: var(--space-2xl) 0;
-}
-
-.sectionTitle {
-    margin-bottom: var(--space-lg);
-    font-size: 1.25rem;
-}
-
-/* Timing Grid */
-.timingGrid {
-    background: var(--carbon-surface);
-    border: 1px solid var(--carbon-border);
-    border-radius: var(--radius-lg);
-    overflow: hidden;
-}
-
-.timingRow {
-    display: grid;
-    grid-template-columns: 50px 1fr 200px 80px;
-    gap: var(--space-md);
-    padding: var(--space-md) var(--space-lg);
-    align-items: center;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    transition: var(--transition-fast);
-}
-
-.timingRow:hover {
-    background: rgba(255, 255, 255, 0.03);
-}
-
-.timingRow:last-child {
-    border-bottom: none;
-}
-
-.position {
-    font-family: var(--font-display);
-    font-size: 1.25rem;
-    font-weight: 800;
-    color: rgba(255, 255, 255, 0.7);
-}
-
-.driverInfo {
-    display: flex;
-    align-items: center;
-    gap: var(--space-md);
-}
-
-.driverNum {
-    font-family: var(--font-display);
-    font-weight: 700;
-    color: var(--racing-red);
-    min-width: 40px;
-}
-
-.driverName {
+    border-radius: var(--radius-sm);
     color: var(--checkered-white);
 }
 
-.driverName strong {
-    text-transform: uppercase;
-    font-weight: 700;
-}
-
-.teamName {
-    color: rgba(255, 255, 255, 0.6);
-    font-size: 0.9rem;
-}
-
-.country {
-    font-size: 0.85rem;
-    color: rgba(255, 255, 255, 0.5);
-    background: rgba(255, 255, 255, 0.1);
-    padding: var(--space-xs) var(--space-sm);
-    border-radius: var(--radius-sm);
-    text-align: center;
-}
-
-/* Loading */
-.loading {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: var(--space-3xl);
-    gap: var(--space-lg);
-}
-
-.spinner {
-    width: 50px;
-    height: 50px;
-    border: 4px solid rgba(255, 255, 255, 0.1);
-    border-top-color: var(--racing-red);
+.liveBadge::before {
+    content: '';
+    width: 0.45rem;
+    height: 0.45rem;
     border-radius: 50%;
-    animation: spin 1s linear infinite;
+    background: currentColor;
+    animation: pulse 1.5s ease infinite;
 }
 
-@keyframes spin {
-    to {
-        transform: rotate(360deg);
-    }
+@keyframes pulse {
+    50% { opacity: 0.3; }
 }
 
-.loading p {
-    color: rgba(255, 255, 255, 0.5);
+.header h1 {
+    font-size: clamp(1.6rem, 4vw, 2.4rem);
+    margin: 0;
 }
 
-/* Data Info */
-.dataInfo {
-    padding: var(--space-2xl) 0;
+.weekendLink {
+    display: inline-block;
+    margin-top: var(--space-sm);
+    color: var(--silver-chrome);
+    font-size: 0.9rem;
+    text-decoration: underline;
+    text-underline-offset: 3px;
 }
 
-.dataCard {
-    background: linear-gradient(135deg, rgba(225, 6, 0, 0.1) 0%, var(--carbon-surface) 100%);
-    border: 1px solid var(--carbon-border);
-    border-radius: var(--radius-lg);
-    padding: var(--space-xl);
+.updated {
+    color: var(--silver-chrome);
+    font-size: 0.85rem;
+    font-variant-numeric: tabular-nums;
 }
 
-.dataCard h3 {
+.weather {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-md) var(--space-xl);
+    margin: var(--space-lg) 0 0;
+}
+
+.weather div {
+    display: flex;
+    gap: var(--space-sm);
+    align-items: baseline;
+}
+
+.weather dt {
+    color: var(--silver-chrome);
+    font-size: 0.8rem;
+}
+
+.weather dd {
+    margin: 0;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+.layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 20rem;
+    gap: var(--space-xl);
+    padding-top: var(--space-xl);
+}
+
+.sectionTitle {
+    font-size: 1rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--silver-chrome);
     margin-bottom: var(--space-md);
 }
 
-.dataCard p {
-    color: rgba(255, 255, 255, 0.7);
-    margin-bottom: var(--space-sm);
-    line-height: 1.6;
+.empty {
+    color: var(--silver-chrome);
+    padding: var(--space-lg);
+    border: 1px solid var(--carbon-border);
+    border-radius: var(--radius-md);
 }
 
-.dataCard a {
-    color: var(--racing-red);
+.tableWrap {
+    overflow-x: auto;
+    border: 1px solid var(--carbon-border);
+    border-radius: var(--radius-md);
 }
 
-/* Responsive */
-@media (max-width: 768px) {
-    .timingRow {
-        grid-template-columns: 40px 1fr;
-        gap: var(--space-sm);
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.92rem;
+}
+
+.table th,
+.table td {
+    padding: 0.6rem 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid var(--carbon-border);
+    white-space: nowrap;
+}
+
+.table thead th {
+    color: var(--silver-chrome);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    background: var(--carbon-dark);
+}
+
+.table tbody tr:last-child > * {
+    border-bottom: none;
+}
+
+.table tbody tr:hover {
+    background: var(--carbon-light);
+}
+
+.pos {
+    width: 3rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.driver {
+    font-weight: 400;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.teamBar {
+    width: 4px;
+    height: 1.4rem;
+    border-radius: 2px;
+    background: var(--team);
+    flex-shrink: 0;
+}
+
+.driverLink {
+    display: inline-flex;
+    gap: 0.5rem;
+    align-items: baseline;
+    color: inherit;
+    text-decoration: none;
+}
+
+.driverLink:hover .code {
+    text-decoration: underline;
+}
+
+.code {
+    font-family: var(--font-display);
+    font-weight: 700;
+    letter-spacing: 0.04em;
+}
+
+.fullName {
+    color: var(--silver-chrome);
+}
+
+.team {
+    color: var(--silver-chrome);
+    font-size: 0.8rem;
+}
+
+.mono {
+    font-variant-numeric: tabular-nums;
+}
+
+.muted {
+    color: var(--silver-chrome);
+}
+
+.tyre {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.tyreBadge {
+    display: inline-grid;
+    place-items: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    border: 3px solid var(--tyre);
+    border-radius: 50%;
+    font-size: 0.7rem;
+    font-weight: 700;
+}
+
+.tyreAge {
+    color: var(--silver-chrome);
+    font-size: 0.8rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.messages {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    max-height: 40rem;
+    overflow-y: auto;
+    border: 1px solid var(--carbon-border);
+    border-radius: var(--radius-md);
+}
+
+.message {
+    display: grid;
+    gap: 0.2rem;
+    padding: 0.7rem 0.9rem;
+    border-bottom: 1px solid var(--carbon-border);
+    border-left: 3px solid transparent;
+    font-size: 0.88rem;
+}
+
+.message:last-child {
+    border-bottom: none;
+}
+
+.message[data-flag='YELLOW'],
+.message[data-flag='DOUBLE YELLOW'] {
+    border-left-color: var(--pit-lane-yellow);
+}
+
+.message[data-flag='RED'] {
+    border-left-color: var(--racing-red);
+}
+
+.message[data-flag='GREEN'],
+.message[data-flag='CLEAR'] {
+    border-left-color: #2fb36d;
+}
+
+.message[data-flag='CHEQUERED'] {
+    border-left-color: var(--checkered-white);
+}
+
+.messageMeta {
+    color: var(--silver-chrome);
+    font-size: 0.75rem;
+    font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 960px) {
+    .layout {
+        grid-template-columns: 1fr;
     }
+}
 
-    .teamName,
-    .country {
+@media (max-width: 640px) {
+    .fullName,
+    .team,
+    .optional {
         display: none;
     }
+}
 
-    .sessionDetails {
-        gap: var(--space-lg);
+@media (prefers-reduced-motion: reduce) {
+    .liveBadge::before {
+        animation: none;
     }
 }

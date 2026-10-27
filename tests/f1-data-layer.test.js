@@ -419,7 +419,7 @@ describe('live snapshot', () => {
         installFetch((url, options) => {
             requested.push({ url, options });
             if (url.pathname.endsWith('/sessions')) return [{ session_key: 500, session_name: 'Race', date_start: '2026-10-27T11:00:00Z', date_end: '2026-10-27T14:00:00Z' }];
-            if (url.pathname.endsWith('/drivers')) return [{ driver_number: 1, name_acronym: 'NOR', full_name: 'Lando Norris', team_name: 'McLaren' }];
+            if (url.pathname.endsWith('/drivers')) return [{ driver_number: 1, name_acronym: 'NOR', full_name: 'Lando Norris', team_name: 'McLaren', team_colour: 'FF8000' }];
             if (url.pathname.endsWith('/position')) return [
                 { driver_number: 1, position: 2, date: '2026-10-27T11:59:00Z' },
                 { driver_number: 1, position: 1, date: '2026-10-27T12:00:00Z' },
@@ -444,11 +444,53 @@ describe('live snapshot', () => {
             gapToLeader: 0,
             interval: 0,
             lastLap: { lapNumber: 2, duration: 90.8 },
-            stint: { compound: 'SOFT' },
+            stint: { compound: 'SOFT', age: 2 },
+            team: 'McLaren',
+            teamColor: '#FF8000',
         });
-        expect(snapshot.weather.air_temperature).toBe(25);
+        expect(snapshot.isRace).toBe(true);
+        expect(snapshot.session).toMatchObject({ key: 500, name: 'Race' });
+        expect(snapshot.weather.airTemperature).toBe(25);
         expect(snapshot.raceControl[0].message).toBe('Latest');
         expect(requested.every(({ options }) => options.cache === 'no-store')).toBe(true);
+    });
+
+    it('ranks practice and qualifying by best lap and skips race intervals', async () => {
+        vi.setSystemTime(new Date('2026-10-27T12:00:00Z'));
+        vi.stubEnv('OPENF1_USERNAME', '');
+        vi.stubEnv('OPENF1_PASSWORD', '');
+        const requested = [];
+        installFetch((url) => {
+            requested.push(url);
+            if (url.pathname.endsWith('/sessions')) return [{ session_key: 501, session_name: 'Qualifying', session_type: 'Qualifying', date_start: '2026-10-27T11:00:00Z', date_end: '2026-10-27T13:00:00Z' }];
+            if (url.pathname.endsWith('/drivers')) return [
+                { driver_number: 1, name_acronym: 'NOR', team_name: 'McLaren' },
+                { driver_number: 3, name_acronym: 'VER', team_name: 'Red Bull Racing' },
+            ];
+            if (url.pathname.endsWith('/position')) return [
+                { driver_number: 3, position: 1, date: '2026-10-27T11:50:00Z' },
+                { driver_number: 1, position: 2, date: '2026-10-27T11:50:00Z' },
+            ];
+            if (url.pathname.endsWith('/laps')) return [
+                { driver_number: 3, lap_number: 3, lap_duration: 78.5 },
+                { driver_number: 3, lap_number: 4, lap_duration: null },
+                { driver_number: 1, lap_number: 2, lap_duration: 78.9 },
+                { driver_number: 1, lap_number: 3, lap_duration: 79.4 },
+            ];
+            if (/\/(stints|race_control|weather)$/.test(url.pathname)) return [];
+            throw new Error(`Unexpected test request: ${url}`);
+        });
+
+        const snapshot = await getLiveSnapshot();
+
+        expect(snapshot.isRace).toBe(false);
+        expect(requested.some((url) => url.pathname.endsWith('/intervals'))).toBe(false);
+        expect(requested.find((url) => url.pathname.endsWith('/laps')).searchParams.has('date_start>')).toBe(false);
+        expect(snapshot.positions.map((row) => [row.code, row.bestLap?.duration, row.gapToLeader])).toEqual([
+            ['VER', 78.5, 0],
+            ['NOR', 78.9, 0.4],
+        ]);
+        expect(snapshot.positions[1].lastLap.lapNumber).toBe(3);
     });
 });
 
