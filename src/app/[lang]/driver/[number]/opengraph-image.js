@@ -1,10 +1,13 @@
 import { ImageResponse } from 'next/og';
 import { getCareerStats } from '@/lib/f1/compare';
+import { FULL_POLE_DATA_FROM, POLE_DATA_FROM } from '@/lib/f1/career';
+import { notFound } from 'next/navigation';
 import { resolveDriverRoute } from './driver-data';
 
 export const alt = 'Formula 1 driver profile on Pit Lane Hub';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
+export const revalidate = 3600;
 
 function Brand() {
     return (
@@ -50,44 +53,27 @@ function Frame({ colour, children }) {
     );
 }
 
-function fallback() {
-    return new ImageResponse(
-        (
-            <Frame colour="#E10600">
-                <Brand />
-                <div style={{ display: 'flex', fontSize: 72, fontWeight: 800, letterSpacing: -2 }}>Formula 1 drivers</div>
-                <div style={{ display: 'flex', fontSize: 26, color: '#C0C0C0' }}>Career records from 1950 to today</div>
-            </Frame>
-        ),
-        size,
-    );
-}
-
-async function loadCard(params) {
+export default async function DriverOpenGraphImage({ params }) {
+    const { number } = await params;
+    const route = await resolveDriverRoute(number);
+    if (!route) notFound();
+    const { driver } = route;
+    let career = null;
     try {
-        const { number } = await params;
-        const route = await resolveDriverRoute(number);
-        if (!route) return null;
-        const { driver } = route;
-        const career = driver.driverId ? await getCareerStats(driver.driverId) : null;
-        const stats = career ? [
-            ['Titles', career.championships],
-            ['Wins', career.wins],
-            ['Podiums', career.podiums],
-            ['Poles', career.poles],
-            ['Starts', career.starts],
-        ] : [];
-        return { driver, stats };
+        career = driver.driverId ? await getCareerStats(driver.driverId) : null;
     } catch (error) {
         console.error('[driver opengraph-image]', error);
-        return null;
     }
-}
-
-export default async function DriverOpenGraphImage({ params }) {
-    const card = await loadCard(params);
-    if (!card) return fallback();
-    const { driver, stats } = card;
+    const poleLabel = career?.poleCoverage === 'none'
+        ? `Poles before ${POLE_DATA_FROM}`
+        : career?.poleCoverage === 'partial' ? `Poles complete since ${FULL_POLE_DATA_FROM}` : 'Poles';
+    const stats = career ? [
+        ['Titles', career.championships],
+        ['Wins', career.wins],
+        ['Podiums', career.podiums],
+        [poleLabel, career.poleCoverage === 'none' ? '—' : career.poles],
+        ['Entries', career.entries],
+    ] : [];
     return new ImageResponse(
         (
             <Frame colour={driver.colour}>

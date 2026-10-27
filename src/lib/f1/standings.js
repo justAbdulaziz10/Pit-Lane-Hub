@@ -246,26 +246,14 @@ export function currentGridDrivers(team, grid) {
     return current.length > 0 ? current : drivers;
 }
 
-/**
- * Lookups built from the current season's teams (`getTeams()`): readable team
- * colours and canonical names by constructorId, and driver page links for the
- * drivers on the current grid (`getGrid()`; falls back to the team lists).
- */
-export function currentSeasonLookups(teams, grid = []) {
+/** Current-season team colours and names, kept separate from historic display names. */
+export function currentSeasonLookups(teams) {
     const colorById = new Map();
     const nameById = new Map();
-    const driverHrefById = new Map();
-    const linkable = [];
     for (const team of teams || []) {
         if (!team?.constructorId) continue;
         colorById.set(team.constructorId, team.color);
         nameById.set(team.constructorId, team.name);
-        linkable.push(...(team.drivers || []));
     }
-    const drivers = grid && grid.length > 0 ? grid : linkable;
-    for (const driver of drivers) {
-        const key = driver.racingNumber ?? driver.number ?? driver.driverId;
-        if (driver.driverId && key != null) driverHrefById.set(driver.driverId, `/driver/${encodeURIComponent(key)}`);
-    }
-    return { colorById, nameById, driverHrefById };
+    return { colorById, nameById };
 }

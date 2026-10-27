@@ -17,6 +17,7 @@ export async function generateMetadata({ params }) {
       title: t.metadataTitle,
       description: t.metadataDescription,
       url: localePath(lang, '/drivers'),
+      images: [localePath(lang, '/opengraph-image')],
       locale: lang === 'ar' ? 'ar_SA' : 'en_US',
     },
   };

@@ -261,7 +261,7 @@ describe('getRaceDates', () => {
 });
 
 describe('currentSeasonLookups', () => {
-    it('builds colour, name and driver link maps keyed by Jolpica ids', () => {
+    it('builds current-season colour and name maps keyed by Jolpica ids', () => {
         const lookups = currentSeasonLookups([
             {
                 constructorId: 'red_bull',
@@ -278,22 +278,19 @@ describe('currentSeasonLookups', () => {
         ]);
         expect(lookups.colorById.get('rb')).toBe('#6C98FF');
         expect(lookups.nameById.get('red_bull')).toBe('Red Bull Racing');
-        expect(lookups.driverHrefById.get('max_verstappen')).toBe('/driver/3');
-        expect(lookups.driverHrefById.get('lawson')).toBe('/driver/30');
-        expect(lookups.driverHrefById.get('lindblad')).toBe('/driver/lindblad');
         expect(currentSeasonLookups(null).colorById.size).toBe(0);
     });
 
-    it('links only drivers on the current grid when the grid is known', () => {
+    it('does not depend on the latest grid to build team lookups', () => {
         const teams = [{
             constructorId: 'rb',
             name: 'Racing Bulls',
             color: '#6C98FF',
             drivers: [{ driverId: 'lawson', racingNumber: 30 }, { driverId: 'tsunoda', racingNumber: 22 }],
         }];
-        const lookups = currentSeasonLookups(teams, [{ driverId: 'lawson', racingNumber: 30 }]);
-        expect(lookups.driverHrefById.get('lawson')).toBe('/driver/30');
-        expect(lookups.driverHrefById.has('tsunoda')).toBe(false);
+        const lookups = currentSeasonLookups(teams);
+        expect(lookups.nameById.get('rb')).toBe('Racing Bulls');
+        expect(lookups.colorById.get('rb')).toBe('#6C98FF');
     });
 });
 

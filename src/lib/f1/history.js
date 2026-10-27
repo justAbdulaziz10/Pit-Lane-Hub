@@ -27,7 +27,8 @@ export function latestList(lists) {
     };
 }
 
-function mapDriverStanding(item) {
+function mapDriverStanding(item, season) {
+    const finalConstructor = item.Constructors?.at(-1);
     return {
         position: Number(item.position),
         points: Number(item.points),
@@ -40,23 +41,23 @@ function mapDriverStanding(item) {
             lastName: item.Driver?.familyName || '',
             nationality: item.Driver?.nationality || null,
         },
-        team: item.Constructors?.[0]
+        team: finalConstructor
             ? {
-                id: item.Constructors[0].constructorId,
-                name: canonicalTeamNameForId(item.Constructors[0].constructorId, item.Constructors[0].name),
+                id: finalConstructor.constructorId,
+                name: canonicalTeamNameForId(finalConstructor.constructorId, finalConstructor.name, season),
             }
             : null,
     };
 }
 
-function mapConstructorStanding(item) {
+function mapConstructorStanding(item, season) {
     return {
         position: Number(item.position),
         points: Number(item.points),
         wins: Number(item.wins),
         team: {
             id: item.Constructor?.constructorId,
-            name: canonicalTeamNameForId(item.Constructor?.constructorId, item.Constructor?.name),
+            name: canonicalTeamNameForId(item.Constructor?.constructorId, item.Constructor?.name, season),
             nationality: item.Constructor?.nationality || null,
         },
     };
@@ -108,8 +109,8 @@ const seasonSummaryLoader = (revalidate) => async (year) => {
                     : null,
             };
         }),
-        driverStandings: (driverList?.DriverStandings || []).map(mapDriverStanding),
-        constructorStandings: (constructorList?.ConstructorStandings || []).map(mapConstructorStanding),
+        driverStandings: (driverList?.DriverStandings || []).map((item) => mapDriverStanding(item, season)),
+        constructorStandings: (constructorList?.ConstructorStandings || []).map((item) => mapConstructorStanding(item, season)),
     };
 };
 
@@ -129,28 +130,33 @@ function seasonComplete(calendar, now = Date.now()) {
     return Boolean(finalEvent?.raceStart) && now >= Date.parse(finalEvent.raceStart) + 3 * 60 * 60 * 1000;
 }
 
-async function seasonChampions(year) {
+async function seasonChampions(year, finalRound) {
+    const revalidate = year === getSeasonYear() ? 300 : 86400;
     const [driverLists, constructorLists] = await Promise.all([
-        fetchJolpicaPages(`${year}/driverstandings/1`, { select: standingsLists, revalidate: 86400, tags: [F1_CACHE_TAGS.champions] }),
-        fetchJolpicaPages(`${year}/constructorstandings/1`, { select: standingsLists, revalidate: 86400, tags: [F1_CACHE_TAGS.champions] }),
+        fetchJolpicaPages(`${year}/driverstandings/1`, { select: standingsLists, revalidate, tags: [F1_CACHE_TAGS.champions] }),
+        fetchJolpicaPages(`${year}/constructorstandings/1`, { select: standingsLists, revalidate, tags: [F1_CACHE_TAGS.champions] }),
     ]);
-    const driver = latestList(driverLists)?.DriverStandings?.[0]?.Driver;
-    const constructor = latestList(constructorLists)?.ConstructorStandings?.[0]?.Constructor;
+    const driverList = latestList(driverLists);
+    const constructorList = latestList(constructorLists);
+    if (Number(driverList?.round) !== Number(finalRound) || Number(constructorList?.round) !== Number(finalRound)) return null;
+    const driver = driverList?.DriverStandings?.[0]?.Driver;
+    const constructor = constructorList?.ConstructorStandings?.[0]?.Constructor;
+    if (!driver || !constructor) return null;
     return {
-        driver: driver ? {
+        driver: {
             year,
             driverId: driver.driverId,
             code: driver.code || null,
             firstName: driver.givenName || '',
             lastName: driver.familyName || '',
             nationality: driver.nationality || null,
-        } : null,
-        constructor: constructor ? {
+        },
+        constructor: {
             year,
             constructorId: constructor.constructorId,
             name: constructor.name,
             nationality: constructor.nationality || null,
-        } : null,
+        },
     };
 }
 
@@ -168,14 +174,18 @@ async function loadChampions() {
     for (let year = lastKnown + 1; year <= currentYear; year += 1) {
         const calendar = await getCalendar(year);
         if (!seasonComplete(calendar)) break;
-        const { driver, constructor } = await seasonChampions(year);
-        if (driver) drivers.push(driver);
-        if (constructor) constructors.push(constructor);
+        const finalRound = Math.max(...calendar.rounds.map((event) => Number(event.round)).filter(Number.isFinite));
+        if (!Number.isFinite(finalRound)) break;
+        const champions = await seasonChampions(year, finalRound);
+        if (!champions) break;
+        drivers.push(champions.driver);
+        constructors.push(champions.constructor);
     }
     return { drivers, constructors };
 }
 
-const cachedChampions = cacheF1Data(loadChampions, ['champions'], 86400, [F1_CACHE_TAGS.champions]);
+// The current season's title can change at the finale, so retry incomplete standings quickly.
+const cachedChampions = cacheF1Data(loadChampions, ['champions'], 300, [F1_CACHE_TAGS.champions]);
 
 export function getChampions() {
     return cachedChampions();

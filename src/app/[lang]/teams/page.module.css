@@ -150,9 +150,15 @@
     width: 60px;
     height: 60px;
     border-radius: 50%;
-    object-fit: cover;
+    overflow: hidden;
     border: 2px solid var(--team-color, var(--accent));
-    image-rendering: -webkit-optimize-contrast;
+    flex: 0 0 auto;
+}
+
+.driverImage {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
 }
 
 .driverPhotoPlaceholder {

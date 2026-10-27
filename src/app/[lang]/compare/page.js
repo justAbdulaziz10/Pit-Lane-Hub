@@ -10,17 +10,25 @@ import { pick } from '@/lib/i18n/messages';
 import compareMessages from '@/lib/i18n/messages/compare';
 import styles from './page.module.css';
 
-export async function generateMetadata({ params }) {
+export async function generateMetadata({ params, searchParams }) {
     const { lang } = await params;
     const t = pick(compareMessages, lang);
+    const query = await searchParams;
+    const pair = new URLSearchParams();
+    const a = param(query?.a);
+    const b = param(query?.b);
+    if (a) pair.set('a', a);
+    if (b) pair.set('b', b);
+    const path = pair.size ? `/compare?${pair.toString()}` : '/compare';
     return {
         title: t.metadataTitle,
-        description: t.metadataDescription,
-        alternates: localeAlternates(lang, '/compare'),
+        description: t.metadataDescriptionEntries,
+        alternates: localeAlternates(lang, path),
         openGraph: {
             title: t.metadataTitle,
             description: t.metadataOgDescription,
-            url: localePath(lang, '/compare'),
+            url: localePath(lang, path),
+            images: [localePath(lang, '/opengraph-image')],
             locale: lang === 'ar' ? 'ar_SA' : 'en_US',
         },
     };

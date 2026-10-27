@@ -1,21 +1,20 @@
 import { getAllTimeDriver, isValidDriverId } from '@/lib/f1/compare';
-import { nationalityInfo, resolveDriver } from '@/lib/f1/drivers';
+import { getSeasonDriverList, nationalityInfo, resolveDriver } from '@/lib/f1/drivers';
 import { cacheF1Data, F1_CACHE_TAGS, fetchJolpicaPages } from '@/lib/f1/http';
 import { canonicalTeamName, ensureTeamColorContrast } from '@/lib/f1/team-utils';
+import { getSeasonYear } from '@/lib/f1/year';
 import { pick } from '@/lib/i18n/messages';
 import driverMessages from '@/lib/i18n/messages/drivers';
+import { driverPath } from './driver-path';
 
 const FALLBACK_COLOUR = '#E10600';
-
-/** Current-grid drivers live at /driver/<racing number>; everyone else at /driver/<driverId>. */
-export function driverPath(driver) {
-    if (driver?.current && Number.isInteger(driver.racingNumber)) return `/driver/${driver.racingNumber}`;
-    return `/driver/${driver.driverId}`;
-}
+export { driverPath } from './driver-path';
 
 /**
  * Resolve a /driver/[number] segment: a racing number, driverId or code on the
- * current grid, or the driverId of any driver since 1950. Null when unknown.
+ * current grid, or the driverId of any driver since 1950. Numeric legacy URLs
+ * resolve through the season entry list so a driver missing the latest session
+ * still redirects to their stable driverId URL.
  */
 export async function resolveDriverRoute(segment) {
     const value = decodeURIComponent(String(segment || '')).trim();
@@ -33,13 +32,23 @@ export async function resolveDriverRoute(segment) {
     }
 
     const id = value.toLowerCase();
-    if (/^\d+$/.test(id) || !isValidDriverId(id)) return null;
-    const historical = await getAllTimeDriver(id);
+    let driverId = id;
+    let seasonEntry = null;
+    if (/^\d+$/.test(id)) {
+        const seasonDrivers = await getSeasonDriverList(getSeasonYear());
+        seasonEntry = seasonDrivers.find((driver) => driver.number === Number(id)) || null;
+        if (!seasonEntry?.driverId) return null;
+        driverId = seasonEntry.driverId;
+    }
+    if (!isValidDriverId(driverId)) return null;
+    const historical = await getAllTimeDriver(driverId);
     if (!historical) return null;
     const driver = {
         ...historical,
+        ...(seasonEntry || {}),
+        driverId,
         current: false,
-        racingNumber: null,
+        racingNumber: seasonEntry?.number ?? null,
         team: null,
         headshot: null,
         flag: nationalityInfo(historical.nationality).flag,
@@ -60,7 +69,15 @@ function mapSeasonResult(race) {
         positionText: result.positionText || null,
         status: result.status || null,
         points: Number(result.points) || 0,
+        constructorId: result.Constructor?.constructorId || null,
     };
+}
+
+export function gridFinishDelta(result) {
+    const grid = Number(result?.grid);
+    const finish = Number(result?.position);
+    if (!Number.isFinite(grid) || grid < 1 || !Number.isFinite(finish) || finish < 1) return null;
+    return grid - finish;
 }
 
 async function loadSeasonResults(driverId, year) {

@@ -40,6 +40,7 @@
 
 .table tbody th {
     font-weight: 400;
+    white-space: nowrap;
 }
 
 .table tbody tr:last-child th,
@@ -86,6 +87,10 @@
 .driverName strong {
     text-transform: uppercase;
     font-weight: 700;
+}
+
+.table tbody th .driverName {
+    white-space: nowrap;
 }
 
 .code {
@@ -178,6 +183,18 @@
     border-color: rgba(255, 255, 255, 0.4);
 }
 
+.gap {
+    color: var(--text-2);
+    white-space: nowrap;
+}
+
+.tieMark {
+    margin-inline-start: 0.2em;
+    color: var(--text-2);
+    font-size: 0.75em;
+    text-decoration: none;
+}
+
 @media (max-width: 640px) {
     .table th,
     .table td {
@@ -186,5 +203,14 @@
 
     .hideSmall {
         display: none;
+    }
+
+    .hideMobile {
+        display: none;
+    }
+
+    .table .num {
+        width: auto;
+        white-space: nowrap;
     }
 }

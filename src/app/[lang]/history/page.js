@@ -12,22 +12,25 @@ import {
     parseSeasonYear,
 } from '@/lib/f1/standings';
 import { getSeasonYear } from '@/lib/f1/year';
+import { driverPath } from '@/app/[lang]/driver/[number]/driver-data';
 import { fill, pick } from '@/lib/i18n/messages';
 import historyMessages from '@/lib/i18n/messages/history';
 import { formatDate, formatNumber } from '@/lib/i18n/format';
 import { localeAlternates, localePath } from '@/lib/i18n/config';
 import { raceName } from '@/lib/i18n/f1-names';
 import { loadCurrentSeasonLookups, lookupsForSeason } from '../standings/_components/lookups';
+import YearPicker from '../standings/_components/YearPicker';
+import { allTimeRecords, viewHref } from './history-utils';
 import {
     ConstructorStandingsTable,
     DriverStandingsTable,
     standingsStyles,
-    YearPicker,
 } from '../standings/_components/StandingsTables';
 import styles from './page.module.css';
 
 const VIEWS = ['races', 'drivers', 'constructors'];
 const DEFAULT_VIEW = 'races';
+const EMPTY_LOOKUPS = { colorById: new Map(), nameById: new Map() };
 
 async function resolveParams(searchParams) {
     const params = await searchParams;
@@ -42,26 +45,26 @@ export async function generateMetadata({ params, searchParams }) {
     await connection();
     const { lang } = await params;
     const t = pick(historyMessages, lang);
-    const { year, explicitYear } = await resolveParams(searchParams);
+    const { year, view, explicitYear } = await resolveParams(searchParams);
     const title = explicitYear
         ? fill(t.metadataSeasonTitle, { year: formatNumber(lang, year, { useGrouping: false }) })
         : t.metadataTitle;
     const description = explicitYear
         ? fill(t.metadataSeasonDescription, { year: formatNumber(lang, year, { useGrouping: false }) })
         : t.metadataDescription;
-    const path = explicitYear ? `/history?year=${year}` : '/history';
+    const path = explicitYear ? viewHref(year, view, 'en') : '/history';
     return {
         title,
         description,
         alternates: localeAlternates(lang, path),
-        openGraph: { title, description, url: localePath(lang, path), locale: lang === 'ar' ? 'ar_SA' : 'en_US' },
+        openGraph: {
+            title,
+            description,
+            url: localePath(lang, path),
+            images: [localePath(lang, '/opengraph-image')],
+            locale: lang === 'ar' ? 'ar_SA' : 'en_US',
+        },
     };
-}
-
-function viewHref(year, view, lang) {
-    const params = new URLSearchParams({ year: String(year) });
-    if (view !== DEFAULT_VIEW) params.set('view', view);
-    return localePath(lang, `/history?${params.toString()}`);
 }
 
 function personName(person) {
@@ -112,13 +115,13 @@ async function RacesView({ year, lookups, lang, t }) {
                                 </td>
                                 <td className={standingsStyles.driverName}>
                                     {winner
-                                        ? <MaybeLink href={lookups.driverHrefById.get(winner.driverId)} lang={lang}>{personName(winner)}</MaybeLink>
+                                        ? <MaybeLink href={driverPath({ driverId: winner.driverId })} lang={lang}>{personName(winner)}</MaybeLink>
                                         : <span className={standingsStyles.muted}>-</span>}
                                 </td>
                                 <td className={`${standingsStyles.muted} ${standingsStyles.hideSmall}`}>
                                     {teamId && (
                                         <Link href={localePath(lang, `/team/${encodeURIComponent(teamId)}`)}>
-                                            {lookups.nameById.get(teamId) || teamNames.get(teamId) || teamId}
+                                            <bdi dir="auto">{lookups.nameById.get(teamId) || teamNames.get(teamId) || teamId}</bdi>
                                         </Link>
                                     )}
                                 </td>
@@ -174,7 +177,7 @@ async function ConstructorsView({ year, lookups, lang, t }) {
     );
 }
 
-function ChampionsTable({ champions, lookups, lang, t }) {
+function ChampionsTable({ champions, lang, t }) {
     const constructorsByYear = new Map(champions.constructors.map((item) => [Number(item.year), item]));
     const rows = [...champions.drivers].sort((a, b) => b.year - a.year);
     return (
@@ -197,11 +200,11 @@ function ChampionsTable({ champions, lookups, lang, t }) {
                                     <Link href={viewHref(driver.year, DEFAULT_VIEW, lang)}><bdi dir="ltr">{formatNumber(lang, driver.year, { useGrouping: false })}</bdi></Link>
                                 </th>
                                 <td className={standingsStyles.driverName}>
-                                    <MaybeLink href={lookups.driverHrefById.get(driver.driverId)} lang={lang}>{personName(driver)}</MaybeLink>
+                                    <MaybeLink href={driverPath({ driverId: driver.driverId })} lang={lang}>{personName(driver)}</MaybeLink>
                                 </td>
                                 <td>
                                     {constructor ? (
-                                        <Link href={localePath(lang, `/team/${encodeURIComponent(constructor.constructorId)}`)}>{constructor.name}</Link>
+                                        <Link href={localePath(lang, `/team/${encodeURIComponent(constructor.constructorId)}`)}><bdi dir="auto">{constructor.name}</bdi></Link>
                                     ) : (
                                         <span className={standingsStyles.muted}>{t.notAwarded}</span>
                                     )}
@@ -215,16 +218,43 @@ function ChampionsTable({ champions, lookups, lang, t }) {
     );
 }
 
+function AllTimeRecords({ records, lang, t }) {
+    return (
+        <section className={styles.content} aria-labelledby="records-heading">
+            <div className="container">
+                <h2 id="records-heading" className={styles.sectionTitle}>{t.allTimeRecords}</h2>
+                <dl className={styles.recordsGrid}>
+                    {[
+                        [t.mostDriverTitles, records.drivers],
+                        [t.mostConstructorTitles, records.constructors],
+                    ].map(([label, leaders]) => (
+                        <div key={label} className={styles.recordGroup}>
+                            <dt>{label}</dt>
+                            {leaders.length ? leaders.map((record) => (
+                                <dd key={record.id} className={styles.record}>
+                                    <bdi dir="auto" className={styles.recordName}>{record.name}</bdi>
+                                    <bdi dir="ltr" className={styles.recordValue}>{formatNumber(lang, record.titles)}</bdi>
+                                </dd>
+                            )) : <dd className={styles.record}>—</dd>}
+                        </div>
+                    ))}
+                </dl>
+            </div>
+        </section>
+    );
+}
+
 export default async function HistoryPage({ params, searchParams }) {
     await connection();
     const { lang } = await params;
     const t = pick(historyMessages, lang);
-    const { year, current, view } = await resolveParams(searchParams);
+    const { year, current, view, explicitYear } = await resolveParams(searchParams);
     const [champions, allLookups] = await Promise.all([
         getChampions(),
-        loadCurrentSeasonLookups(current),
+        explicitYear ? loadCurrentSeasonLookups(current) : Promise.resolve(EMPTY_LOOKUPS),
     ]);
-    const lookups = lookupsForSeason(allLookups, year, current);
+    const records = allTimeRecords(champions);
+    const lookups = explicitYear ? lookupsForSeason(allLookups, year, current) : EMPTY_LOOKUPS;
     const SeasonView = view === 'drivers' ? DriversView : view === 'constructors' ? ConstructorsView : RacesView;
 
     return (
@@ -237,34 +267,37 @@ export default async function HistoryPage({ params, searchParams }) {
                         year={year}
                         min={FIRST_DRIVERS_CHAMPIONSHIP_YEAR}
                         max={current}
-                        extraParams={view === DEFAULT_VIEW ? {} : { view }}
+                        extraParams={explicitYear && view !== DEFAULT_VIEW ? { view } : {}}
+                        label={!explicitYear ? t.seasonBrowser : undefined}
                         lang={lang}
                     />
                 </div>
             </header>
 
-            <section className={styles.content} aria-labelledby="season-heading">
-                <div className="container">
-                    <h2 id="season-heading" className={styles.sectionTitle}>{fill(t.yearSeason, { year: formatNumber(lang, year, { useGrouping: false }) })}</h2>
-                    <nav aria-label={fill(t.seasonViews, { year: formatNumber(lang, year, { useGrouping: false }) })} className={styles.views}>
-                        {VIEWS.map((key) => (
-                            <Link
-                                key={key}
-                                href={viewHref(year, key, lang)}
-                                className={`${styles.viewLink} ${key === view ? styles.active : ''}`}
-                                aria-current={key === view ? 'page' : undefined}
-                            >
-                                {t[key]}
-                            </Link>
-                        ))}
-                    </nav>
-                    <SeasonView year={year} lookups={lookups} lang={lang} t={t} />
-                </div>
-            </section>
+            {!explicitYear ? <AllTimeRecords records={records} lang={lang} t={t} /> : (
+                <section className={styles.content} aria-labelledby="season-heading">
+                    <div className="container">
+                        <h2 id="season-heading" className={styles.sectionTitle}>{fill(t.yearSeason, { year: formatNumber(lang, year, { useGrouping: false }) })}</h2>
+                        <nav aria-label={fill(t.seasonViews, { year: formatNumber(lang, year, { useGrouping: false }) })} className={styles.views}>
+                            {VIEWS.map((key) => (
+                                <Link
+                                    key={key}
+                                    href={viewHref(year, key, lang)}
+                                    className={`${styles.viewLink} ${key === view ? styles.active : ''}`}
+                                    aria-current={key === view ? 'page' : undefined}
+                                >
+                                    {t[key]}
+                                </Link>
+                            ))}
+                        </nav>
+                        <SeasonView year={year} lookups={lookups} lang={lang} t={t} />
+                    </div>
+                </section>
+            )}
 
             <section className={styles.content} aria-label={t.worldChampions}>
                 <div className="container">
-                    <ChampionsTable champions={champions} lookups={allLookups} lang={lang} t={t} />
+                    <ChampionsTable champions={champions} lang={lang} t={t} />
                 </div>
             </section>
         </div>

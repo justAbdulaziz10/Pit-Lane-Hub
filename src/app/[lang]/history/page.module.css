@@ -55,7 +55,41 @@
 }
 
 .viewLink.active {
-    background: var(--accent);
-    border-color: var(--accent);
+    background: #c00500;
+    border-color: #c00500;
+    color: #ffffff;
+}
+
+.recordsGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: var(--space-md);
+    margin: 0;
+}
+
+.recordGroup {
+    padding: var(--space-lg);
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    color: var(--text-2);
+}
+
+.record {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-md);
+    margin-top: var(--space-md);
     color: var(--text-1);
+}
+
+.recordName {
+    font-weight: 600;
+}
+
+.recordValue {
+    font-family: var(--font-display);
+    font-stretch: var(--stretch-display);
+    font-weight: 800;
 }

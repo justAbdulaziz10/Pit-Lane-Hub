@@ -6,7 +6,7 @@ import {
     UpstreamError,
 } from './http';
 import { getGrid } from './drivers';
-import { canonicalTeamName } from './team-utils';
+import { canonicalTeamNameForId } from './team-utils';
 import { getSeasonYear } from './year';
 
 const HOUR = 3600000;
@@ -43,23 +43,23 @@ function mapDriver(driver = {}) {
     };
 }
 
-function mapTeam(constructor) {
+function mapTeam(constructor, season) {
     if (!constructor) return null;
     return {
         id: constructor.constructorId || null,
-        name: canonicalTeamName(constructor.name, constructor.constructorId),
+        name: canonicalTeamNameForId(constructor.constructorId, constructor.name, season),
     };
 }
 
 /** Map a Jolpica race or sprint result row. */
-export function mapResultRow(row) {
+export function mapResultRow(row, season = getSeasonYear()) {
     const fastestRank = toNumber(row?.FastestLap?.rank);
     return {
         position: toNumber(row?.position),
         positionText: row?.positionText || row?.position || null,
         number: toNumber(row?.number),
         driver: mapDriver(row?.Driver),
-        team: mapTeam(row?.Constructor),
+        team: mapTeam(row?.Constructor, season),
         grid: toNumber(row?.grid),
         laps: toNumber(row?.laps),
         status: row?.status || null,
@@ -72,12 +72,12 @@ export function mapResultRow(row) {
 }
 
 /** Map a Jolpica qualifying row. */
-export function mapQualifyingRow(row) {
+export function mapQualifyingRow(row, season = getSeasonYear()) {
     return {
         position: toNumber(row?.position),
         number: toNumber(row?.number),
         driver: mapDriver(row?.Driver),
-        team: mapTeam(row?.Constructor),
+        team: mapTeam(row?.Constructor, season),
         q1: row?.Q1 || null,
         q2: row?.Q2 || null,
         q3: row?.Q3 || null,
@@ -134,7 +134,9 @@ async function loadSessionResults(year, round, kind, revalidate) {
         revalidate,
         tags: [F1_CACHE_TAGS.results],
     });
-    return kind === 'qualifying' ? rows.map(mapQualifyingRow) : rows.map(mapResultRow);
+    return kind === 'qualifying'
+        ? rows.map((row) => mapQualifyingRow(row, Number(year)))
+        : rows.map((row) => mapResultRow(row, Number(year)));
 }
 
 const cachedRecentResults = cacheF1Data(

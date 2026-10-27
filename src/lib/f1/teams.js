@@ -46,7 +46,7 @@ async function loadTeams(year) {
 
     return constructors.map((constructor) => {
         const constructorId = constructor.constructorId;
-        const canonicalName = canonicalTeamNameForId(constructorId, constructor.name);
+        const canonicalName = canonicalTeamNameForId(constructorId, constructor.name, year);
         // The latest grid is the current line-up (standings also list replaced
         // drivers); standings cover teams missing from the grid.
         const lineup = grid.filter((driver) => driver.team === canonicalName && driver.driverId);

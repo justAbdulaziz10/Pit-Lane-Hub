@@ -2,6 +2,8 @@ import { connection } from 'next/server';
 import { driverPath } from '@/app/[lang]/driver/[number]/driver-data';
 import DriversGrid from '@/components/DriversGrid';
 import { getGrid } from '@/lib/f1/drivers';
+import { getDriverStandings } from '@/lib/f1/standings';
+import { getSeasonYear } from '@/lib/f1/year';
 import { ensureTeamColorContrast } from '@/lib/f1/team-utils';
 import { getHighQualityPhoto } from '@/lib/photos';
 import { nationalityName } from '@/lib/i18n/f1-names';
@@ -11,7 +13,7 @@ import styles from './page.module.css';
 
 // Metadata (title, description, canonical /drivers) lives in ./layout.js.
 
-function toCardData(driver, lang) {
+function toCardData(driver, lang, standing) {
     const current = { ...driver, current: true };
     return {
         key: driver.driverId || `${driver.racingNumber}-${driver.code}`,
@@ -24,10 +26,12 @@ function toCardData(driver, lang) {
         nationality: nationalityName(driver.nationality, lang),
         flag: driver.flag,
         team: driver.team,
+        position: standing?.position ?? null,
+        points: standing?.points ?? null,
         colour: ensureTeamColorContrast(driver.teamColour || '#E10600'),
         headshot: driver.headshot,
         photo: getHighQualityPhoto(driver.headshot),
-        href: driver.driverId || driver.racingNumber != null ? driverPath(current) : '/drivers',
+        href: driverPath(current) || '/drivers',
     };
 }
 
@@ -36,8 +40,18 @@ export default async function DriversPage({ params, searchParams }) {
     const { lang } = await params;
     const t = pick(driverMessages, lang);
     const { q } = await searchParams;
-    const grid = await getGrid();
-    const drivers = grid.map((driver) => toCardData(driver, lang));
+    const [gridResult, standingsResult] = await Promise.allSettled([getGrid(), getDriverStandings(getSeasonYear())]);
+    if (gridResult.status === 'rejected') throw gridResult.reason;
+    const grid = gridResult.value;
+    const standings = standingsResult.status === 'fulfilled' ? standingsResult.value : { standings: [] };
+    const standingById = new Map(standings.standings.map((row) => [row.driver.id, row]));
+    const gridOrder = new Map(grid.map((driver, index) => [driver.driverId, index]));
+    const orderedGrid = [...grid].sort((a, b) => {
+        const positionA = standingById.get(a.driverId)?.position ?? Infinity;
+        const positionB = standingById.get(b.driverId)?.position ?? Infinity;
+        return positionA - positionB || (gridOrder.get(a.driverId) ?? 0) - (gridOrder.get(b.driverId) ?? 0);
+    });
+    const drivers = orderedGrid.map((driver) => toCardData(driver, lang, standingById.get(driver.driverId)));
     const initialQuery = typeof q === 'string' ? q.slice(0, 40) : '';
 
     return (

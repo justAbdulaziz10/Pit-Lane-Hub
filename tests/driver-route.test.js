@@ -4,10 +4,12 @@ vi.mock('next/cache', () => ({ unstable_cache: (callback) => callback }));
 
 const resolveDriver = vi.fn();
 const getAllTimeDriver = vi.fn();
+const getSeasonDriverList = vi.fn();
 
 vi.mock('@/lib/f1/drivers', async (importOriginal) => ({
     nationalityInfo: (await importOriginal()).nationalityInfo,
     resolveDriver: (...args) => resolveDriver(...args),
+    getSeasonDriverList: (...args) => getSeasonDriverList(...args),
 }));
 vi.mock('@/lib/f1/compare', () => ({
     getAllTimeDriver: (...args) => getAllTimeDriver(...args),
@@ -32,19 +34,34 @@ describe('resolveDriverRoute', () => {
     beforeEach(() => {
         resolveDriver.mockReset();
         getAllTimeDriver.mockReset();
+        getSeasonDriverList.mockReset();
+        getSeasonDriverList.mockResolvedValue([]);
         resolveDriver.mockImplementation(async (value) => (['3', 'max_verstappen', 'VER', 'ver'].includes(value) ? verstappen : null));
         getAllTimeDriver.mockImplementation(async (id) => (id === 'senna'
             ? { driverId: 'senna', firstName: 'Ayrton', lastName: 'Senna', fullName: 'Ayrton Senna', nationality: 'Brazilian' }
-            : null));
+            : id === 'russell'
+                ? { driverId: 'russell', firstName: 'George', lastName: 'Russell', fullName: 'George Russell', nationality: 'British' }
+                : null));
     });
 
-    it('sends every form of a current driver to the racing-number URL', async () => {
+    it('sends every form of a current driver to the stable driverId URL', async () => {
         for (const segment of ['3', 'max_verstappen', 'VER']) {
             const route = await resolveDriverRoute(segment);
-            expect(route.path).toBe('/driver/3');
+            expect(route.path).toBe('/driver/max_verstappen');
             expect(route.driver.current).toBe(true);
             expect(route.driver.colour).toMatch(/^#[0-9A-F]{6}$/);
         }
+    });
+
+    it('resolves a numeric legacy URL from the season entry list when the latest grid omits that driver', async () => {
+        resolveDriver.mockResolvedValue(null);
+        getSeasonDriverList.mockResolvedValue([{ driverId: 'russell', number: 63 }]);
+
+        const route = await resolveDriverRoute('63');
+
+        expect(route.path).toBe('/driver/russell');
+        expect(route.driver.fullName).toBe('George Russell');
+        expect(getAllTimeDriver).toHaveBeenCalledWith('russell');
     });
 
     it('resolves any driver since 1950 by driverId, case-insensitively', async () => {
@@ -64,7 +81,7 @@ describe('resolveDriverRoute', () => {
     });
 
     it('builds the canonical path', () => {
-        expect(driverPath({ current: true, racingNumber: 1, driverId: 'norris' })).toBe('/driver/1');
+        expect(driverPath({ current: true, racingNumber: 1, driverId: 'norris' })).toBe('/driver/norris');
         expect(driverPath({ current: true, racingNumber: null, driverId: 'lindblad' })).toBe('/driver/lindblad');
         expect(driverPath({ current: false, racingNumber: 44, driverId: 'hamilton' })).toBe('/driver/hamilton');
     });

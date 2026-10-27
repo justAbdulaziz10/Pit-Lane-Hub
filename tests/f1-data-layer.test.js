@@ -454,11 +454,18 @@ describe('teams and career/history data', () => {
             race(2025, 2, 1, 2, true),
             race(2025, 3, null, 1, false),
         ];
+        const qualifying = races.map((item, index) => ({
+            season: item.season,
+            round: item.round,
+            raceName: item.raceName,
+            QualifyingResults: [{ position: index === 0 || index === 3 ? '1' : '2' }],
+        }));
         const fetchMock = installFetch((url) => {
             if (url.hostname === 'api.openf1.org') return [];
             if (url.pathname.endsWith('/2026/races.json')) return mrData(0, { RaceTable: { Races: [] } });
             if (/\/\d{4}\/drivers\.json$/.test(url.pathname)) return mrData(0, { DriverTable: { Drivers: [] } });
             if (url.pathname.endsWith('/drivers/norris/results.json')) return mrData(races.length, { RaceTable: { Races: races } });
+            if (url.pathname.endsWith('/drivers/norris/qualifying.json')) return mrData(qualifying.length, { RaceTable: { Races: qualifying } });
             throw new Error(`Unexpected test request: ${url}`);
         });
 
@@ -466,16 +473,20 @@ describe('teams and career/history data', () => {
 
         expect(stats).toEqual({
             driverId: 'norris',
-            starts: 5,
+            entries: 5,
             wins: 2,
             podiums: 4,
-            poles: 3,
+            poles: 2,
+            poleCoverage: 'full',
             fastestLaps: 2,
             championships: 1,
             seasons: 2,
         });
         const careerRequests = fetchMock.mock.calls.map(([input]) => new URL(input).pathname).filter((path) => path.includes('/drivers/norris/'));
-        expect(careerRequests).toEqual(['/ergast/f1/drivers/norris/results.json']);
+        expect(careerRequests.sort()).toEqual([
+            '/ergast/f1/drivers/norris/qualifying.json',
+            '/ergast/f1/drivers/norris/results.json',
+        ]);
     });
 
     it('includes Norris as 2025 champion but excludes the unfinished 2026 season', async () => {
