@@ -37,18 +37,18 @@ function latestSession(sessions, now) {
     return candidates.sort((a, b) => timestamp(a.date_start) - timestamp(b.date_start))[0] || null;
 }
 
-async function getSession(year, token) {
+async function getSession(year, token, now) {
     const sessions = await fetchOpenF1Json(`sessions?year=${encodeURIComponent(year)}`, { token });
     if (!Array.isArray(sessions)) {
         throw new UpstreamError('OpenF1 returned an invalid session list', { source: 'OpenF1' });
     }
-    const selected = latestSession(sessions, Date.now());
+    const selected = latestSession(sessions, now);
     if (selected) return selected;
     const latest = await fetchOpenF1Json('sessions?session_key=latest', { token });
     if (!Array.isArray(latest)) {
         throw new UpstreamError('OpenF1 returned an invalid latest session response', { source: 'OpenF1' });
     }
-    return latestSession(latest, Date.now());
+    return latestSession(latest, now);
 }
 
 async function sessionRows(path, token) {
@@ -92,38 +92,95 @@ function currentTyreAge(stint, lapNumber) {
     return atStart + Math.max(0, Number(lapNumber) - start + 1);
 }
 
-export async function getLiveSnapshot() {
-    const token = await getOpenF1Token();
-    const session = await getSession(getSeasonYear(), token);
-    if (!session) return { session: null, isLive: false, isRace: false, fetchedAt: new Date().toISOString(), positions: [], weather: null, raceControl: [] };
+function unavailableSnapshot(unavailable, now) {
+    return {
+        unavailable,
+        session: null,
+        isLive: false,
+        isRace: false,
+        fetchedAt: new Date(now).toISOString(),
+        positions: [],
+        weather: null,
+        raceControl: [],
+    };
+}
+
+function flagIsTrue(value) {
+    return value === true || value === 1 || value === '1' || String(value).toLowerCase() === 'true';
+}
+
+function retirementStatus(result) {
+    if (!result) return null;
+    if (flagIsTrue(result.dsq)) return 'DSQ';
+    if (flagIsTrue(result.dns)) return 'DNS';
+    if (flagIsTrue(result.dnf)) return 'DNF';
+    return null;
+}
+
+function latestTimestamp(rows) {
+    return Math.max(...rows.map((row) => timestamp(row.date) ?? -Infinity));
+}
+
+function isRecent(value, now) {
+    return Number.isFinite(value) && value <= now && now - value < 2 * 60 * 1000;
+}
+
+function finishedWindowAnchor({ latestPosition, latestMessage, sessionEnd, graceMs, now }) {
+    if (Number.isFinite(latestPosition)) return latestPosition;
+    const graceEnd = Number.isFinite(sessionEnd) ? sessionEnd + graceMs : null;
+    if (Number.isFinite(latestMessage) && graceEnd !== null) return Math.min(latestMessage, graceEnd);
+    if (Number.isFinite(latestMessage)) return latestMessage;
+    return graceEnd ?? now;
+}
+
+async function loadLiveSnapshot(token, now) {
+    const session = await getSession(getSeasonYear(), token, now);
+    if (!session) return unavailableSnapshot('no-session', now);
     const isRace = isRaceSession(session);
 
     const sessionKey = encodeURIComponent(session.session_key);
-    const now = Date.now();
     const sessionStart = timestamp(session.date_start);
     const sessionEnd = timestamp(session.date_end);
-    const isLive = sessionStart !== null && sessionEnd !== null && now >= sessionStart && now <= sessionEnd;
-    const [drivers, positionRows, stints, messages] = await Promise.all([
+    const graceMs = isRace ? 60 * 60 * 1000 : 30 * 60 * 1000;
+    const [drivers, positionRows, stints, messages, sessionResults] = await Promise.all([
         sessionRows(`drivers?session_key=${sessionKey}`, token),
         sessionRows(`position?session_key=${sessionKey}`, token),
         sessionRows(`stints?session_key=${sessionKey}`, token),
         sessionRows(`race_control?session_key=${sessionKey}`, token),
+        isRace ? sessionRows(`session_result?session_key=${sessionKey}`, token) : Promise.resolve([]),
     ]);
-    // Intervals, laps and weather are high-volume feeds: only pull a recent
-    // window, around "now" while live or around the last timing message after.
-    const lastMessage = Math.max(...messages.map((row) => timestamp(row.date) ?? -Infinity));
-    const anchor = isLive ? now : (Number.isFinite(lastMessage) ? lastMessage : (sessionEnd ?? now));
-    const since = (minutes) => encodeURIComponent(new Date(anchor - minutes * 60000).toISOString());
+    const latestPosition = latestTimestamp(positionRows);
+    const latestMessage = latestTimestamp(messages);
+    const checkedFlag = messages.some((row) => String(row.flag || '').toUpperCase() === 'CHEQUERED');
+    const latestPositionRecent = isRecent(latestPosition, now);
+    const since = (anchor, minutes) => encodeURIComponent(new Date(anchor - minutes * 60000).toISOString());
+    // Check the newest interval rows independently of the historical window so
+    // late stewards' messages cannot hide timing data that is still arriving.
+    const recentIntervals = isRace
+        ? await sessionRows(`intervals?session_key=${sessionKey}&date>=${since(now, 2)}`, token)
+        : [];
+    const latestInterval = latestTimestamp(recentIntervals);
+    const started = sessionStart !== null && now >= sessionStart;
+    const gracePassed = sessionEnd !== null && now > sessionEnd + graceMs;
+    const settledBySchedule = gracePassed && checkedFlag;
+    const isLive = started && (!settledBySchedule || latestPositionRecent || isRecent(latestInterval, now));
+    const anchor = isLive
+        ? now
+        : finishedWindowAnchor({ latestPosition, latestMessage, sessionEnd, graceMs, now });
+    // Once a session has settled, refill intervals around its final timing row;
+    // the live check above always uses the short window ending at request time.
+    const intervalRows = isRace && isLive
+        ? recentIntervals
+        : isRace
+            ? await sessionRows(`intervals?session_key=${sessionKey}&date>=${since(anchor, 10)}`, token)
+            : [];
     // Practice and qualifying are ranked by best lap, so they need every lap;
     // races only need the latest gaps and laps.
-    const [intervalRows, laps, weatherRows] = await Promise.all([
-        isRace
-            ? sessionRows(`intervals?session_key=${sessionKey}&date>=${since(isLive ? 1 : 10)}`, token)
-            : Promise.resolve([]),
+    const [laps, weatherRows] = await Promise.all([
         sessionRows(isRace
-            ? `laps?session_key=${sessionKey}&date_start>=${since(15)}`
+            ? `laps?session_key=${sessionKey}&date_start>=${since(anchor, 15)}`
             : `laps?session_key=${sessionKey}`, token),
-        sessionRows(`weather?session_key=${sessionKey}&date>=${since(15)}`, token),
+        sessionRows(`weather?session_key=${sessionKey}&date>=${since(anchor, 15)}`, token),
     ]);
 
     const positionsByDriver = lastByDate(positionRows, (row) => row.driver_number);
@@ -144,13 +201,18 @@ export async function getLiveSnapshot() {
         if (!previous || Number(stint.stint_number) > Number(previous.stint_number)) stintsByDriver.set(stint.driver_number, stint);
     }
     const driversByNumber = new Map(drivers.map((driver) => [Number(driver.driver_number), driver]));
-    const positions = [...positionsByDriver.entries()]
-        .map(([driverNumber, position]) => {
+    const resultsByDriver = new Map(sessionResults.map((result) => [Number(result.driver_number), result]));
+    const driverNumbers = new Set([...positionsByDriver.keys(), ...resultsByDriver.keys()]);
+    const positions = [...driverNumbers]
+        .map((driverNumber) => {
+            const position = positionsByDriver.get(Number(driverNumber));
+            const result = resultsByDriver.get(Number(driverNumber));
             const driver = driversByNumber.get(Number(driverNumber));
             const interval = intervalsByDriver.get(driverNumber);
             const lastLap = lapsByDriver.get(driverNumber);
             const stint = stintsByDriver.get(driverNumber);
             const bestLap = bestByDriver.get(driverNumber);
+            const numericPosition = Number(position?.position ?? result?.position);
             return {
                 driverNumber,
                 driverId: driver?.name_acronym || null,
@@ -158,7 +220,8 @@ export async function getLiveSnapshot() {
                 name: driver?.full_name || driver?.broadcast_name || null,
                 team: driver?.team_name ? canonicalTeamName(driver.team_name) : null,
                 teamColor: teamColor(driver),
-                position: Number(position.position),
+                position: Number.isFinite(numericPosition) ? numericPosition : null,
+                status: retirementStatus(result),
                 gapToLeader: interval?.gap_to_leader ?? null,
                 interval: interval?.interval ?? null,
                 lastLap: lastLap
@@ -177,7 +240,8 @@ export async function getLiveSnapshot() {
                     : null,
             };
         })
-        .sort((a, b) => a.position - b.position);
+        .sort((a, b) => Number(Boolean(a.status)) - Number(Boolean(b.status))
+            || (a.position ?? Infinity) - (b.position ?? Infinity));
     if (!isRace) {
         const leaderBest = positions[0]?.bestLap?.duration;
         for (const row of positions) {
@@ -214,6 +278,18 @@ export async function getLiveSnapshot() {
         weather,
         raceControl,
     };
+}
+
+export async function getLiveSnapshot() {
+    const now = Date.now();
+    try {
+        const token = await getOpenF1Token();
+        if (!token) return unavailableSnapshot('auth', now);
+        return await loadLiveSnapshot(token, now);
+    } catch (error) {
+        if (error?.status === 401 || error?.status === 403) return unavailableSnapshot('auth', now);
+        throw error;
+    }
 }
 
 

@@ -19,8 +19,10 @@ export function formatGap(value, { leader = false } = {}) {
     return `+${number.toFixed(3)}`;
 }
 
-/** Poll quickly only while a session is running. */
-export function pollInterval(snapshot) {
+/** Return null for permanent upstream states; transient failures back off from 5s to 60s. */
+export function pollInterval(snapshot, retryAttempt = 0) {
+    if (snapshot?.unavailable && snapshot.unavailable !== 'no-session') return null;
+    if (retryAttempt > 0) return Math.min(60000, 5000 * (2 ** (retryAttempt - 1)));
     return snapshot?.isLive ? 5000 : 60000;
 }
 

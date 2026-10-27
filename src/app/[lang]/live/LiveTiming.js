@@ -1,13 +1,14 @@
 'use client';
 
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { Countdown } from '@/components/LocalTime';
 import { Link, useLocale } from '@/lib/i18n/LocaleProvider';
 import { getCompound } from '@/lib/f1/tyres';
 import { formatGap, formatLapTime, pollInterval, sessionPhase } from '@/lib/f1/live-format';
 import { formatNumber, intlLocale } from '@/lib/i18n/format';
 import liveMessages from '@/lib/i18n/messages/live';
 import timeMessages, { sessionLabel } from '@/lib/i18n/messages/time';
-import { pick } from '@/lib/i18n/messages';
+import { fill, pick } from '@/lib/i18n/messages';
 import styles from './page.module.css';
 
 const subscribeNothing = () => () => {};
@@ -32,6 +33,22 @@ function ClockTime({ iso, withDate = false, locale, t, time }) {
         ? formatter().format(date)
         : `${formatter('UTC').format(date)} ${time.utc}`;
     return <time dateTime={iso} aria-label={`${text}, ${hydrated ? t.localTime : time.utc}`}><bdi dir="auto">{text}</bdi></time>;
+}
+
+function flagLabel(message, t) {
+    const flag = String(message.flag || '').toUpperCase();
+    const category = String(message.category || '').toLowerCase();
+    const body = String(message.message || '').toUpperCase();
+    if (category.includes('track limit') || body.includes('TRACK LIMIT')) return t.flagTrackLimits;
+    if (flag === 'DOUBLE YELLOW') return t.flagDoubleYellow;
+    if (flag === 'YELLOW') return t.flagYellow;
+    if (flag === 'RED') return t.flagRed;
+    if (flag === 'GREEN' || flag === 'CLEAR') return t.flagGreen;
+    if (flag === 'BLUE') return t.flagBlue;
+    if (flag === 'CHEQUERED') return t.flagChequered;
+    if (body.includes('VIRTUAL SAFETY CAR') || body.includes(' VSC')) return t.flagVsc;
+    if (body.includes('SAFETY CAR') || body.includes(' SC ')) return t.flagSc;
+    return null;
 }
 
 function tyreLabel(compound, t) {
@@ -72,7 +89,7 @@ function Tyre({ stint, locale, t }) {
     );
 }
 
-export default function LiveTiming({ initial, lang, labels }) {
+export default function LiveTiming({ initial, lang, labels, nextSession, grandPrixName, serverNow }) {
     const locale = useLocale();
     const t = locale === lang ? labels : pick(liveMessages, locale);
     const time = pick(timeMessages, locale);
@@ -84,33 +101,60 @@ export default function LiveTiming({ initial, lang, labels }) {
         let timer;
         let controller;
         let cancelled = false;
+        let retryAttempt = 0;
 
         const schedule = () => {
             clearTimeout(timer);
-            timer = setTimeout(refresh, pollInterval(snapshotRef.current));
+            const delay = pollInterval(snapshotRef.current, retryAttempt);
+            if (delay != null) timer = setTimeout(refresh, delay);
         };
 
         async function refresh() {
             if (document.hidden) return schedule();
             controller?.abort();
-            controller = new AbortController();
+            const requestController = new AbortController();
+            controller = requestController;
+            let didTimeout = false;
+            const timeout = setTimeout(() => {
+                didTimeout = true;
+                requestController.abort();
+            }, 12000);
             try {
-                const response = await fetch('/api/live', { signal: controller.signal, cache: 'no-store' });
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                const next = await response.json();
+                const response = await fetch('/api/live', { signal: requestController.signal, cache: 'no-store' });
+                let next;
+                if (response.ok) {
+                    next = await response.json();
+                } else if (response.status >= 500) {
+                    throw Object.assign(new Error(`HTTP ${response.status}`), { status: response.status, retryable: true });
+                } else {
+                    next = { unavailable: response.status === 401 || response.status === 403 ? 'auth' : 'upstream' };
+                }
                 if (cancelled) return;
                 snapshotRef.current = next;
                 setSnapshot(next);
                 setFailed(false);
+                retryAttempt = 0;
             } catch (error) {
-                if (cancelled || error.name === 'AbortError') return;
-                setFailed(true);
+                if (cancelled || (error.name === 'AbortError' && !didTimeout)) return;
+                if (didTimeout || error.retryable || error instanceof TypeError) {
+                    retryAttempt += 1;
+                    setFailed(true);
+                } else {
+                    const unavailable = error.status === 401 || error.status === 403 ? 'auth' : 'upstream';
+                    const next = { unavailable };
+                    snapshotRef.current = next;
+                    setSnapshot(next);
+                    setFailed(false);
+                    retryAttempt = 0;
+                }
+            } finally {
+                clearTimeout(timeout);
             }
             if (!cancelled) schedule();
         }
 
         const onVisible = () => {
-            if (!document.hidden) refresh();
+            if (!document.hidden && (!snapshotRef.current.unavailable || snapshotRef.current.unavailable === 'no-session')) refresh();
         };
         schedule();
         document.addEventListener('visibilitychange', onVisible);
@@ -122,10 +166,13 @@ export default function LiveTiming({ initial, lang, labels }) {
         };
     }, []);
 
-    const { session, isLive, isRace, positions, weather, raceControl, fetchedAt } = snapshot;
+    const { session, isLive, isRace, positions = [], weather, raceControl = [], fetchedAt } = snapshot;
     const phase = sessionPhase(session, isLive);
     const sessionName = session ? sessionLabel(session.name, locale) : '';
-    const titleLocation = session?.location || session?.circuit;
+    const title = grandPrixName || session?.location || session?.circuit;
+    const nextName = nextSession ? sessionLabel(nextSession.label, locale) : null;
+    const authUnavailable = snapshot.unavailable === 'auth';
+    const permanentUnavailable = snapshot.unavailable && snapshot.unavailable !== 'no-session';
 
     return (
         <div className={styles.live}>
@@ -137,12 +184,12 @@ export default function LiveTiming({ initial, lang, labels }) {
                                 {phase === 'live' && <span className={styles.liveBadge}>{t.live}</span>}
                                 {phase === 'finished' && t.finalClassification}
                                 {phase === 'upcoming' && t.nextSession}
-                                {phase === 'none' && t.liveTiming}
+                                {phase === 'none' && (authUnavailable ? t.authUnavailable : t.liveTiming)}
                             </p>
                             <h1>
                                 {session ? (
                                     <>
-                                        {titleLocation && <><bdi dir="ltr">{titleLocation}</bdi>{sessionName && ' · '}</>}
+                                        {title && <><bdi dir="auto">{title}</bdi>{sessionName && ' · '}</>}
                                         {sessionName}
                                     </>
                                 ) : t.liveTiming}
@@ -153,9 +200,15 @@ export default function LiveTiming({ initial, lang, labels }) {
                                 </Link>
                             )}
                         </div>
-                        <p className={styles.updated} aria-live="polite">
-                            {failed ? t.connectionLost : <>{t.updated} <ClockTime iso={fetchedAt} locale={locale} t={t} time={time} /></>}
-                        </p>
+                        {!permanentUnavailable && (
+                            <p className={styles.updated} aria-live="polite">
+                                {failed
+                                    ? t.connectionLost
+                                    : phase === 'finished'
+                                        ? <>{t.lastSessionResults} <ClockTime iso={session.start} withDate locale={locale} t={t} time={time} /></>
+                                        : <>{t.updated} <ClockTime iso={fetchedAt} locale={locale} t={t} time={time} /></>}
+                            </p>
+                        )}
                     </div>
                     {weather && (
                         <dl className={styles.weather}>
@@ -169,15 +222,31 @@ export default function LiveTiming({ initial, lang, labels }) {
                 </div>
             </header>
 
+            {phase !== 'live' && (
+                <section className={`container ${styles.stateBanner}`} aria-labelledby="state-heading">
+                    <div className={styles.stateCopy}>
+                        <h2 id="state-heading">{t.noSessionRunning}</h2>
+                        {authUnavailable && <p>{t.authUnavailableMessage}</p>}
+                        {nextSession ? (
+                            <p>
+                                {t.nextSession}: <strong>{nextName}</strong>{' '}
+                                <ClockTime iso={nextSession.start} withDate locale={locale} t={t} time={time} />
+                            </p>
+                        ) : <p>{t.noUpcomingSession}</p>}
+                    </div>
+                    {nextSession && (
+                        <div className={styles.nextCountdown}>
+                            <p>{fill(t.countdownTo, { session: nextName })}</p>
+                            <Countdown target={nextSession.start} serverNow={serverNow} className={styles.countdown} />
+                        </div>
+                    )}
+                </section>
+            )}
+
             <div className={`container ${styles.layout}`}>
                 <section aria-labelledby="timing-heading" className={styles.timing}>
                     <h2 id="timing-heading" className={styles.sectionTitle}>{t.timing}</h2>
-                    {phase === 'upcoming' && (
-                        <p className={styles.empty}>
-                            {t.sessionStarts.replace('{session}', sessionName)} <ClockTime iso={session.start} withDate locale={locale} t={t} time={time} />.
-                        </p>
-                    )}
-                    {phase !== 'upcoming' && positions.length === 0 && (
+                    {positions.length === 0 && (
                         <p className={styles.empty}>{t.noTimingData}</p>
                     )}
                     {positions.length > 0 && (
@@ -205,8 +274,8 @@ export default function LiveTiming({ initial, lang, labels }) {
                                 </thead>
                                 <tbody>
                                     {positions.map((row, index) => (
-                                        <tr key={row.driverNumber}>
-                                            <td className={styles.pos}><bdi dir="ltr">{formatNumber(locale, row.position)}</bdi></td>
+                                        <tr key={row.driverNumber} className={row.status && !positions[index - 1]?.status ? styles.retiredDivider : undefined}>
+                                            <td className={styles.pos}><bdi dir="ltr">{row.status || (row.position == null ? '—' : formatNumber(locale, row.position))}</bdi></td>
                                             <th scope="row">
                                                 <div className={styles.driver}>
                                                     <span className={styles.teamBar} style={{ '--team': row.teamColor || 'var(--border)' }} />
@@ -245,11 +314,12 @@ export default function LiveTiming({ initial, lang, labels }) {
                         <p className={styles.empty}>{t.noMessages}</p>
                     ) : (
                         <ol className={styles.messages}>
-                            {raceControl.map((message, index) => (
+                                    {raceControl.map((message, index) => (
                                 <li key={`${message.date}-${index}`} className={styles.message} data-flag={message.flag || undefined}>
                                     <span className={styles.messageMeta}>
                                         <ClockTime iso={message.date} locale={locale} t={t} time={time} />
                                         {message.lapNumber != null && <> · {t.lap} <bdi dir="ltr">{formatNumber(locale, message.lapNumber)}</bdi></>}
+                                                {flagLabel(message, t) && <span className={styles.flagChip} data-flag={message.flag || undefined}>{flagLabel(message, t)}</span>}
                                     </span>
                                     <span><bdi lang="en">{message.message}</bdi></span>
                                 </li>
