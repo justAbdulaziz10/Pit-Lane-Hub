@@ -167,19 +167,26 @@ async function seasonChampions(year, finalRound) {
  * appears as soon as the season finale is over.
  */
 async function loadChampions() {
-    const drivers = [...CHAMPIONS_HISTORY.drivers];
-    const constructors = [...CHAMPIONS_HISTORY.constructors];
+    const snapshotDrivers = [...CHAMPIONS_HISTORY.drivers];
+    const snapshotConstructors = [...CHAMPIONS_HISTORY.constructors];
+    const drivers = [...snapshotDrivers];
+    const constructors = [...snapshotConstructors];
     const lastKnown = Math.max(...drivers.map((item) => item.year));
     const currentYear = getSeasonYear();
-    for (let year = lastKnown + 1; year <= currentYear; year += 1) {
-        const calendar = await getCalendar(year);
-        if (!seasonComplete(calendar)) break;
-        const finalRound = Math.max(...calendar.rounds.map((event) => Number(event.round)).filter(Number.isFinite));
-        if (!Number.isFinite(finalRound)) break;
-        const champions = await seasonChampions(year, finalRound);
-        if (!champions) break;
-        drivers.push(champions.driver);
-        constructors.push(champions.constructor);
+    try {
+        for (let year = lastKnown + 1; year <= currentYear; year += 1) {
+            const calendar = await getCalendar(year);
+            if (!seasonComplete(calendar)) break;
+            const finalRound = Math.max(...calendar.rounds.map((event) => Number(event.round)).filter(Number.isFinite));
+            if (!Number.isFinite(finalRound)) break;
+            const champions = await seasonChampions(year, finalRound);
+            if (!champions) break;
+            drivers.push(champions.driver);
+            constructors.push(champions.constructor);
+        }
+    } catch {
+        // The bundled history remains useful when a post-snapshot year is throttled.
+        return { drivers: snapshotDrivers, constructors: snapshotConstructors };
     }
     return { drivers, constructors };
 }

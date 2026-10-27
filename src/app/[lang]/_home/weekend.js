@@ -8,9 +8,6 @@ const SESSION_ORDER = Object.freeze([
     ['race', 'race'],
 ]);
 
-const RACE_GRACE_MS = 60 * 60 * 1000;
-const OTHER_SESSION_GRACE_MS = 30 * 60 * 1000;
-
 export function getWeekendSessions(event) {
     const starts = event?.sessions || {};
     const known = SESSION_ORDER.flatMap(([key, label]) => {
@@ -28,29 +25,25 @@ export function nextWeekendSession(event, now = Date.now()) {
     return getWeekendSessions(event).find((session) => Date.parse(session.start) > now) || null;
 }
 
-function sessionEnd(event, start, grace, duration) {
-    const startTimestamp = Date.parse(start || '');
-    const window = (event.sessionWindows || []).find((candidate) => (
-        Date.parse(candidate.start || '') === startTimestamp
-    ));
-    const end = Date.parse(window?.end || '');
-    if (Number.isFinite(end)) return end + grace;
-    return Number.isFinite(startTimestamp) ? startTimestamp + duration + grace : null;
+function latestStandingsRound(value) {
+    const round = Number(value);
+    return Number.isFinite(round) ? Math.max(0, round) : 0;
 }
 
-export function countRemainingRaces(rounds = [], now = Date.now()) {
+export function countRemainingRaces(rounds = [], standings = null) {
+    const settledRound = latestStandingsRound(standings);
     return rounds.filter((event) => {
-        const start = event.sessions?.race || event.raceStart;
-        const end = sessionEnd(event, start, RACE_GRACE_MS, 3 * 60 * 60 * 1000);
-        return end !== null && now <= end;
+        const round = Number(event.round);
+        const hasRaceDate = /^\d{4}-\d{2}-\d{2}$/.test(String(event.raceDate || ''));
+        const hasRaceTime = Boolean(event.sessions?.race || event.raceStart);
+        return Number.isFinite(round) && round > settledRound && (hasRaceTime || hasRaceDate);
     }).length;
 }
 
-export function countRemainingSprints(rounds = [], now = Date.now()) {
+export function countRemainingSprints(rounds = [], standings = null) {
+    const settledRound = latestStandingsRound(standings);
     return rounds.filter((event) => {
-        const start = event.sessions?.sprint;
-        if (!start) return false;
-        const end = sessionEnd(event, start, OTHER_SESSION_GRACE_MS, 60 * 60 * 1000);
-        return end !== null && now <= end;
+        const round = Number(event.round);
+        return Number.isFinite(round) && round > settledRound && Boolean(event.sessions?.sprint);
     }).length;
 }

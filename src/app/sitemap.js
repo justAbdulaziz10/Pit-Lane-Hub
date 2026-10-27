@@ -1,7 +1,9 @@
 import { getGrid } from '@/lib/f1/drivers';
+import { driverPath } from '@/app/[lang]/driver/[number]/driver-data';
 import { LOCALES, localePath } from '@/lib/i18n/config';
 import { getCalendar } from '@/lib/f1/season';
 import { getTeams } from '@/lib/f1/teams';
+import { getCircuitView } from '@/lib/f1/circuits';
 import { getSeasonYear } from '@/lib/f1/year';
 import { SITE_URL } from '@/lib/site';
 
@@ -49,9 +51,9 @@ export function dynamicEntries({ calendar, grid, teams }, now = new Date()) {
             priority: 0.7,
         }));
     const drivers = grid
-        .filter((driver) => driver.racingNumber != null)
+        .filter((driver) => driver.driverId)
         .map((driver) => ({
-            url: `${SITE_URL}/driver/${driver.racingNumber}`,
+            url: `${SITE_URL}${driverPath(driver)}`,
             lastModified: now,
             changeFrequency: 'weekly',
             priority: 0.6,
@@ -65,12 +67,14 @@ export function dynamicEntries({ calendar, grid, teams }, now = new Date()) {
             priority: 0.6,
         }));
     const circuitIds = [...new Set(calendar.rounds.map((event) => event.circuit?.id).filter(Boolean))];
-    const circuits = circuitIds.map((circuitId) => ({
-        url: `${SITE_URL}/tracks/${circuitId}`,
-        lastModified: now,
-        changeFrequency: 'yearly',
-        priority: 0.5,
-    }));
+    const circuits = circuitIds
+        .filter((circuitId) => getCircuitView(circuitId))
+        .map((circuitId) => ({
+            url: `${SITE_URL}/tracks/${circuitId}`,
+            lastModified: now,
+            changeFrequency: 'yearly',
+            priority: 0.5,
+        }));
     return [...races, ...drivers, ...teamEntries, ...circuits];
 }
 

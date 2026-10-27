@@ -5,6 +5,7 @@ vi.mock('next/server', () => ({ connection: async () => {} }));
 
 import { meetingStatus, nextRound, webcalUrl } from '@/app/[lang]/schedule/status';
 import { dynamicEntries, staticEntries } from '@/app/sitemap';
+import { getCircuitView } from '@/lib/f1/circuits';
 import { countdownParts, formatInstant } from '@/components/localTimeFormat';
 import {
     fastestLapOf,
@@ -106,7 +107,7 @@ describe('ics generator', () => {
         expect(lines).toContain('DTEND:20261101T220000Z');
         expect(lines).toContain('DTSTAMP:20261027T000000Z');
         expect(lines).toContain('LOCATION:Autódromo Hermanos Rodríguez\\, Mexico City\\, Mexico');
-        expect(lines).toContain('URL:https://example.com/race/1298');
+        expect(lines).toContain('URL:https://example.com/race/2026-19');
         const encoder = new TextEncoder();
         for (const line of ics.split('\r\n')) expect(encoder.encode(line).length).toBeLessThanOrEqual(75);
     });
@@ -116,7 +117,7 @@ describe('ics generator', () => {
         const events = sessionEvents([{ ...event, meetingKey: injected }], {
             siteUrl: 'https://example.com', domain: 'example.com',
         });
-        expect(events.every((item) => item.url === null)).toBe(true);
+        expect(events.every((item) => item.url === 'https://example.com/race/2026-19')).toBe(true);
 
         const ics = buildCalendar({
             name: 'F1',
@@ -263,15 +264,25 @@ describe('schedule helpers', () => {
 });
 
 describe('sitemap entries', () => {
-    it('lists races by stable route key, current drivers by number, teams by id and circuits once', () => {
+    it('lists stable driver paths and only circuits with views', () => {
         const now = new Date('2026-10-27T00:00:00Z');
         const entries = dynamicEntries({
-            calendar: { rounds: [{ ...event, routeKey: '2026-19', status: 'upcoming' }, { ...event, meetingKey: null, routeKey: null }] },
-            grid: [{ racingNumber: 12 }, { racingNumber: null }],
+            calendar: { rounds: [
+                { ...event, routeKey: '2026-19', status: 'upcoming' },
+                { ...event, meetingKey: null, routeKey: null },
+                { ...event, circuit: { ...event.circuit, id: 'future_circuit' }, routeKey: '2026-20' },
+            ] },
+            grid: [{ driverId: 'max_verstappen', racingNumber: 12 }, { driverId: null, racingNumber: 22 }, { driverId: 'unknown_number', racingNumber: null }],
             teams: [{ constructorId: 'mercedes' }],
         }, now);
         const paths = entries.map((entry) => new URL(entry.url).pathname);
-        expect(paths).toEqual(['/race/2026-19', '/driver/12', '/team/mercedes', `/tracks/${event.circuit.id}`]);
+        expect(paths).toContain('/race/2026-19');
+        expect(paths).toContain('/driver/max_verstappen');
+        expect(paths).not.toContain('/driver/12');
+        expect(paths).not.toContain('/driver/22');
+        expect(paths).toContain('/team/mercedes');
+        expect(paths).not.toContain('/tracks/future_circuit');
+        expect(paths.includes(`/tracks/${event.circuit.id}`)).toBe(Boolean(getCircuitView(event.circuit.id)));
         expect(staticEntries(now).map((entry) => new URL(entry.url).pathname)).toContain('/schedule');
     });
 });

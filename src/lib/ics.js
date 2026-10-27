@@ -80,6 +80,10 @@ export function sessionEvents(rounds, { siteUrl = '', domain = 'pitlanehub' } = 
         const place = [event.circuit?.name, event.circuit?.locality, event.circuit?.country]
             .filter(Boolean)
             .join(', ');
+        const year = Number(event.year);
+        const round = Number(event.round);
+        const hasRaceRoute = Number.isInteger(year) && year >= 1950
+            && Number.isInteger(round) && round >= 1 && round <= 99;
         for (const session of ICS_SESSIONS) {
             const start = event.sessions?.[session.key];
             if (!start || !Number.isFinite(Date.parse(start))) continue;
@@ -90,7 +94,9 @@ export function sessionEvents(rounds, { siteUrl = '', domain = 'pitlanehub' } = 
                 summary: `${event.raceName}: ${session.label}`,
                 location: place,
                 description: `Round ${event.round} of the ${event.year} Formula 1 World Championship`,
-                url: siteUrl && /^\d+$/.test(String(event.meetingKey ?? '')) ? `${siteUrl}/race/${event.meetingKey}` : null,
+                url: siteUrl && hasRaceRoute
+                    ? `${siteUrl}/race/${year}-${round}`
+                    : null,
             });
         }
     }

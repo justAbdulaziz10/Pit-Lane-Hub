@@ -31,9 +31,12 @@ async function loadTeam(params) {
     const info = await getConstructor(id);
     if (!info) notFound();
     const year = getSeasonYear();
-    const [teams, grid] = await Promise.all([getTeams(year), getGrid(year)]);
-    const team = teams.find((item) => item.constructorId === info.constructorId) || null;
-    const current = team ? { ...team, drivers: currentGridDrivers(team, grid) } : null;
+    const [currentTeams, currentGrid] = await Promise.all([
+        getTeams(year).catch(() => null),
+        getGrid(year).catch(() => null),
+    ]);
+    const team = currentTeams?.find((item) => item.constructorId === info.constructorId) || null;
+    const current = team && currentGrid ? { ...team, drivers: currentGridDrivers(team, currentGrid) } : null;
     return { id: info.constructorId, info, year, current, name: current?.name || info.name };
 }
 

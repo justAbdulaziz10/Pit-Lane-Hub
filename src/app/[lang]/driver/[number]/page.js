@@ -53,7 +53,8 @@ export async function generateMetadata({ params }) {
     return metadataOrNotFound(lang, async () => {
         const route = await resolveDriverRoute(number);
         if (!route) notFound();
-        const { driver, path } = route;
+        const { driver } = route;
+        const path = route.path || `/driver/${encodeURIComponent(String(number))}`;
         const description = describe(driver, lang);
         return {
             title: driver.fullName,
@@ -112,10 +113,14 @@ async function teammateHeadToHead(driver, year, raceResults, qualifyingResults) 
             getDriverQualifyingResults(teammate.driverId),
         ]);
         const inSeason = (rows) => rows.filter((row) => row.season === year);
+        const races = headToHead(inSeason(raceResults), inSeason(teammateRaceResults.results));
+        const qualifying = qualifyingHeadToHead(inSeason(qualifyingResults), inSeason(teammateQualifying));
+        const hasScore = (record) => Number(record.aheadA) > 0 || Number(record.aheadB) > 0;
+        if (!hasScore(races) && !hasScore(qualifying)) return null;
         return {
             name: teammate.fullName || `${teammate.firstName} ${teammate.lastName}`.trim(),
-            races: headToHead(inSeason(raceResults), inSeason(teammateRaceResults.results)),
-            qualifying: qualifyingHeadToHead(inSeason(qualifyingResults), inSeason(teammateQualifying)),
+            races,
+            qualifying,
         };
     } catch {
         return null;
@@ -140,7 +145,8 @@ export default async function DriverPage({ params }) {
     const route = await resolveDriverRoute(number);
     if (!route) notFound();
     const { driver, path } = route;
-    if (`/driver/${decodeURIComponent(String(number))}` !== path) permanentRedirect(localePath(lang, path));
+    if (path && `/driver/${decodeURIComponent(String(number))}` !== path) permanentRedirect(localePath(lang, path));
+    const canonicalPath = path || `/driver/${encodeURIComponent(String(number))}`;
 
     const year = getSeasonYear();
     const driverId = driver.driverId;
@@ -178,7 +184,7 @@ export default async function DriverPage({ params }) {
         birthDate: profile?.dateOfBirth || undefined,
         jobTitle: 'Formula 1 driver',
         image: photoUrl || undefined,
-        url: `${SITE_URL}${localePath(lang, path)}`,
+        url: `${SITE_URL}${localePath(lang, canonicalPath)}`,
         sameAs: profile?.url ? [profile.url] : undefined,
         memberOf: driver.current && driver.team ? { '@type': 'SportsTeam', name: driver.team, sport: 'Formula 1' } : undefined,
     };

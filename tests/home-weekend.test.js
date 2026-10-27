@@ -23,22 +23,41 @@ describe('weekend session helpers', () => {
         });
     });
 
-    it('counts future and in-progress races and sprints as remaining points', () => {
+    it('counts races after the standings round, including rounds without a session time', () => {
         const rounds = [
             {
-                raceStart: '2026-11-01T20:00:00Z',
-                sessions: { race: '2026-11-01T20:00:00Z', sprint: '2026-10-31T18:00:00Z' },
-                sessionWindows: [
-                    { start: '2026-11-01T20:00:00Z', end: '2026-11-01T22:00:00Z' },
-                    { start: '2026-10-31T18:00:00Z', end: '2026-10-31T19:00:00Z' },
-                ],
+                round: 17,
+                raceStart: '2026-10-25T20:00:00Z',
+                sessions: { race: '2026-10-25T20:00:00Z' },
             },
-            { raceStart: '2026-11-15T20:00:00Z', sessions: { race: '2026-11-15T20:00:00Z' } },
-            { raceStart: '2026-10-25T20:00:00Z', sessions: { race: '2026-10-25T20:00:00Z' } },
+            {
+                round: 16,
+                raceStart: '2026-10-18T20:00:00Z',
+                sessions: { race: '2026-10-18T20:00:00Z' },
+            },
+            {
+                round: 18,
+                raceStart: '2026-10-31T20:00:00Z',
+                sessions: { race: '2026-10-31T20:00:00Z', sprint: '2026-10-31T18:00:00Z' },
+            },
+            { round: 19, raceDate: '2026-11-15', raceStart: null, sessions: { race: null } },
         ];
-        const now = Date.parse('2026-11-01T20:30:00Z');
+        const standingsRound = 17;
 
-        expect(countRemainingRaces(rounds, now)).toBe(2);
-        expect(countRemainingSprints(rounds, now)).toBe(0);
+        expect(countRemainingRaces(rounds, standingsRound)).toBe(2);
+        expect(countRemainingSprints(rounds, standingsRound)).toBe(1);
+    });
+
+    it('keeps a just-finished round in the points total while standings lag', () => {
+        const rounds = [
+            { round: 4, raceStart: '2026-10-18T20:00:00Z', sessions: { race: '2026-10-18T20:00:00Z' } },
+            { round: 3, raceStart: '2026-10-11T20:00:00Z', sessions: { race: '2026-10-11T20:00:00Z' } },
+            { round: 5, raceStart: '2026-10-25T20:00:00Z', sessions: { race: '2026-10-25T20:00:00Z', sprint: '2026-10-24T18:00:00Z' } },
+            { round: 6, raceDate: '2026-11-01', raceStart: null, sessions: { race: null } },
+        ];
+        const standingsRound = 4;
+
+        expect(countRemainingRaces(rounds, standingsRound)).toBe(2);
+        expect(countRemainingSprints(rounds, standingsRound)).toBe(1);
     });
 });

@@ -18,7 +18,8 @@ export default async function TracksPage({ params }) {
     const seen = new Set();
     const circuits = calendar.rounds
         .filter((event) => event.circuit?.id && !seen.has(event.circuit.id) && seen.add(event.circuit.id))
-        .map((event) => ({ event, view: getCircuitView(event.circuit.id) }));
+        .map((event) => ({ event, view: getCircuitView(event.circuit.id) }))
+        .filter(({ view }) => view);
 
     return (
         <div className={styles.tracksPage}>

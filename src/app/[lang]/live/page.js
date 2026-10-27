@@ -18,8 +18,8 @@ export default async function LivePage({ params }) {
     const year = getSeasonYear();
     const [snapshot, nextRace, lastRace] = await Promise.all([
         getCachedLiveSnapshot(),
-        getNextRace(year, now),
-        getLastRace(year, now),
+        getNextRace(year, now).catch(() => null),
+        getLastRace(year, now).catch(() => null),
     ]);
     const event = [nextRace, lastRace].find((candidate) => (
         candidate && snapshot.session?.meetingKey != null

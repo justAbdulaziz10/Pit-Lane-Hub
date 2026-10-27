@@ -3,6 +3,7 @@ import LocalTime, { Countdown } from '@/components/LocalTime';
 import { getSeasonSummary } from '@/lib/f1/history';
 import { fastestLapOf, getDriverNumbers, getRaceResults } from '@/lib/f1/results';
 import { getCalendar, getLastRace, getNextRace } from '@/lib/f1/season';
+import { getDriverStandings } from '@/lib/f1/standings';
 import { getTeams } from '@/lib/f1/teams';
 import { canonicalTeamName } from '@/lib/f1/team-utils';
 import { getSeasonYear } from '@/lib/f1/year';
@@ -120,10 +121,14 @@ function NextRace({ race, serverNow, now, t, lang }) {
 function recapFacts(results, numbers, t, lang) {
     if (!results?.length) return null;
     const fastest = fastestLapOf(results);
-    const dnfs = results.filter((row) => row.position == null
-        && !/did not start|withdrew|disqualified/i.test(row.status || '')).length;
+    const dnfs = results.filter((row) => {
+        const positionText = String(row.positionText ?? '').trim().toUpperCase();
+        if (!['R', 'N'].includes(positionText)) return false;
+        return !/did not start|\bDNS\b|withdrew|withdrawn|disqualified|\bDSQ\b/i.test(row.status || '');
+    }).length;
     const mover = results
-        .filter((row) => row.position != null && row.grid != null && row.grid > row.position)
+        .filter((row) => /^\d+$/.test(String(row.positionText ?? '').trim())
+            && row.position != null && row.grid != null && row.grid > row.position)
         .sort((a, b) => (b.grid - b.position) - (a.grid - a.position))[0];
     return (
         <dl className={styles.recapFacts}>
@@ -243,27 +248,29 @@ export default async function Home({ params }) {
     await connection();
     const now = requestTime();
     const year = getSeasonYear();
-    const [nextRace, currentLastRace, summary, numbers, calendar] = await Promise.all([
+    const [nextRace, currentLastRace, summary, numbers, calendar, driverStandings] = await Promise.all([
         getNextRace(year, now),
         getLastRace(year, now),
         getSeasonSummary(year),
-        getDriverNumbers(year),
+        getDriverNumbers(year).catch(() => ({})),
         getCalendar(year, now),
+        // Only the settled round is needed; without it every scheduled round counts as remaining.
+        getDriverStandings(year).catch(() => null),
     ]);
     const lastRace = currentLastRace || (year > 1950 ? await getLastRace(year - 1, now).catch(() => null) : null);
     const [lastResults, teamRows] = await Promise.all([
         lastRace
-            ? getRaceResults(lastRace.year, lastRace.round, { raceStart: lastRace.raceStart, now })
+            ? getRaceResults(lastRace.year, lastRace.round, { raceStart: lastRace.raceStart, now }).catch(() => null)
             : Promise.resolve(null),
-        getTeams(lastRace?.year || year),
+        getTeams(lastRace?.year || year).catch(() => []),
     ]);
     const teamsById = new Map(teamRows.map((team) => [team.id, team]));
-    const currentTeams = !lastRace || lastRace.year === year ? teamRows : await getTeams(year);
+    const currentTeams = !lastRace || lastRace.year === year ? teamRows : await getTeams(year).catch(() => []);
     for (const team of currentTeams) teamsById.set(team.id, team);
     const titleMath = calculateTitleMath({
         standings: summary.driverStandings,
-        remainingRaces: countRemainingRaces(calendar.rounds, now),
-        remainingSprints: countRemainingSprints(calendar.rounds, now),
+        remainingRaces: countRemainingRaces(calendar.rounds, driverStandings?.round),
+        remainingSprints: countRemainingSprints(calendar.rounds, driverStandings?.round),
     });
     const serverNow = Math.floor(now / 1000) * 1000;
     const yearText = String(summary.year);
