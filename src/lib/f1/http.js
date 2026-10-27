@@ -18,12 +18,13 @@ export const F1_CACHE_TAGS = Object.freeze({
 });
 
 export class UpstreamError extends Error {
-    constructor(message, { source, url, status = null, cause = null } = {}) {
+    constructor(message, { source, url, status = null, cause = null, retryAfterMs } = {}) {
         super(message, { cause });
         this.name = 'UpstreamError';
         this.source = source || 'upstream';
         this.url = url;
         this.status = status;
+        if (retryAfterMs != null) this.retryAfterMs = retryAfterMs;
     }
 }
 
@@ -32,7 +33,7 @@ const delay = (ms) => new Promise((resolve) => nativeSetTimeout(resolve, ms));
 // Next bundles each route separately, so module state is per bundle. Keep the
 // pacing queue on globalThis so every route in the process shares one budget.
 const jolpicaPacer = globalThis.__pitLaneJolpicaPacer
-    ??= { queue: Promise.resolve(), lastStart: 0 };
+    ??= { queue: Promise.resolve(), lastStart: 0, blockedUntil: 0 };
 
 async function waitForJolpicaSlot() {
     let release;
@@ -98,6 +99,7 @@ export async function fetchJson(url, {
                     source,
                     url,
                     status: response.status,
+                    retryAfterMs: response.status === 429 ? retryDelay(response, 0) : undefined,
                 });
             }
             try {
@@ -136,10 +138,40 @@ export function fetchJolpicaPage(path, {
     const url = new URL(`${JOLPICA_BASE_URL}/${normalizePath(path)}.json`);
     url.searchParams.set('limit', String(Math.min(100, Math.max(1, limit))));
     url.searchParams.set('offset', String(offset));
-    return waitForJolpicaSlot().then(() => fetchJson(url.toString(), {
-        source: 'Jolpica',
-        fetchOptions: { next: { revalidate, tags } },
-    }));
+    const key = url.toString();
+
+    // Concurrent cold misses for the same page share one upstream request, so a burst of
+    // visitors costs one slot of Jolpica's hourly quota instead of one per visitor.
+    const pending = jolpicaInFlight.get(key);
+    if (pending) return pending;
+
+    const request = (async () => {
+        if (Date.now() < jolpicaPacer.blockedUntil) throw jolpicaBlockedError(key);
+        await waitForJolpicaSlot();
+        try {
+            return await fetchJson(key, {
+                source: 'Jolpica',
+                fetchOptions: { next: { revalidate, tags } },
+            });
+        } catch (error) {
+            // A long throttle means the quota is spent; stop calling until it resets instead of
+            // extending the block. Pages keep serving their last good cached data meanwhile.
+            if (error instanceof UpstreamError && error.status === 429) {
+                jolpicaPacer.blockedUntil = Date.now() + Math.max(10000, error.retryAfterMs ?? 0);
+            }
+            throw error;
+        }
+    })().finally(() => jolpicaInFlight.delete(key));
+    jolpicaInFlight.set(key, request);
+    return request;
+}
+
+const jolpicaInFlight = globalThis.__pitLaneJolpicaInFlight
+    || (globalThis.__pitLaneJolpicaInFlight = new Map());
+
+function jolpicaBlockedError(url) {
+    const retryAfterMs = Math.max(0, jolpicaPacer.blockedUntil - Date.now());
+    return new UpstreamError('Jolpica returned HTTP 429', { source: 'Jolpica', url, status: 429, retryAfterMs });
 }
 
 /** Page a Jolpica collection using MRData.total and offset, capped at 100 rows. */

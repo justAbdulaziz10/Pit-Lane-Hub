@@ -38,6 +38,7 @@ afterEach(() => {
     vi.unstubAllEnvs();
     vi.useRealTimers();
     delete globalThis.__pitLaneOpenF1TokenCache;
+    if (globalThis.__pitLaneJolpicaPacer) globalThis.__pitLaneJolpicaPacer.blockedUntil = 0;
 });
 
 describe('all-time drivers', () => {
@@ -195,5 +196,31 @@ describe('OpenF1 authentication and request identity', () => {
         const warningText = JSON.stringify(warning.mock.calls);
         expect(warningText).toContain('HTTP 403');
         expect(warningText).not.toContain('private-fixture');
+    });
+});
+
+describe('Jolpica burst protection', () => {
+    it('shares one upstream request between concurrent cold misses for the same page', async () => {
+        const fetchMock = vi.fn(async () => jsonResponse({ MRData: { total: '0' } }));
+        vi.stubGlobal('fetch', fetchMock);
+        const results = await Promise.all(Array.from({ length: 10 }, () => fetchJolpicaPage('2026/driverstandings')));
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+        expect(results.every((result) => result.MRData.total === '0')).toBe(true);
+        await fetchJolpicaPage('2026/driverstandings');
+        expect(fetchMock).toHaveBeenCalledTimes(2);
+    });
+
+    it('stops calling Jolpica while its quota is spent, then resumes', async () => {
+        vi.useFakeTimers({ toFake: ['Date'] });
+        const fetchMock = vi.fn(async () => jsonResponse({}, { status: 429, headers: { 'retry-after': '30' } }));
+        vi.stubGlobal('fetch', fetchMock);
+        await expect(fetchJolpicaPage('2026/races')).rejects.toMatchObject({ status: 429 });
+        const callsAfterThrottle = fetchMock.mock.calls.length;
+        await expect(fetchJolpicaPage('2026/results')).rejects.toMatchObject({ status: 429 });
+        expect(fetchMock).toHaveBeenCalledTimes(callsAfterThrottle);
+
+        vi.setSystemTime(Date.now() + 31000);
+        fetchMock.mockImplementation(async () => jsonResponse({ MRData: { total: '0' } }));
+        await expect(fetchJolpicaPage('2026/results')).resolves.toMatchObject({ MRData: { total: '0' } });
     });
 });
