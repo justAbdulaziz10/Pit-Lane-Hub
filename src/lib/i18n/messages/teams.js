@@ -1,0 +1,48 @@
+import { sharedStats } from './drivers';
+
+const teams = {
+    en: {
+        ...sharedStats.en,
+        pageTitle: '{year} Teams',
+        afterRound: "Constructors' standings after round {round}",
+        noTeams: 'No {year} teams announced yet.',
+        teamDrivers: '{team} drivers',
+        metadataTitle: 'F1 Teams: Constructors and Drivers',
+        metadataDescription: 'Every Formula 1 team on the current grid with its drivers, championship position and points.',
+        metadataDetailTitle: '{name}: F1 Team Drivers, Standings and History',
+        currentTeamDescription: '{name} in Formula 1: current drivers, championship position, race wins and titles.',
+        historicalTeamDescription: '{name} in Formula 1: race wins, championships and seasons entered.',
+        allTeams: 'All teams',
+        season: '{year} season',
+        position: 'Position',
+        seasonDrivers: '{year} drivers',
+        allTimeRecord: 'All-time record',
+        constructorTitles: "Constructors' titles",
+        raceWins: 'Race wins',
+        grandsPrix: 'Grands Prix',
+        championshipSeasons: 'Championship seasons',
+    },
+    ar: {
+        ...sharedStats.ar,
+        pageTitle: 'فرق {year}',
+        afterRound: 'ترتيب الصانعين بعد الجولة {round}',
+        noTeams: 'لم يُعلَن بعد عن فرق موسم {year}.',
+        teamDrivers: 'سائقو {team}',
+        metadataTitle: 'فرق الفورمولا 1 وسائقوها',
+        metadataDescription: 'تعرّف على فرق الفورمولا 1 الحالية وسائقيها وترتيبها ونقاطها في البطولة.',
+        metadataDetailTitle: '{name}: سائقو الفريق وترتيبه وتاريخه في الفورمولا 1',
+        currentTeamDescription: '{name} في الفورمولا 1: السائقون الحاليون وترتيب البطولة والانتصارات والألقاب.',
+        historicalTeamDescription: '{name} في الفورمولا 1: انتصارات السباقات والبطولات والمواسم المشاركة.',
+        allTeams: 'كل الفرق',
+        season: 'موسم {year}',
+        position: 'الترتيب',
+        seasonDrivers: 'سائقو {year}',
+        allTimeRecord: 'السجل عبر التاريخ',
+        constructorTitles: 'ألقاب الصانعين',
+        raceWins: 'انتصارات السباقات',
+        grandsPrix: 'سباقات الجائزة الكبرى',
+        championshipSeasons: 'مواسم حصد البطولة',
+    },
+};
+
+export default teams;

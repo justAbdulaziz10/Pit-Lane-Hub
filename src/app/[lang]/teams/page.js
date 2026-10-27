@@ -5,11 +5,15 @@ import { currentGridDrivers, getConstructorStandings } from '@/lib/f1/standings'
 import { getTeams } from '@/lib/f1/teams';
 import { getSeasonYear } from '@/lib/f1/year';
 import { getHighQualityPhoto } from '@/lib/photos';
+import { fill, pick } from '@/lib/i18n/messages';
+import teamsMessages from '@/lib/i18n/messages/teams';
+import { formatNumber } from '@/lib/i18n/format';
+import { localePath } from '@/lib/i18n/config';
 import styles from './page.module.css';
 
 // Metadata lives in ./layout.js.
 
-function DriverRow({ driver }) {
+function DriverRow({ driver, lang }) {
     const photo = getHighQualityPhoto(driver.headshot);
     const number = driver.racingNumber ?? driver.number;
     const key = number ?? driver.driverId;
@@ -19,26 +23,28 @@ function DriverRow({ driver }) {
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={photo} alt={driver.fullName || driver.lastName} className={styles.driverPhoto} loading="lazy" />
             ) : (
-                <span className={styles.driverPhotoPlaceholder} aria-hidden="true">{number ?? ''}</span>
+                <span className={styles.driverPhotoPlaceholder} aria-hidden="true"><bdi dir="ltr">{number == null ? '' : formatNumber(lang, number)}</bdi></span>
             )}
             <span className={styles.driverDetails}>
-                <span className={styles.driverName}>
+                <bdi dir="ltr" className={styles.driverName}>
                     {driver.firstName} <strong>{driver.lastName}</strong>
-                </span>
-                {number != null && <span className={styles.driverNumber}>#{number}</span>}
+                </bdi>
+                {number != null && <span className={styles.driverNumber}><bdi dir="ltr">#{formatNumber(lang, number)}</bdi></span>}
             </span>
         </>
     );
     if (key == null) return <li className={styles.driverRow}>{content}</li>;
     return (
         <li>
-            <Link href={`/driver/${encodeURIComponent(key)}`} className={styles.driverRow}>{content}</Link>
+            <Link href={localePath(lang, `/driver/${encodeURIComponent(key)}`)} className={styles.driverRow}>{content}</Link>
         </li>
     );
 }
 
-export default async function TeamsPage() {
+export default async function TeamsPage({ params }) {
     await connection();
+    const { lang } = await params;
+    const t = pick(teamsMessages, lang);
     const year = getSeasonYear();
     const [teams, constructorStandings, grid] = await Promise.all([
         getTeams(year),
@@ -56,37 +62,40 @@ export default async function TeamsPage() {
         <div className={styles.teams}>
             <header className={styles.header}>
                 <div className="container">
-                    <h1>{year} Teams</h1>
-                    {constructorStandings.round && <p>Constructors&apos; standings after round {constructorStandings.round}</p>}
+                    <h1>{fill(t.pageTitle, { year: formatNumber(lang, year, { useGrouping: false }) })}</h1>
+                    {constructorStandings.round && <p>{fill(t.afterRound, { round: formatNumber(lang, constructorStandings.round) })}</p>}
                 </div>
             </header>
 
             <div className={styles.content}>
                 <div className="container">
                     {ordered.length === 0 ? (
-                        <p className={styles.empty}>No {year} teams announced yet.</p>
+                        <p className={styles.empty}>{fill(t.noTeams, { year: formatNumber(lang, year, { useGrouping: false }) })}</p>
                     ) : (
                         <ul className={styles.teamsGrid} role="list">
                             {ordered.map((team) => {
                                 const standing = standingById.get(team.constructorId);
+                                const position = standing
+                                    ? (standing.position == null ? standing.positionText : formatNumber(lang, standing.position))
+                                    : null;
                                 return (
                                     <li key={team.constructorId} className={styles.teamCard} style={{ '--team-color': team.color }}>
                                         <div className={styles.teamColorBar} aria-hidden="true"></div>
                                         {standing && (
                                             <div className={styles.teamHeader}>
-                                                <span className={styles.teamPosition}>P{standing.position ?? standing.positionText}</span>
+                                                <span className={styles.teamPosition}><bdi dir="ltr">P{position}</bdi></span>
                                                 <span className={styles.teamPoints}>
-                                                    <span className={styles.pointsValue}>{standing.points}</span>
-                                                    <span className={styles.pointsLabel}>Pts</span>
+                                                    <span className={styles.pointsValue}><bdi dir="ltr">{formatNumber(lang, standing.points)}</bdi></span>
+                                                    <span className={styles.pointsLabel}>{t.statPoints}</span>
                                                 </span>
                                             </div>
                                         )}
                                         <h2 className={styles.teamName}>
-                                            <Link href={`/team/${encodeURIComponent(team.constructorId)}`}>{team.name}</Link>
+                                            <Link href={localePath(lang, `/team/${encodeURIComponent(team.constructorId)}`)}>{team.name}</Link>
                                         </h2>
-                                        <ul className={styles.driversList} aria-label={`${team.name} drivers`}>
+                                        <ul className={styles.driversList} aria-label={fill(t.teamDrivers, { team: team.name })}>
                                             {currentGridDrivers(team, grid).map((driver) => (
-                                                <DriverRow key={driver.driverId || driver.racingNumber} driver={driver} />
+                                                <DriverRow key={driver.driverId || driver.racingNumber} driver={driver} lang={lang} />
                                             ))}
                                         </ul>
                                     </li>

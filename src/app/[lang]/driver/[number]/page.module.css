@@ -302,7 +302,7 @@
 }
 
 .teamsLabel {
-    margin-right: var(--space-sm);
+    margin-inline-end: var(--space-sm);
     font-size: 0.75rem;
     color: var(--text-3);
 }
@@ -323,7 +323,7 @@
 .resultsTable th,
 .resultsTable td {
     padding: var(--space-md) var(--space-lg);
-    text-align: left;
+    text-align: start;
     background: var(--surface-1);
     border-bottom: 1px solid var(--border);
 }
@@ -344,6 +344,7 @@
     font-stretch: var(--stretch-display);
     font-weight: 700;
     color: var(--team-color, var(--accent));
+    text-align: end;
 }
 
 .resultRace {
@@ -352,12 +353,14 @@
 
 .resultFinish {
     font-weight: 700;
+    text-align: end;
 }
 
 .resultPoints {
     font-family: var(--font-display);
     font-stretch: var(--stretch-display);
     font-weight: 700;
+    text-align: end;
 }
 
 .compareBtn:focus-visible,

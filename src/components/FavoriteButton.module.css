@@ -1,7 +1,7 @@
 .fav {
     position: absolute;
     top: var(--space-sm);
-    right: var(--space-sm);
+    inset-inline-end: var(--space-sm);
     z-index: 3;
     width: 40px;
     height: 40px;

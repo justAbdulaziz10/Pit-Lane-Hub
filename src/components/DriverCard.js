@@ -1,7 +1,9 @@
 'use client';
 
-import Link from 'next/link';
+import { Link } from '@/lib/i18n/LocaleProvider';
 import { useState } from 'react';
+import { useLocale } from '@/lib/i18n/LocaleProvider';
+import { formatNumber } from '@/lib/i18n/format';
 import styles from './DriverCard.module.css';
 import FavoriteButton from './FavoriteButton';
 
@@ -10,6 +12,7 @@ import FavoriteButton from './FavoriteButton';
  * arrives in the `driver` prop prepared on the server.
  */
 export default function DriverCard({ driver }) {
+    const locale = useLocale();
     const sources = [driver.photo, driver.headshot].filter(Boolean);
     const [sourceIndex, setSourceIndex] = useState(0);
     const photoUrl = sources[sourceIndex] || null;
@@ -40,11 +43,13 @@ export default function DriverCard({ driver }) {
             </div>
 
             <div className={styles.info}>
-                {driver.number != null ? <div className={styles.number}>{driver.number}</div> : null}
+                {driver.number != null ? <div className={styles.number}><bdi dir="ltr">{formatNumber(locale, driver.number)}</bdi></div> : null}
                 <h3 className={styles.name}>
                     <Link href={driver.href} className={styles.cardLink}>
-                        <span className={styles.firstName}>{driver.firstName}</span>
-                        <span className={styles.lastName}>{driver.lastName}</span>
+                        <bdi dir="ltr">
+                            <span className={styles.firstName}>{driver.firstName}</span>
+                            <span className={styles.lastName}>{driver.lastName}</span>
+                        </bdi>
                     </Link>
                 </h3>
                 <div className={styles.team}>{driver.team}</div>

@@ -1,10 +1,23 @@
-// Default metadata for /history; the page's generateMetadata refines it per season.
-export const metadata = {
-  title: 'F1 History: World Champions and Season Results',
-  description: 'Every Formula 1 world champion since 1950, with race winners and standings for each season.',
-  alternates: { canonical: '/history' },
-};
+import history from '@/lib/i18n/messages/history';
+import { pick } from '@/lib/i18n/messages';
+import { localeAlternates, localePath } from '@/lib/i18n/config';
 
 export default function HistoryLayout({ children }) {
   return children;
+}
+
+export async function generateMetadata({ params }) {
+  const { lang } = await params;
+  const t = pick(history, lang);
+  return {
+    title: t.metadataTitle,
+    description: t.metadataDescription,
+    alternates: localeAlternates(lang, '/history'),
+    openGraph: {
+      title: t.metadataTitle,
+      description: t.metadataDescription,
+      url: localePath(lang, '/history'),
+      locale: lang === 'ar' ? 'ar_SA' : 'en_US',
+    },
+  };
 }
