@@ -10,6 +10,11 @@ const ADDITIVE = new URL('20261027130000_webhook_order_verification_binding/migr
 describe('20261027120000_polar_auth_security migration (static)', () => {
     const sql = readFileSync(POLAR_AUTH, 'utf8');
 
+    it('only expands the schema, so the previous deployment keeps working during the rollout', () => {
+        expect(sql).not.toMatch(/DROP COLUMN|RENAME COLUMN/);
+        expect(sql).toMatch(/SET "passwordHash" = "password"/);
+    });
+
     it('merges case-insensitive duplicate emails before lowercasing them, inside one transaction', () => {
         const begin = sql.indexOf('BEGIN;');
         const merge = sql.indexOf('DELETE FROM "User"');
@@ -78,6 +83,9 @@ describe.skipIf(!databaseUrl)('20261027120000_polar_auth_security migration (Pos
             'acc_3|u_a_old',
         ]);
         expect(psql('SELECT "userId" FROM "Session"')).toBe('u_verified');
+        // The previous deployment's columns still exist, so it keeps working until it is replaced.
+        expect(psql(`INSERT INTO "User" ("id", "email", "password", "isPro", "updatedAt")
+                     VALUES ('u_old_code', 'old@example.com', 'hash-old', false, now()) RETURNING "id"`)).toBe('u_old_code');
     });
 
     it('leaves the database untouched when a statement fails', () => {

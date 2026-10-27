@@ -3,8 +3,14 @@
 -- the case-insensitive merge below will combine.
 BEGIN;
 
--- Rename the existing credential hash column and retain existing Pro status.
-ALTER TABLE "User" RENAME COLUMN "password" TO "passwordHash";
+-- Expand only: the legacy "password", "isPro" and "stripeCustomerId" columns stay, so the
+-- previous deployment keeps working while this runs and remains a safe rollback target. A later
+-- migration drops them once no deployment reads them.
+ALTER TABLE "User" ADD COLUMN "passwordHash" TEXT;
+
+UPDATE "User"
+SET "passwordHash" = "password"
+WHERE "password" IS NOT NULL;
 
 -- Merge accounts whose emails differ only by case or surrounding whitespace, so lowercasing
 -- cannot violate "User_email_key". Per address the kept row is, in order: the one with
@@ -78,10 +84,6 @@ ALTER TABLE "User"
 UPDATE "User"
 SET "subscriptionStatus" = 'active'
 WHERE "isPro" = true;
-
-ALTER TABLE "User"
-    DROP COLUMN "stripeCustomerId",
-    DROP COLUMN "isPro";
 
 CREATE UNIQUE INDEX "User_polarCustomerId_key" ON "User"("polarCustomerId");
 CREATE UNIQUE INDEX "User_polarSubscriptionId_key" ON "User"("polarSubscriptionId");

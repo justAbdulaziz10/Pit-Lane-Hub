@@ -30,6 +30,10 @@ model User {
   emailVerificationTokenExpires   DateTime?
   // SHA-256 of the passwordHash the pending token verifies; a different password voids the token.
   emailVerificationPasswordDigest String?
+  // Legacy columns kept for the previous deployment during rollout; never read or written here.
+  password                        String?
+  isPro                           Boolean   @default(false)
+  stripeCustomerId                String?   @unique
   createdAt                       DateTime  @default(now())
   updatedAt                       DateTime  @updatedAt
 }
