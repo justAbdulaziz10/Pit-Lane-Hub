@@ -24,7 +24,7 @@ export default function DriversGrid({ drivers, initialQuery = '' }) {
     const [team, setTeam] = useState('');
     const [view, setView] = useState('championship');
 
-    const teams = useMemo(() => [...new Set(drivers.map((driver) => driver.team))].sort(), [drivers]);
+    const teams = useMemo(() => [...new Set(drivers.map((driver) => driver.team).filter(Boolean))].sort(), [drivers]);
     const visible = useMemo(() => filterDrivers(drivers, { query, team }), [drivers, query, team]);
     const ordered = useMemo(() => {
         if (view !== 'number') return visible;

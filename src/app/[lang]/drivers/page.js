@@ -45,8 +45,13 @@ export default async function DriversPage({ params, searchParams }) {
     const grid = gridResult.value;
     const standings = standingsResult.status === 'fulfilled' ? standingsResult.value : { standings: [] };
     const standingById = new Map(standings.standings.map((row) => [row.driver.id, row]));
-    const gridOrder = new Map(grid.map((driver, index) => [driver.driverId, index]));
-    const orderedGrid = [...grid].sort((a, b) => {
+    // Once the season has started, list the drivers who have raced in it; reserve and young
+    // drivers who only ran in Friday practice stay reachable by URL but not in the line-up.
+    const raceDrivers = standingById.size > 0
+        ? grid.filter((driver) => standingById.has(driver.driverId))
+        : grid;
+    const gridOrder = new Map(raceDrivers.map((driver, index) => [driver.driverId, index]));
+    const orderedGrid = [...raceDrivers].sort((a, b) => {
         const positionA = standingById.get(a.driverId)?.position ?? Infinity;
         const positionB = standingById.get(b.driverId)?.position ?? Infinity;
         return positionA - positionB || (gridOrder.get(a.driverId) ?? 0) - (gridOrder.get(b.driverId) ?? 0);
