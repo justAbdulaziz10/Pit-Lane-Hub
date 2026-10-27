@@ -39,7 +39,7 @@ beforeEach(() => {
     mocks.hash.mockResolvedValue('bcrypt-hash');
     mocks.rateLimit.mockResolvedValue({ success: true });
     mocks.headers.mockResolvedValue(new Headers({ host: 'pitlane.test' }));
-    mocks.create.mockResolvedValue({ id: 'new_user', email: 'racer@example.com', name: 'Racer' });
+    mocks.create.mockResolvedValue({ id: 'new_user', email: 'racer@example.com', name: 'Racer', passwordHash: 'bcrypt-hash' });
     mocks.update.mockResolvedValue({ id: 'new_user' });
 });
 
@@ -86,35 +86,60 @@ describe('registerUser', () => {
 
         const text = JSON.parse(fetch.mock.calls[0][1].body).text;
         const link = new URL(text.match(/https:\/\/\S+/)[0]);
-        expect(link.origin + link.pathname).toBe('https://pitlane.example/api/auth/verify');
+        expect(link.origin + link.pathname).toBe('https://pitlane.example/verify-email');
         const rawToken = link.searchParams.get('token');
         expect(rawToken).toMatch(/^[a-f0-9]{64}$/);
 
         const { data } = mocks.update.mock.calls[0][0];
         expect(data.emailVerificationTokenHash).toBe(createHash('sha256').update(rawToken).digest('hex'));
         expect(data.emailVerificationTokenHash).not.toBe(rawToken);
+        // The token is bound to the password hash it verifies.
+        expect(data.emailVerificationPasswordDigest).toBe(createHash('sha256').update('bcrypt-hash').digest('hex'));
         const ttl = data.emailVerificationTokenExpires.getTime() - before;
         expect(ttl).toBeGreaterThan(24 * 60 * 60 * 1000 - 5000);
         expect(ttl).toBeLessThanOrEqual(24 * 60 * 60 * 1000 + 5000);
     });
 
-    it('replaces the unproven password of an unverified account and sends a new link', async () => {
+    it('never replaces the stored password of an unverified account; it resends a link for the existing one', async () => {
+        const fetch = vi.fn(async () => new Response(null, { status: 200 }));
+        vi.stubGlobal('fetch', fetch);
+        const pending = { id: 'pending_user', email: 'racer@example.com', name: 'Owner', emailVerified: null, passwordHash: 'owner-hash' };
+        mocks.findUnique.mockResolvedValueOnce(pending);
+
+        const response = await registerUser(makeFormData());
+
+        expect(response).toEqual({
+            success: true,
+            message: 'If you can create an account with this address, check your inbox for the next step.',
+        });
+        expect(mocks.create).not.toHaveBeenCalled();
+        for (const [args] of mocks.update.mock.calls) {
+            expect(args.data).not.toHaveProperty('passwordHash');
+            expect(args.data).not.toHaveProperty('name');
+        }
+        expect(mocks.update).toHaveBeenCalledWith({
+            where: { id: 'pending_user' },
+            data: expect.objectContaining({
+                emailVerificationPasswordDigest: createHash('sha256').update('owner-hash').digest('hex'),
+            }),
+        });
+        expect(mocks.rateLimit).toHaveBeenCalledWith('auth:verify-resend-email:racer@example.com', expect.any(Object));
+        expect(JSON.parse(fetch.mock.calls[0][1].body).text).toContain('/verify-email?token=');
+    });
+
+    it('does not resend to an unverified account once its per-address cap is reached', async () => {
         const fetch = vi.fn(async () => new Response(null, { status: 200 }));
         vi.stubGlobal('fetch', fetch);
         mocks.findUnique.mockResolvedValueOnce({
-            id: 'pending_user', email: 'racer@example.com', emailVerified: null, passwordHash: 'old-hash',
+            id: 'pending_user', email: 'racer@example.com', emailVerified: null, passwordHash: 'owner-hash',
         });
-        mocks.update.mockResolvedValue({ id: 'pending_user', email: 'racer@example.com' });
+        mocks.rateLimit.mockImplementation(async (key) => ({ success: !key.startsWith('auth:verify-resend-email:') }));
 
         const response = await registerUser(makeFormData());
 
         expect(response.success).toBe(true);
-        expect(mocks.create).not.toHaveBeenCalled();
-        expect(mocks.update.mock.calls[0][0]).toEqual({
-            where: { id: 'pending_user' },
-            data: { name: 'Racer', passwordHash: 'bcrypt-hash' },
-        });
-        expect(JSON.parse(fetch.mock.calls[0][1].body).text).toContain('/api/auth/verify?token=');
+        expect(mocks.update).not.toHaveBeenCalled();
+        expect(fetch).not.toHaveBeenCalled();
     });
 
     it('rejects when the signup rate limit is exceeded without touching the database', async () => {

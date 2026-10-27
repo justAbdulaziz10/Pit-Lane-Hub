@@ -90,11 +90,22 @@ export function sessionEvents(rounds, { siteUrl = '', domain = 'pitlanehub' } = 
                 summary: `${event.raceName}: ${session.label}`,
                 location: place,
                 description: `Round ${event.round} of the ${event.year} Formula 1 World Championship`,
-                url: event.meetingKey != null && siteUrl ? `${siteUrl}/race/${event.meetingKey}` : null,
+                url: siteUrl && /^\d+$/.test(String(event.meetingKey ?? '')) ? `${siteUrl}/race/${event.meetingKey}` : null,
             });
         }
     }
     return events.sort((a, b) => a.start - b.start);
+}
+
+/** URI property value: only an absolute http(s) URL without control characters, else null. */
+export function safeUri(value) {
+    if (typeof value !== 'string' || /[\u0000-\u001f\u007f]/.test(value)) return null;
+    try {
+        const url = new URL(value);
+        return url.protocol === 'https:' || url.protocol === 'http:' ? url.href : null;
+    } catch {
+        return null;
+    }
 }
 
 /** Build a complete VCALENDAR document with CRLF line endings. */
@@ -123,7 +134,8 @@ export function buildCalendar({ name, description, events, now = Date.now(), pro
         );
         if (event.location) lines.push(`LOCATION:${escapeText(event.location)}`);
         if (event.description) lines.push(`DESCRIPTION:${escapeText(event.description)}`);
-        if (event.url) lines.push(`URL:${event.url}`);
+        const url = safeUri(event.url);
+        if (url) lines.push(`URL:${url}`);
         lines.push('TRANSP:TRANSPARENT', 'END:VEVENT');
     }
     lines.push('END:VCALENDAR');

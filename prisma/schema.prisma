@@ -6,43 +6,47 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider  = "postgresql"
   url       = env("POSTGRES_PRISMA_URL") // pooled connection
   directUrl = env("POSTGRES_URL_NON_POOLING") // direct connection (migrations)
 }
 
 model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String?   @unique
-  emailVerified DateTime?
-  image         String?
-  passwordHash  String?
-  accounts      Account[]
-  sessions      Session[]
-  polarCustomerId String? @unique
-  polarSubscriptionId String? @unique
-  subscriptionStatus String?
-  currentPeriodEnd DateTime?
-  emailVerificationTokenHash String? @unique
-  emailVerificationTokenExpires DateTime?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id                              String    @id @default(cuid())
+  name                            String?
+  email                           String?   @unique
+  emailVerified                   DateTime?
+  image                           String?
+  passwordHash                    String?
+  accounts                        Account[]
+  sessions                        Session[]
+  polarCustomerId                 String?   @unique
+  polarSubscriptionId             String?   @unique
+  // Polar's modified_at for the stored subscription state; older webhook deliveries are ignored.
+  polarSubscriptionUpdatedAt      DateTime?
+  subscriptionStatus              String?
+  currentPeriodEnd                DateTime?
+  emailVerificationTokenHash      String?   @unique
+  emailVerificationTokenExpires   DateTime?
+  // SHA-256 of the passwordHash the pending token verifies; a different password voids the token.
+  emailVerificationPasswordDigest String?
+  createdAt                       DateTime  @default(now())
+  updatedAt                       DateTime  @updatedAt
 }
 
 model Account {
-  id                 String  @id @default(cuid())
-  userId             String
-  type               String
-  provider           String
-  providerAccountId  String
-  refresh_token      String?  @db.Text
-  access_token       String?  @db.Text
-  expires_at         Int?
-  token_type         String?
-  scope              String?
-  id_token           String?  @db.Text
-  session_state      String?
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -63,4 +67,11 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+// Shared fixed-window counters for auth rate limits when Upstash Redis is not configured.
+model RateLimit {
+  key         String   @id
+  count       Int
+  windowStart DateTime
 }

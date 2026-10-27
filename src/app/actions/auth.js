@@ -19,6 +19,15 @@ async function checkRequestLimit(scope, limit) {
     });
 }
 
+/** Caps verification emails per recipient, so one inbox cannot be flooded from many IPs. */
+async function allowVerificationResend(email) {
+    const limit = await rateLimit(`auth:verify-resend-email:${email}`, {
+        limit: 3,
+        windowMs: 60 * 60 * 1000,
+    });
+    return limit.success;
+}
+
 async function sendResendEmail({ to, subject, text }) {
     const apiKey = process.env.AUTH_RESEND_KEY;
     if (!apiKey) throw new Error("Email service is not configured");
@@ -50,20 +59,32 @@ function getPublicOrigin() {
     ).origin;
 }
 
+function sha256Hex(value) {
+    return createHash("sha256").update(value).digest("hex");
+}
+
+/**
+ * Emails a verification link for a password account. The stored token is bound to the account's
+ * current passwordHash (via its SHA-256 digest), so the link stops working if the password changes.
+ */
 async function sendVerificationEmail(user) {
+    if (!user.passwordHash) throw new Error("Verification links are only issued for password accounts");
+
     const token = randomBytes(32).toString("hex");
-    const tokenHash = createHash("sha256").update(token).digest("hex");
     const expires = new Date(Date.now() + TOKEN_LIFETIME_MS);
 
     await prisma.user.update({
         where: { id: user.id },
         data: {
-            emailVerificationTokenHash: tokenHash,
+            emailVerificationTokenHash: sha256Hex(token),
             emailVerificationTokenExpires: expires,
+            emailVerificationPasswordDigest: sha256Hex(user.passwordHash),
         },
     });
 
-    const verificationUrl = new URL("/api/auth/verify", getPublicOrigin());
+    // The link opens a confirmation page; only its POST verifies, so mail scanners that prefetch
+    // links cannot verify an address on their own.
+    const verificationUrl = new URL("/verify-email", getPublicOrigin());
     verificationUrl.searchParams.set("token", token);
 
     await sendResendEmail({
@@ -120,14 +141,11 @@ export async function registerUser(formData) {
         }
 
         if (existingUser) {
-            // Unverified password account: the latest sign-up replaces the unproven password and
-            // gets a fresh link (older links stop working). Nothing is usable until the inbox confirms.
-            const user = await prisma.user.update({
-                where: { id: existingUser.id },
-                data: { name: name || existingUser.name, passwordHash: hashedPassword },
-            });
+            // Unverified password account: never replace the stored password, or anyone could
+            // re-register a pending address with their own password and wait for the owner to
+            // click the link. Resend a link for the existing password instead (rate-limited).
             try {
-                await sendVerificationEmail(user);
+                if (await allowVerificationResend(email)) await sendVerificationEmail(existingUser);
             } catch {
                 // Keep the same response for every case.
             }
@@ -161,6 +179,8 @@ export async function resendVerificationEmail(formData) {
     try {
         const limit = await checkRequestLimit("auth:verify-resend", 3);
         if (!limit.success) return { success: true, message: GENERIC_RESEND_MESSAGE };
+
+        if (!(await allowVerificationResend(email))) return { success: true, message: GENERIC_RESEND_MESSAGE };
 
         const user = await prisma.user.findUnique({ where: { email } });
         if (user && !user.emailVerified && user.passwordHash) {

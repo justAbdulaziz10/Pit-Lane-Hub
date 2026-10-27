@@ -4,24 +4,13 @@ import { signIn } from "next-auth/react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Suspense, useState } from "react"
+import { safeRedirectPath } from "@/lib/validation"
 import { resendVerificationEmail } from "@/app/actions/auth"
 import styles from "./page.module.css"
 
 const AUTH_ERROR_MESSAGES = {
     TooManyRequests: "Too many sign-in link requests. Try again later.",
     Verification: "That sign-in link is invalid or has expired. Request a new one.",
-}
-
-/** Only same-origin paths are allowed as post-login destinations. */
-function safeRedirectPath(value, origin) {
-    if (typeof value !== "string" || !value) return "/"
-    try {
-        const target = new URL(value, origin)
-        if (target.origin !== origin) return "/"
-        return `${target.pathname}${target.search}${target.hash}`
-    } catch {
-        return "/"
-    }
 }
 
 function normalizeEmail(value) {
