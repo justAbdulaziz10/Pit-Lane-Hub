@@ -5,7 +5,10 @@ vi.mock('next/cache', () => ({ unstable_cache: (callback) => callback }));
 const resolveDriver = vi.fn();
 const getAllTimeDriver = vi.fn();
 
-vi.mock('@/lib/f1/drivers', () => ({ resolveDriver: (...args) => resolveDriver(...args) }));
+vi.mock('@/lib/f1/drivers', async (importOriginal) => ({
+    nationalityInfo: (await importOriginal()).nationalityInfo,
+    resolveDriver: (...args) => resolveDriver(...args),
+}));
 vi.mock('@/lib/f1/compare', () => ({
     getAllTimeDriver: (...args) => getAllTimeDriver(...args),
     isValidDriverId: (value) => typeof value === 'string' && /^[a-z0-9_]{2,40}$/.test(value),

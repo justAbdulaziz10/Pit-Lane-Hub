@@ -1,5 +1,5 @@
 import { getAllTimeDriver, isValidDriverId } from '@/lib/f1/compare';
-import { resolveDriver } from '@/lib/f1/drivers';
+import { nationalityInfo, resolveDriver } from '@/lib/f1/drivers';
 import { cacheF1Data, F1_CACHE_TAGS, fetchJolpicaPages } from '@/lib/f1/http';
 import { canonicalTeamName, ensureTeamColorContrast } from '@/lib/f1/team-utils';
 
@@ -40,7 +40,7 @@ export async function resolveDriverRoute(segment) {
         racingNumber: null,
         team: null,
         headshot: null,
-        flag: null,
+        flag: nationalityInfo(historical.nationality).flag,
         colour: FALLBACK_COLOUR,
     };
     return { driver, path: driverPath(driver) };

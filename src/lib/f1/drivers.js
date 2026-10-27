@@ -54,7 +54,7 @@ function normalize(value) {
         .trim();
 }
 
-function nationalityInfo(nationality, openF1Code) {
+export function nationalityInfo(nationality, openF1Code) {
     const entry = Object.entries(NATIONALITY_ISO)
         .find(([name]) => normalize(name) === normalize(nationality))?.[1];
     if (entry) {
