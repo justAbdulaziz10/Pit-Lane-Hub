@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { jsonLdScript } from '@/lib/jsonld';
 import { resolveSiteUrl } from '@/lib/site';
-import { metadata as driversMetadata } from '@/app/drivers/layout';
-import { metadata as teamsMetadata } from '@/app/teams/layout';
-import { metadata as liveMetadata } from '@/app/live/layout';
-import { metadata as tracksMetadata } from '@/app/tracks/layout';
-import { metadata as historyMetadata } from '@/app/history/layout';
-import { metadata as supportMetadata } from '@/app/support/layout';
+import { metadata as driversMetadata } from '@/app/[lang]/drivers/layout';
+import { metadata as teamsMetadata } from '@/app/[lang]/teams/layout';
+import { metadata as liveMetadata } from '@/app/[lang]/live/layout';
+import { metadata as tracksMetadata } from '@/app/[lang]/tracks/layout';
+import { metadata as historyMetadata } from '@/app/[lang]/history/layout';
+import { metadata as supportMetadata } from '@/app/[lang]/support/layout';
 
 describe('jsonLdScript', () => {
   it('escapes script-sensitive characters and round-trips through JSON.parse', () => {

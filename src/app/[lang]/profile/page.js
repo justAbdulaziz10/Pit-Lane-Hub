@@ -58,7 +58,9 @@ export default function ProfilePage() {
                 </dl>
                 <div className={styles.actions}>
                     {isPro ? (
-                        <a href="/api/polar/portal" className="btn btn-secondary">Manage subscription</a>
+                        <form action="/api/polar/portal" method="get">
+                            <button type="submit" className="btn btn-secondary">Manage subscription</button>
+                        </form>
                     ) : (
                         <Link href="/support" className="btn btn-secondary">About Pit Lane Pro</Link>
                     )}

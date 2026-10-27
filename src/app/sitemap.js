@@ -1,4 +1,5 @@
 import { getGrid } from '@/lib/f1/drivers';
+import { LOCALES, localePath } from '@/lib/i18n/config';
 import { getCalendar } from '@/lib/f1/season';
 import { getTeams } from '@/lib/f1/teams';
 import { getSeasonYear } from '@/lib/f1/year';
@@ -70,16 +71,33 @@ export function dynamicEntries({ calendar, grid, teams }, now = new Date()) {
     return [...races, ...drivers, ...teamEntries, ...circuits];
 }
 
+/** One entry per language for every page, each listing all language versions. */
+export function withLanguages(entries) {
+    return entries.flatMap((entry) => {
+        const path = entry.url.slice(SITE_URL.length) || '/';
+        const url = (locale) => {
+            const localized = localePath(locale, path);
+            return `${SITE_URL}${localized === '/' ? '' : localized}`;
+        };
+        const languages = Object.fromEntries(LOCALES.map((locale) => [locale, url(locale)]));
+        return LOCALES.map((locale) => ({
+            ...entry,
+            url: languages[locale],
+            alternates: { languages: { ...languages, 'x-default': languages.en } },
+        }));
+    });
+}
+
 export default async function sitemap() {
     await connection();
     const now = new Date();
     const year = getSeasonYear();
     try {
         const [calendar, grid, teams] = await Promise.all([getCalendar(year), getGrid(year), getTeams(year)]);
-        return [...staticEntries(now), ...dynamicEntries({ calendar, grid, teams }, now)];
+        return withLanguages([...staticEntries(now), ...dynamicEntries({ calendar, grid, teams }, now)]);
     } catch (error) {
         // The one allowed fallback: search engines still get the static routes.
         console.error('Sitemap data failed; serving static routes only', error);
-        return staticEntries(now);
+        return withLanguages(staticEntries(now));
     }
 }

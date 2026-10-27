@@ -1,4 +1,7 @@
 import Link from 'next/link';
+import { localePath } from '@/lib/i18n/config';
+import { pick } from '@/lib/i18n/messages';
+import common from '@/lib/i18n/messages/common';
 import { Wordmark } from './Header';
 import styles from './Footer.module.css';
 
@@ -6,57 +9,60 @@ const REPO_URL = 'https://github.com/justAbdulaziz10/Pit-Lane-Hub';
 
 const COLUMNS = [
     {
-        title: 'Season',
+        title: 'season',
         links: [
-            { href: '/schedule', label: 'Calendar' },
-            { href: '/standings', label: 'Standings' },
-            { href: '/live', label: 'Live timing' },
+            { href: '/schedule', label: 'calendar' },
+            { href: '/standings', label: 'standings' },
+            { href: '/live', label: 'liveTiming' },
         ],
     },
     {
-        title: 'Grid',
+        title: 'grid',
         links: [
-            { href: '/drivers', label: 'Drivers' },
-            { href: '/teams', label: 'Teams' },
-            { href: '/compare', label: 'Compare drivers' },
+            { href: '/drivers', label: 'drivers' },
+            { href: '/teams', label: 'teams' },
+            { href: '/compare', label: 'compareDrivers' },
         ],
     },
     {
-        title: 'Archive',
+        title: 'archive',
         links: [
-            { href: '/history', label: 'History' },
-            { href: '/tracks', label: 'Circuits' },
+            { href: '/history', label: 'history' },
+            { href: '/tracks', label: 'circuits' },
         ],
     },
     {
-        title: 'Site',
+        title: 'site',
         links: [
-            { href: '/support', label: 'Support' },
-            { href: REPO_URL, label: 'Source on GitHub', external: true },
+            { href: '/support', label: 'support' },
+            { href: REPO_URL, label: 'source', external: true },
         ],
     },
 ];
 
-export default function Footer() {
+export default function Footer({ lang = 'en' }) {
+    const t = pick(common, lang);
+    const [beforeJolpica, afterJolpica] = t.dataFrom.split('{jolpica}');
+    const [between, afterOpenF1] = afterJolpica.split('{openf1}');
     return (
         <footer className={styles.footer}>
             <div className={styles.container}>
                 <div className={styles.top}>
-                    <Link href="/" className={styles.brand} aria-label="Pit Lane Hub home">
+                    <Link href={localePath(lang, '/')} className={styles.brand} aria-label={t.homeLabel}>
                         <Wordmark />
                     </Link>
 
-                    <nav className={styles.columns} aria-label="Footer">
+                    <nav className={styles.columns} aria-label={t.footerNav}>
                         {COLUMNS.map((column) => (
                             <div key={column.title} className={styles.column}>
-                                <h2 className={styles.columnTitle}>{column.title}</h2>
+                                <h2 className={styles.columnTitle}>{t[column.title]}</h2>
                                 <ul>
                                     {column.links.map((link) => (
                                         <li key={link.href}>
                                             {link.external ? (
-                                                <a href={link.href} rel="noopener noreferrer">{link.label}</a>
+                                                <a href={link.href} rel="noopener noreferrer">{t[link.label]}</a>
                                             ) : (
-                                                <Link href={link.href}>{link.label}</Link>
+                                                <Link href={localePath(lang, link.href)}>{t[link.label]}</Link>
                                             )}
                                         </li>
                                     ))}
@@ -68,13 +74,13 @@ export default function Footer() {
 
                 <div className={styles.legal}>
                     <p>
-                        Data from <a href="https://github.com/jolpica/jolpica-f1" rel="noopener noreferrer">Jolpica F1</a>{' '}
-                        and <a href="https://openf1.org" rel="noopener noreferrer">OpenF1</a>.
+                        {beforeJolpica}
+                        <a href="https://github.com/jolpica/jolpica-f1" rel="noopener noreferrer">Jolpica F1</a>
+                        {between}
+                        <a href="https://openf1.org" rel="noopener noreferrer">OpenF1</a>
+                        {afterOpenF1}
                     </p>
-                    <p>
-                        Unofficial fan site. Not affiliated with Formula 1, the FIA or any team. F1 and Formula 1 are
-                        trademarks of Formula One Licensing B.V.
-                    </p>
+                    <p>{t.disclaimer}</p>
                 </div>
             </div>
         </footer>

@@ -4,7 +4,7 @@ import { signIn } from "next-auth/react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Suspense, useState } from "react"
-import { resendVerificationEmail } from "../actions/auth"
+import { resendVerificationEmail } from "@/app/actions/auth"
 import styles from "./page.module.css"
 
 const AUTH_ERROR_MESSAGES = {

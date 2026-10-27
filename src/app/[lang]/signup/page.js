@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
-import { registerUser } from "../actions/auth"
+import { registerUser } from "@/app/actions/auth"
 import styles from "../login/page.module.css"
 
 export default function SignupPage() {

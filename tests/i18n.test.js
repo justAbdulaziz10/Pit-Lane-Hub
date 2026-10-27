@@ -82,3 +82,28 @@ describe('proxy locale routing', async () => {
         expect(resolveLocaleRoute({ pathname: '/teams', cookieLocale: 'en' }).action).toBe('rewrite');
     });
 });
+
+describe('metadata image routes', async () => {
+    const { resolveLocaleRoute } = await import('@/lib/i18n/routing');
+
+    it('serves generated og/twitter images under the internal /en segment without redirecting', () => {
+        expect(resolveLocaleRoute({ pathname: '/en/opengraph-image' }).action).toBe('next');
+        expect(resolveLocaleRoute({ pathname: '/en/driver/1/opengraph-image-1a2b3c' }).action).toBe('next');
+        expect(resolveLocaleRoute({ pathname: '/en/driver/1' }).action).toBe('redirect');
+    });
+});
+
+describe('sitemap languages', async () => {
+    const { withLanguages } = await import('@/app/sitemap');
+    const { SITE_URL } = await import('@/lib/site');
+
+    it('lists English and Arabic URLs with hreflang alternates', () => {
+        const entries = withLanguages([{ url: `${SITE_URL}/teams` }, { url: SITE_URL }]);
+        expect(entries.map((entry) => entry.url.slice(SITE_URL.length))).toEqual(['/teams', '/ar/teams', '', '/ar']);
+        expect(entries[1].alternates.languages).toEqual({
+            en: `${SITE_URL}/teams`,
+            ar: `${SITE_URL}/ar/teams`,
+            'x-default': `${SITE_URL}/teams`,
+        });
+    });
+});

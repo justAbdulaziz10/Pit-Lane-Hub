@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { compareDriversAction, searchDriversAction } from '@/app/actions/compare-actions';
-import styles from '@/app/compare/page.module.css';
+import styles from '@/app/[lang]/compare/page.module.css';
 
 const COLOURS = ['#FF4D45', '#4FC3F7'];
 

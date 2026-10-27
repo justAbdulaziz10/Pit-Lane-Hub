@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { favouritesFirst, filterDrivers, groupByTeam } from '@/app/drivers/filter';
+import { favouritesFirst, filterDrivers, groupByTeam } from '@/app/[lang]/drivers/filter';
 import DriverCard from '@/components/DriverCard';
 import { useFavorites } from '@/lib/useFavorites';
 import styles from './DriversGrid.module.css';

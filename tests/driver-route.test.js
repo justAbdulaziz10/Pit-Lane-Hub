@@ -14,8 +14,8 @@ vi.mock('@/lib/f1/compare', () => ({
     isValidDriverId: (value) => typeof value === 'string' && /^[a-z0-9_]{2,40}$/.test(value),
 }));
 
-import { driverPath, finishLabel, resolveDriverRoute } from '@/app/driver/[number]/driver-data';
-import { favouritesFirst, filterDrivers, groupByTeam } from '@/app/drivers/filter';
+import { driverPath, finishLabel, resolveDriverRoute } from '@/app/[lang]/driver/[number]/driver-data';
+import { favouritesFirst, filterDrivers, groupByTeam } from '@/app/[lang]/drivers/filter';
 
 const verstappen = {
     driverId: 'max_verstappen',

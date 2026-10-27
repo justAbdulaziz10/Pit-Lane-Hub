@@ -1,5 +1,5 @@
 import { connection } from 'next/server';
-import { driverPath } from '@/app/driver/[number]/driver-data';
+import { driverPath } from '@/app/[lang]/driver/[number]/driver-data';
 import DriversGrid from '@/components/DriversGrid';
 import { getGrid } from '@/lib/f1/drivers';
 import { ensureTeamColorContrast } from '@/lib/f1/team-utils';

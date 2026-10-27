@@ -1,4 +1,4 @@
-import { requestTime } from '@/app/schedule/status';
+import { requestTime } from '@/app/[lang]/schedule/status';
 import LocalTime, { Countdown } from '@/components/LocalTime';
 import { getSeasonSummary } from '@/lib/f1/history';
 import { getDriverNumbers, getRaceResults } from '@/lib/f1/results';

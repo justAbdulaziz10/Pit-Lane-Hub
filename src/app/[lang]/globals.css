@@ -76,6 +76,12 @@
   --container: 1280px;
 }
 
+/* Arabic pages: Arabic glyphs from IBM Plex Sans Arabic, Latin names and digits from Archivo. */
+html[lang='ar'] {
+  --font-sans: var(--font-archivo), var(--font-arabic), system-ui, sans-serif;
+}
+
+
 *,
 *::before,
 *::after {

@@ -1,4 +1,4 @@
-import { STATUS_LABELS, meetingStatus, requestTime } from '@/app/schedule/status';
+import { STATUS_LABELS, meetingStatus, requestTime } from '@/app/[lang]/schedule/status';
 import LocalTime from '@/components/LocalTime';
 import { getDriverNumbers, getWeekendResults, sessionDone } from '@/lib/f1/results';
 import { getSeasonYear } from '@/lib/f1/year';

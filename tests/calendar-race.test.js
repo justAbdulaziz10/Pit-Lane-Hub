@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 vi.mock('next/cache', () => ({ unstable_cache: (callback) => callback }));
 vi.mock('next/server', () => ({ connection: async () => {} }));
 
-import { meetingStatus, nextRound, webcalUrl } from '@/app/schedule/status';
+import { meetingStatus, nextRound, webcalUrl } from '@/app/[lang]/schedule/status';
 import { dynamicEntries, staticEntries } from '@/app/sitemap';
 import { countdownParts, formatInstant } from '@/components/localTimeFormat';
 import {
