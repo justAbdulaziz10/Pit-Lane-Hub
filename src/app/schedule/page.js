@@ -1,143 +1,166 @@
-import { getCurrentYear, getMeetings } from '@/lib/f1api';
-import { SCHEDULE_2026 } from '@/lib/schedule2026';
+import LocalTime from '@/components/LocalTime';
+import { getCalendar } from '@/lib/f1/season';
+import { getSeasonYear } from '@/lib/f1/year';
+import { SITE_URL } from '@/lib/site';
 import Link from 'next/link';
+import { connection } from 'next/server';
 import styles from './page.module.css';
+import { meetingStatus, nextRound, requestTime, STATUS_LABELS, webcalUrl } from './status';
 
-export const revalidate = 3600; // Revalidate every hour
+export async function generateMetadata() {
+    await connection();
+    const year = getSeasonYear();
+    return {
+        title: `${year} F1 Calendar and Race Times`,
+        description: `Every round of the ${year} Formula 1 season with circuits and session times in your timezone. Subscribe to the calendar.`,
+        alternates: { canonical: '/schedule' },
+        openGraph: {
+            title: `${year} F1 Calendar`,
+            description: `Every round of the ${year} Formula 1 season with session times in your timezone.`,
+            url: '/schedule',
+        },
+    };
+}
 
-export const metadata = {
-    title: 'F1 Schedule | Race Calendar',
-    description: 'Full Formula 1 race calendar with dates, times, and circuit information. Don\'t miss a race.',
-};
+function StatusBadge({ status }) {
+    return <span className={`${styles.status} ${styles[`status_${status}`] || ''}`}>{STATUS_LABELS[status]}</span>;
+}
+
+function RoundCard({ event, isNext }) {
+    const content = (
+        <>
+            <div className={styles.cardTop}>
+                <span className={styles.round}>Round {event.round}</span>
+                <StatusBadge status={event.status} />
+            </div>
+            <h3 className={styles.raceName}>{event.raceName}</h3>
+            <p className={styles.circuit}>{event.circuit.name}</p>
+            <p className={styles.country}>
+                {[event.circuit.locality, event.circuit.country].filter(Boolean).join(', ')}
+            </p>
+            <p className={styles.dates}>
+                <span className={styles.dateLabel}>Race</span>
+                <LocalTime iso={event.raceStart} format="datetime" />
+            </p>
+        </>
+    );
+    const className = `${styles.raceCard} ${isNext ? styles.next : ''} ${event.status === 'completed' ? styles.past : ''}`;
+    return (
+        <li>
+            {event.meetingKey != null ? (
+                <Link
+                    href={`/race/${event.meetingKey}`}
+                    className={className}
+                    aria-current={isNext ? 'true' : undefined}
+                >
+                    {content}
+                </Link>
+            ) : (
+                <div className={className}>{content}</div>
+            )}
+        </li>
+    );
+}
+
+function MeetingRow({ meeting, status }) {
+    const name = meeting.name;
+    return (
+        <li className={styles.meetingRow}>
+            <div>
+                {meeting.meetingKey != null ? (
+                    <Link href={`/race/${meeting.meetingKey}`} className={styles.meetingName}>{name}</Link>
+                ) : (
+                    <span className={styles.meetingName}>{name}</span>
+                )}
+                <p className={styles.circuit}>
+                    {[meeting.circuitShortName, meeting.country].filter(Boolean).join(', ')}
+                </p>
+            </div>
+            <p className={styles.meetingDates}>
+                <LocalTime iso={meeting.dateStart} format="dayMonth" />
+                {meeting.dateEnd ? (
+                    <>
+                        {' to '}
+                        <LocalTime iso={meeting.dateEnd} format="dayMonth" />
+                    </>
+                ) : null}
+            </p>
+            <StatusBadge status={status} />
+        </li>
+    );
+}
 
 export default async function SchedulePage() {
-    let meetings = [];
-    let error = null;
-    const year = getCurrentYear();
-
-    try {
-        meetings = await getMeetings(year);
-        if (meetings.length === 0) {
-            // Fallback to hardcoded 2026 schedule if API is empty
-            meetings = SCHEDULE_2026;
-        }
-    } catch (e) {
-        error = 'Failed to load schedule data';
-        console.error(e);
-        // Fallback on error too
-        meetings = SCHEDULE_2026;
-        error = null; // Clear error since we have fallback
-    }
-
-    const formatDate = (dateString) => {
-        if (!dateString) return '';
-        const date = new Date(dateString);
-        return date.toLocaleDateString('en-US', {
-            month: 'short',
-            day: 'numeric',
-            timeZone: 'UTC', // Ensure consistent date regardless of client timezone
-        });
-    };
-
-    const formatDateRange = (start, end) => {
-        const startDate = formatDate(start);
-        const endDate = formatDate(end);
-        if (startDate === endDate) return startDate;
-        return `${startDate} - ${endDate}`;
-    };
-
-    const isPast = (dateString) => {
-        if (!dateString) return false;
-        return new Date(dateString) < new Date();
-    };
-
-    const isUpcoming = (dateString) => {
-        if (!dateString) return false;
-        const raceDate = new Date(dateString);
-        const now = new Date();
-        const diff = raceDate - now;
-        return diff > 0 && diff < 14 * 24 * 60 * 60 * 1000;
-    };
+    await connection();
+    const now = requestTime();
+    const calendar = await getCalendar(getSeasonYear(), now);
+    const { year, rounds } = calendar;
+    const next = nextRound(rounds);
+    const testing = calendar.testing.filter((meeting) => !meeting.is_cancelled);
+    const cancelled = calendar.cancelled;
+    const completedCount = rounds.filter((event) => event.status === 'completed').length;
 
     return (
         <div className={styles.schedule}>
-            {/* Header */}
-            <div className={styles.header}>
+            <header className={styles.header}>
                 <div className="container">
-                    <span className={styles.badge}>📅 RACE CALENDAR</span>
-                    <h1>{year} Schedule</h1>
-                    <p>Click any race for details, videos & track map</p>
+                    <h1>{year} F1 Calendar</h1>
+                    {rounds.length > 0 && (
+                        <p className={styles.summary}>
+                            {rounds.length} rounds, {completedCount} completed
+                        </p>
+                    )}
+                    <div className={styles.actions}>
+                        <a href={webcalUrl(SITE_URL)} className="btn btn-primary">Subscribe to calendar</a>
+                        <a href="/calendar.ics" download={`f1-${year}.ics`} className="btn btn-secondary">Download .ics</a>
+                    </div>
                 </div>
-            </div>
+            </header>
 
-            {/* Schedule Grid */}
             <div className={styles.content}>
                 <div className="container">
-                    {error ? (
-                        <div className={styles.error}>
-                            <span className={styles.errorIcon}>⚠️</span>
-                            <h3>Unable to load schedule</h3>
-                            <p>{error}</p>
-                        </div>
-                    ) : meetings.length > 0 ? (
-                        <div className={styles.grid}>
-                            {meetings.map((meeting) => {
-                                const isTesting = meeting.meeting_name.toLowerCase().includes('testing');
-                                // Calculate round number: Count only non-testing events before this one
-                                const roundNum = meetings
-                                    .slice(0, meetings.indexOf(meeting))
-                                    .filter(m => !m.meeting_name.toLowerCase().includes('testing'))
-                                    .length + 1;
+                    <section aria-labelledby="rounds-heading">
+                        <h2 id="rounds-heading" className={styles.sectionTitle}>Grands Prix</h2>
+                        {rounds.length > 0 ? (
+                            <ol className={styles.grid}>
+                                {rounds.map((event) => (
+                                    <RoundCard key={event.round} event={event} isNext={event === next} />
+                                ))}
+                            </ol>
+                        ) : (
+                            <p className={styles.empty}>The {year} calendar has not been published yet.</p>
+                        )}
+                    </section>
 
-                                return (
-                                    <Link
-                                        key={meeting.meeting_key || meeting.date_start}
-                                        href={`/race/${meeting.meeting_key}`}
-                                        className={`${styles.raceCard} ${isPast(meeting.date_start) ? styles.past : ''} ${isUpcoming(meeting.date_start) ? styles.upcoming : ''}`}
-                                    >
-                                        {isUpcoming(meeting.date_start) && (
-                                            <span className={styles.upcomingBadge}>UPCOMING</span>
-                                        )}
-                                        <div className={styles.round}>
-                                            {isTesting ? 'TESTING' : `Round ${roundNum}`}
-                                        </div>
-                                        <h3 className={styles.raceName}>
-                                            {meeting.meeting_name || meeting.meeting_official_name}
-                                        </h3>
-                                        <div className={styles.location}>
-                                            <span className={styles.country}>{meeting.country_name}</span>
-                                            <span className={styles.circuit}>{meeting.circuit_short_name}</span>
-                                        </div>
-                                        <div className={styles.dates}>
-                                            {formatDateRange(meeting.date_start, meeting.date_end)}
-                                        </div>
-                                        {isPast(meeting.date_start) && (
-                                            <div className={styles.completed}>✓ Completed</div>
-                                        )}
-                                        <div className={styles.viewDetails}>View Details →</div>
-                                    </Link>
-                                );
-                            })}
-                        </div>
-                    ) : (
-                        <div className={styles.loading}>
-                            <div className={styles.spinner}></div>
-                            <p>Loading schedule...</p>
-                        </div>
+                    {testing.length > 0 && (
+                        <section aria-labelledby="testing-heading" className={styles.section}>
+                            <h2 id="testing-heading" className={styles.sectionTitle}>Pre-season testing</h2>
+                            <ul className={styles.meetingList}>
+                                {testing.map((meeting) => (
+                                    <MeetingRow
+                                        key={meeting.meetingKey ?? meeting.dateStart}
+                                        meeting={meeting}
+                                        status={meetingStatus(meeting, now)}
+                                    />
+                                ))}
+                            </ul>
+                        </section>
                     )}
-                </div>
-            </div>
 
-            {/* API Credit */}
-            <div className={styles.credit}>
-                <div className="container">
-                    <p>
-                        Data provided by{' '}
-                        <a href="https://openf1.org" target="_blank" rel="noopener noreferrer">
-                            OpenF1 API
-                        </a>
-                        {' '}— Updates automatically every hour
-                    </p>
+                    {cancelled.length > 0 && (
+                        <section aria-labelledby="cancelled-heading" className={styles.section}>
+                            <h2 id="cancelled-heading" className={styles.sectionTitle}>Cancelled</h2>
+                            <ul className={styles.meetingList}>
+                                {cancelled.map((meeting) => (
+                                    <MeetingRow
+                                        key={meeting.meetingKey ?? meeting.dateStart}
+                                        meeting={meeting}
+                                        status="cancelled"
+                                    />
+                                ))}
+                            </ul>
+                        </section>
+                    )}
                 </div>
             </div>
         </div>

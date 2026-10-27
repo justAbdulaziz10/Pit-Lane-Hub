@@ -3,12 +3,10 @@ import styles from './page.module.css';
 
 export default function Loading() {
     return (
-        <div className={styles.schedule}>
+        <div className={styles.schedule} aria-busy="true">
             <div className={styles.header}>
                 <div className="container">
-                    <span className={styles.badge}>📅 RACE CALENDAR</span>
-                    <h1>Loading Schedule...</h1>
-                    <p>Please wait while we fetch the latest race data</p>
+                    <h1>F1 Calendar</h1>
                 </div>
             </div>
             <div className={styles.content}>
