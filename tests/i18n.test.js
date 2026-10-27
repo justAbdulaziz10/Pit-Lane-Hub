@@ -63,3 +63,22 @@ describe('locale formatting', async () => {
         expect(formatDate('en', '2026-10-25T19:00:00Z', { day: 'numeric', month: 'long', timeZone: 'UTC' })).toBe('25 October');
     });
 });
+
+describe('proxy locale routing', async () => {
+    const { resolveLocaleRoute } = await import('@/lib/i18n/routing');
+
+    it('rewrites English internally, passes Arabic through and hides /en', () => {
+        expect(resolveLocaleRoute({ pathname: '/' })).toEqual({ action: 'rewrite', url: '/en', locale: 'en' });
+        expect(resolveLocaleRoute({ pathname: '/history', search: '?year=1976' })).toEqual({ action: 'rewrite', url: '/en/history?year=1976', locale: 'en' });
+        expect(resolveLocaleRoute({ pathname: '/ar/driver/1' })).toEqual({ action: 'next', locale: 'ar' });
+        expect(resolveLocaleRoute({ pathname: '/en/teams', search: '?x=1' })).toEqual({ action: 'redirect', url: '/teams?x=1' });
+        expect(resolveLocaleRoute({ pathname: '/en' })).toEqual({ action: 'redirect', url: '/' });
+    });
+
+    it('sends visitors who chose Arabic to /ar, but never bots or client navigations', () => {
+        expect(resolveLocaleRoute({ pathname: '/teams', cookieLocale: 'ar' })).toEqual({ action: 'redirect', url: '/ar/teams', temporary: true });
+        expect(resolveLocaleRoute({ pathname: '/teams', cookieLocale: 'ar', userAgent: 'Googlebot/2.1' }).action).toBe('rewrite');
+        expect(resolveLocaleRoute({ pathname: '/teams', cookieLocale: 'ar', isDocument: false }).action).toBe('rewrite');
+        expect(resolveLocaleRoute({ pathname: '/teams', cookieLocale: 'en' }).action).toBe('rewrite');
+    });
+});
