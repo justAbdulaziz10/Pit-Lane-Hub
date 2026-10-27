@@ -1,68 +1,54 @@
+import { connection } from 'next/server';
+import { driverPath } from '@/app/driver/[number]/driver-data';
 import DriversGrid from '@/components/DriversGrid';
-import { getCurrentYear, getDrivers } from '@/lib/f1api';
+import { getGrid } from '@/lib/f1/drivers';
+import { ensureTeamColorContrast } from '@/lib/f1/team-utils';
+import { getHighQualityPhoto } from '@/lib/photos';
 import styles from './page.module.css';
 
-export const revalidate = 60;
+// Metadata (title, description, canonical /drivers) lives in ./layout.js.
 
-export default async function DriversPage() {
-    let drivers = [];
-    let error = null;
+function toCardData(driver) {
+    const current = { ...driver, current: true };
+    return {
+        key: driver.driverId || `${driver.racingNumber}-${driver.code}`,
+        driverId: driver.driverId,
+        number: driver.racingNumber,
+        code: driver.code,
+        firstName: driver.firstName,
+        lastName: driver.lastName,
+        fullName: driver.fullName,
+        nationality: driver.nationality,
+        flag: driver.flag,
+        team: driver.team,
+        colour: ensureTeamColorContrast(driver.teamColour || '#E10600'),
+        headshot: driver.headshot,
+        photo: getHighQualityPhoto(driver.headshot),
+        href: driver.driverId || driver.racingNumber != null ? driverPath(current) : '/drivers',
+    };
+}
 
-    try {
-        drivers = await getDrivers();
-        // Remove duplicates based on driver_number
-        const seen = new Set();
-        drivers = drivers.filter((driver) => {
-            if (seen.has(driver.driver_number)) return false;
-            seen.add(driver.driver_number);
-            return true;
-        });
-    } catch (e) {
-        error = 'Failed to load drivers data';
-        console.error(e);
-    }
+export default async function DriversPage({ searchParams }) {
+    await connection();
+    const { q } = await searchParams;
+    const grid = await getGrid();
+    const drivers = grid.map(toCardData);
+    const initialQuery = typeof q === 'string' ? q.slice(0, 40) : '';
 
     return (
         <div className={styles.drivers}>
-            {/* Header */}
             <div className={styles.header}>
                 <div className="container">
-                    <span className={styles.badge}>🏎️ LIVE DATA</span>
-                    <h1>{getCurrentYear()} Drivers</h1>
-                    <p>Real-time driver data powered by OpenF1 API</p>
+                    <h1>Drivers</h1>
                 </div>
             </div>
-
-            {/* Drivers Grid */}
             <div className={styles.content}>
                 <div className="container">
-                    {error ? (
-                        <div className={styles.error}>
-                            <span className={styles.errorIcon}>⚠️</span>
-                            <h3>Unable to load drivers</h3>
-                            <p>{error}</p>
-                        </div>
-                    ) : drivers.length > 0 ? (
-                        <DriversGrid drivers={drivers} className={styles.grid} />
+                    {drivers.length > 0 ? (
+                        <DriversGrid drivers={drivers} initialQuery={initialQuery} />
                     ) : (
-                        <div className={styles.loading}>
-                            <div className={styles.spinner}></div>
-                            <p>Loading drivers...</p>
-                        </div>
+                        <p className={styles.empty}>The grid for this season has not been announced yet.</p>
                     )}
-                </div>
-            </div>
-
-            {/* API Credit */}
-            <div className={styles.credit}>
-                <div className="container">
-                    <p>
-                        Data provided by{' '}
-                        <a href="https://openf1.org" target="_blank" rel="noopener noreferrer">
-                            OpenF1 API
-                        </a>
-                        {' '}— Free and open source
-                    </p>
                 </div>
             </div>
         </div>

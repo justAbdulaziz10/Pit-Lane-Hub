@@ -1,80 +1,60 @@
 'use client';
 
-import { getTeamColor } from '@/lib/f1api';
-import { getHighQualityPhoto } from '@/lib/photos';
 import Link from 'next/link';
+import { useState } from 'react';
 import styles from './DriverCard.module.css';
 import FavoriteButton from './FavoriteButton';
 
+/**
+ * One grid driver. Everything it shows, including the readable team colour,
+ * arrives in the `driver` prop prepared on the server.
+ */
 export default function DriverCard({ driver }) {
-    const teamColor = getTeamColor(driver.team_name);
-
-    const photoUrl = getHighQualityPhoto(driver.headshot_url);
-
-    const handleImageError = (e) => {
-        // Fallback to original URL if high-quality fails
-        if (driver.headshot_url && e.target.src !== driver.headshot_url) {
-            e.target.src = driver.headshot_url;
-        } else {
-            // Hide broken image and show placeholder
-            e.target.style.display = 'none';
-            const placeholder = e.target.parentNode.querySelector('[data-placeholder]');
-            if (placeholder) {
-                placeholder.style.display = 'flex';
-            }
-        }
-    };
+    const sources = [driver.photo, driver.headshot].filter(Boolean);
+    const [sourceIndex, setSourceIndex] = useState(0);
+    const photoUrl = sources[sourceIndex] || null;
 
     return (
-        <Link href={`/driver/${driver.driver_number}`} className={styles.cardLink}>
-            <div
-                className={styles.card}
-                style={{ '--team-color': teamColor }}
-            >
-                {/* Team Color Bar */}
-                <div className={styles.colorBar}></div>
+        <article className={styles.card} style={{ '--team-color': driver.colour }}>
+            <div className={styles.colorBar} aria-hidden="true" />
+            {driver.number != null ? (
+                <FavoriteButton driverNumber={driver.number} driverName={driver.fullName} />
+            ) : null}
 
-                <FavoriteButton driverNumber={driver.driver_number} />
-
-                {/* Driver Photo */}
-                <div className={styles.photoContainer}>
-                    {photoUrl && (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                            src={photoUrl}
-                            alt={`${driver.first_name} ${driver.last_name}`}
-                            className={styles.photo}
-                            loading="lazy"
-                            onError={handleImageError}
-                        />
-                    )}
-                    <div
-                        className={styles.photoPlaceholder}
-                        data-placeholder
-                        style={{ display: photoUrl ? 'none' : 'flex' }}
-                    >
-                        <span className={styles.photoNumber}>{driver.driver_number}</span>
+            <div className={styles.photoContainer}>
+                {photoUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                        src={photoUrl}
+                        alt=""
+                        className={styles.photo}
+                        loading="lazy"
+                        decoding="async"
+                        onError={() => setSourceIndex((index) => index + 1)}
+                    />
+                ) : (
+                    <div className={styles.photoPlaceholder} aria-hidden="true">
+                        <span className={styles.photoCode}>{driver.code || driver.lastName.slice(0, 3).toUpperCase()}</span>
                     </div>
-                </div>
-
-                {/* Driver Info */}
-                <div className={styles.info}>
-                    <div className={styles.number}>{driver.driver_number}</div>
-                    <div className={styles.name}>
-                        <span className={styles.firstName}>{driver.first_name}</span>
-                        <span className={styles.lastName}>{driver.last_name}</span>
-                    </div>
-                    <div className={styles.team}>{driver.team_name}</div>
-                    <div className={styles.country}>
-                        <span className={styles.countryCode}>{driver.country_code}</span>
-                    </div>
-                </div>
-
-                {/* View Profile Hint */}
-                <div className={styles.viewHint}>
-                    View Profile →
-                </div>
+                )}
             </div>
-        </Link>
+
+            <div className={styles.info}>
+                {driver.number != null ? <div className={styles.number}>{driver.number}</div> : null}
+                <h3 className={styles.name}>
+                    <Link href={driver.href} className={styles.cardLink}>
+                        <span className={styles.firstName}>{driver.firstName}</span>
+                        <span className={styles.lastName}>{driver.lastName}</span>
+                    </Link>
+                </h3>
+                <div className={styles.team}>{driver.team}</div>
+                {driver.nationality ? (
+                    <div className={styles.country}>
+                        {driver.flag ? <span aria-hidden="true">{driver.flag}</span> : null}
+                        <span className={styles.countryCode}>{driver.nationality}</span>
+                    </div>
+                ) : null}
+            </div>
+        </article>
     );
 }

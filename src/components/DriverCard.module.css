@@ -1,7 +1,25 @@
 .cardLink {
-    text-decoration: none;
+    display: flex;
+    flex-direction: column;
     color: inherit;
-    display: block;
+    text-decoration: none;
+}
+
+/* The name link covers the whole card; the favourite button sits above it. */
+.cardLink::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+}
+
+.card:focus-within {
+    outline: 2px solid var(--team-color, var(--racing-red));
+    outline-offset: 3px;
+}
+
+.cardLink:focus-visible {
+    outline: none;
 }
 
 .card {
@@ -20,10 +38,6 @@
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
 }
 
-.card:hover .viewHint {
-    opacity: 1;
-    transform: translateY(0);
-}
 
 /* Color Bar */
 .colorBar {
@@ -72,7 +86,7 @@
     justify-content: center;
 }
 
-.photoNumber {
+.photoCode {
     font-family: var(--font-display);
     font-size: 4rem;
     font-weight: 900;
@@ -88,19 +102,19 @@
 .number {
     display: inline-block;
     padding: var(--space-xs) var(--space-sm);
-    background: var(--team-color, var(--racing-red));
+    border: 1px solid var(--team-color, var(--racing-red));
     border-radius: var(--radius-sm);
     font-family: var(--font-display);
     font-size: 0.85rem;
     font-weight: 800;
-    color: var(--checkered-white);
+    color: var(--team-color, var(--racing-red));
     margin-bottom: var(--space-sm);
 }
 
 .name {
-    display: flex;
-    flex-direction: column;
-    margin-bottom: var(--space-xs);
+    margin: 0 0 var(--space-xs);
+    font-size: inherit;
+    font-weight: inherit;
 }
 
 .firstName {
@@ -138,24 +152,6 @@
     color: rgba(255, 255, 255, 0.6);
 }
 
-/* View Hint */
-.viewHint {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    padding: var(--space-md);
-    background: linear-gradient(to top, var(--team-color, var(--racing-red)), transparent);
-    text-align: center;
-    font-family: var(--font-display);
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: var(--checkered-white);
-    opacity: 0;
-    transform: translateY(10px);
-    transition: var(--transition-fast);
-}
-
 /* Responsive */
 @media (max-width: 768px) {
     .photoContainer {
@@ -166,7 +162,7 @@
         font-size: 1.2rem;
     }
 
-    .photoNumber {
+    .photoCode {
         font-size: 3rem;
     }
 }

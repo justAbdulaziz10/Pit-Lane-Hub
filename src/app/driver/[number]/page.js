@@ -1,256 +1,266 @@
-import { DRIVER_ERGAST_IDS, getDriverCareerStats, getDriverSeasonResults, getDrivers, getTeamColor, resolveErgastId } from '@/lib/f1api';
-import { getHighQualityPhoto } from '@/lib/photos';
 import Link from 'next/link';
+import { notFound, permanentRedirect } from 'next/navigation';
+import { connection } from 'next/server';
+import { getCareerStats } from '@/lib/f1/career';
+import { careerSummary, FASTEST_LAP_DATA_FROM, fastestLapCoverage, getAllTimeDriver, getDriverResults } from '@/lib/f1/compare';
+import { getSeasonSummary } from '@/lib/f1/history';
+import { getSeasonYear } from '@/lib/f1/year';
+import { jsonLdScript } from '@/lib/jsonld';
+import { getHighQualityPhoto } from '@/lib/photos';
+import { SITE_URL } from '@/lib/site';
+import { finishLabel, getDriverSeasonResults, resolveDriverRoute } from './driver-data';
 import styles from './page.module.css';
 
-export const revalidate = 3600;
+const RECENT_RESULTS = 10;
 
-async function getDriver(driverNumber) {
-    const drivers = await getDrivers();
-    let driver = drivers.find((d) => d.driver_number == driverNumber);
-
-    if (!driver) {
-        // Fallback: query OpenF1 directly for drivers not in the latest session.
-        try {
-            const res = await fetch(
-                `https://api.openf1.org/v1/drivers?driver_number=${driverNumber}&session_key=latest`,
-                { next: { revalidate: 3600 } }
-            );
-            const data = await res.json();
-            driver = data[0] || null;
-        } catch {
-            driver = null;
-        }
+function describe(driver) {
+    if (driver.current) {
+        const number = driver.racingNumber ? `#${driver.racingNumber} ` : '';
+        return `${driver.fullName}, ${number}for ${driver.team}: Formula 1 career wins, podiums, poles, championships and ${getSeasonYear()} results.`;
     }
-    return driver;
+    const nationality = driver.nationality ? `${driver.nationality} ` : '';
+    return `${driver.fullName}, ${nationality}Formula 1 driver: career starts, wins, podiums, poles, fastest laps and championships.`;
 }
 
 export async function generateMetadata({ params }) {
     const { number } = await params;
-    const driver = await getDriver(number);
-    if (!driver) return { title: 'Driver Not Found · Pit Lane Hub' };
-    const name = driver.full_name || `${driver.first_name} ${driver.last_name}`;
+    const route = await resolveDriverRoute(number);
+    if (!route) notFound();
+    const { driver, path } = route;
+    const description = describe(driver);
     return {
-        title: `${name} · Pit Lane Hub`,
-        description: `Career statistics and profile for ${name}, #${driver.driver_number} (${driver.team_name}).`,
+        title: driver.fullName,
+        description,
+        alternates: { canonical: path },
+        openGraph: { title: driver.fullName, description, url: path, type: 'profile' },
     };
 }
 
-export default async function DriverDetailPage({ params }) {
-    const { number: driverNumber } = await params;
+async function currentStanding(driverId, year) {
+    const summary = await getSeasonSummary(year);
+    return summary.driverStandings.find((item) => item.driver.id === driverId) || null;
+}
 
-    const driver = await getDriver(driverNumber);
-
-    if (!driver) {
-        return (
-            <div className={styles.driverDetail}>
-                <div className={styles.notFound}>
-                    <h1>Driver Not Found</h1>
-                    <p>Could not find driver #{driverNumber}</p>
-                    <Link href="/drivers" className={styles.backBtn}>← Back to Drivers</Link>
-                </div>
-            </div>
-        );
+async function recentResults(driver, careerResults) {
+    if (!driver.current) {
+        return {
+            label: 'Final races',
+            rows: [...careerResults].sort((a, b) => b.season - a.season || b.round - a.round).slice(0, RECENT_RESULTS),
+            showSeason: true,
+        };
     }
+    const year = getSeasonYear();
+    let rows = await getDriverSeasonResults(driver.driverId, year);
+    let season = year;
+    if (rows.length === 0) {
+        season = year - 1;
+        rows = await getDriverSeasonResults(driver.driverId, season);
+    }
+    return {
+        label: `${season} results`,
+        rows: [...rows].reverse().slice(0, RECENT_RESULTS),
+        showSeason: false,
+    };
+}
 
-    const teamColor = getTeamColor(driver.team_name);
-    const photoUrl = getHighQualityPhoto(driver.headshot_url);
+function formatPoints(value) {
+    return Number.isInteger(value) ? String(value) : value.toFixed(1);
+}
 
-    // Resolve the Ergast id dynamically from the live season driver list, falling
-    // back to the static map so new drivers still work without code changes.
-    const ergastId = await resolveErgastId(driver.driver_number, DRIVER_ERGAST_IDS);
+export default async function DriverPage({ params }) {
+    await connection();
+    const { number } = await params;
+    const route = await resolveDriverRoute(number);
+    if (!route) notFound();
+    const { driver, path } = route;
+    if (`/driver/${decodeURIComponent(String(number))}` !== path) permanentRedirect(path);
 
-    // Real career stats + this season's results from Ergast.
-    const [careerStats, seasonResults] = ergastId
-        ? await Promise.all([getDriverCareerStats(ergastId), getDriverSeasonResults(ergastId)])
-        : [null, []];
-    const recentResults = [...seasonResults].reverse().slice(0, 8);
+    const year = getSeasonYear();
+    const driverId = driver.driverId;
+    const [career, results, profile, standing] = driverId
+        ? await Promise.all([
+            getCareerStats(driverId),
+            getDriverResults(driverId),
+            driver.current ? getAllTimeDriver(driverId) : driver,
+            driver.current ? currentStanding(driverId, year) : null,
+        ])
+        : [null, { results: [] }, null, null];
+    const span = careerSummary(results.results);
+    const recent = driverId ? await recentResults(driver, results.results) : { rows: [] };
+    const photoUrl = getHighQualityPhoto(driver.headshot);
 
     const personJsonLd = {
         '@context': 'https://schema.org',
         '@type': 'Person',
-        name: driver.full_name || `${driver.first_name} ${driver.last_name}`,
-        jobTitle: 'Formula 1 Driver',
-        nationality: driver.country_code,
+        name: driver.fullName,
+        givenName: driver.firstName || undefined,
+        familyName: driver.lastName || undefined,
+        nationality: driver.nationality || undefined,
+        birthDate: profile?.dateOfBirth || undefined,
+        jobTitle: 'Formula 1 driver',
         image: photoUrl || undefined,
-        worksFor: driver.team_name ? { '@type': 'Organization', name: driver.team_name } : undefined,
+        url: `${SITE_URL}${path}`,
+        sameAs: profile?.url ? [profile.url] : undefined,
+        memberOf: driver.current && driver.team ? { '@type': 'SportsTeam', name: driver.team, sport: 'Formula 1' } : undefined,
     };
 
+    const lapCoverage = fastestLapCoverage(span.firstSeason, span.lastSeason);
+    const careerStats = career ? [
+        ['Championships', career.championships],
+        ['Starts', career.starts],
+        ['Wins', career.wins],
+        ['Podiums', career.podiums],
+        ['Poles', career.poles],
+        [
+            lapCoverage === 'partial' ? `Fastest laps since ${FASTEST_LAP_DATA_FROM}` : 'Fastest laps',
+            lapCoverage === 'none' ? '—' : career.fastestLaps,
+        ],
+        ['Seasons', career.seasons],
+    ] : [];
+
     return (
-        <div className={styles.driverDetail} style={{ '--team-color': teamColor }}>
+        <div className={styles.driverDetail} style={{ '--team-color': driver.colour }}>
             <script
                 type="application/ld+json"
-                dangerouslySetInnerHTML={{ __html: JSON.stringify(personJsonLd) }}
+                dangerouslySetInnerHTML={{ __html: jsonLdScript(personJsonLd) }}
             />
-            {/* Hero Section */}
-            <div className={styles.hero}>
-                <div className={styles.heroBackground}></div>
+            <section className={styles.hero}>
+                <div className={styles.heroBackground} />
                 <div className={styles.heroContent}>
-                    <Link href="/drivers" className={styles.backLink}>← Back to Drivers</Link>
-
+                    <Link href="/drivers" className={styles.backLink}>All drivers</Link>
                     <div className={styles.heroMain}>
                         <div className={styles.driverPhoto}>
                             {photoUrl ? (
                                 // eslint-disable-next-line @next/next/no-img-element
-                                <img src={photoUrl} alt={`${driver.first_name} ${driver.last_name}`} />
+                                <img src={photoUrl} alt={driver.fullName} />
                             ) : (
-                                <div className={styles.photoPlaceholder}>{driver.driver_number}</div>
+                                <div className={styles.photoPlaceholder} aria-hidden="true">
+                                    {driver.code || driver.lastName.slice(0, 3).toUpperCase()}
+                                </div>
                             )}
                         </div>
-
                         <div className={styles.driverInfo}>
-                            <span className={styles.driverNumber}>{driver.driver_number}</span>
+                            {driver.racingNumber ? (
+                                <span className={styles.driverNumber} aria-label={`Car number ${driver.racingNumber}`}>
+                                    {driver.racingNumber}
+                                </span>
+                            ) : null}
                             <h1>
-                                <span className={styles.firstName}>{driver.first_name}</span>
-                                <span className={styles.lastName}>{driver.last_name}</span>
+                                <span className={styles.firstName}>{driver.firstName}</span>
+                                <span className={styles.lastName}>{driver.lastName}</span>
                             </h1>
-                            <div className={styles.teamBadge}>
-                                <span className={styles.teamDot}></span>
-                                {driver.team_name}
-                            </div>
-                            <div className={styles.countryInfo}>
-                                🏳️ {driver.country_code || 'INT'} • {driver.name_acronym}
-                            </div>
+                            {driver.team ? (
+                                <div className={styles.teamBadge}>
+                                    <span className={styles.teamDot} aria-hidden="true" />
+                                    {driver.team}
+                                </div>
+                            ) : null}
+                            <dl className={styles.facts}>
+                                {driver.nationality ? (
+                                    <div>
+                                        <dt>Nationality</dt>
+                                        <dd>
+                                            {driver.flag ? <span aria-hidden="true">{driver.flag} </span> : null}
+                                            {driver.nationality}
+                                        </dd>
+                                    </div>
+                                ) : null}
+                                {driver.code ? (
+                                    <div>
+                                        <dt>Code</dt>
+                                        <dd>{driver.code}</dd>
+                                    </div>
+                                ) : null}
+                                {span.firstSeason ? (
+                                    <div>
+                                        <dt>Seasons</dt>
+                                        <dd>{span.firstSeason === span.lastSeason ? span.firstSeason : `${span.firstSeason}–${span.lastSeason}`}</dd>
+                                    </div>
+                                ) : null}
+                            </dl>
+                            {standing ? (
+                                <dl className={styles.seasonStanding} aria-label={`${year} championship`}>
+                                    <div>
+                                        <dt>{year} position</dt>
+                                        <dd>P{standing.position}</dd>
+                                    </div>
+                                    <div>
+                                        <dt>Points</dt>
+                                        <dd>{formatPoints(standing.points)}</dd>
+                                    </div>
+                                    <div>
+                                        <dt>Wins</dt>
+                                        <dd>{standing.wins}</dd>
+                                    </div>
+                                </dl>
+                            ) : null}
                         </div>
                     </div>
                 </div>
-            </div>
+            </section>
 
-            {/* Stats Grid (real Ergast career data) */}
-            {careerStats ? (
-                <div className={styles.statsSection}>
+            {career ? (
+                <section className={styles.statsSection} aria-labelledby="career-heading">
                     <div className="container">
-                        <h2 className={styles.sectionTitle}>Career Statistics</h2>
-                        <div className={styles.statsGrid}>
-                            <div className={styles.statCard}>
-                                <span className={styles.statValue}>{careerStats.championships}</span>
-                                <span className={styles.statLabel}>🏆 Championships</span>
-                            </div>
-                            <div className={styles.statCard}>
-                                <span className={styles.statValue}>{careerStats.wins}</span>
-                                <span className={styles.statLabel}>🏁 Race Wins</span>
-                            </div>
-                            <div className={styles.statCard}>
-                                <span className={styles.statValue}>{careerStats.podiums}</span>
-                                <span className={styles.statLabel}>🥇 Podiums</span>
-                            </div>
-                            <div className={styles.statCard}>
-                                <span className={styles.statValue}>{careerStats.poles}</span>
-                                <span className={styles.statLabel}>⚡ Pole Positions</span>
-                            </div>
-                            <div className={styles.statCard}>
-                                <span className={styles.statValue}>{careerStats.fastestLaps}</span>
-                                <span className={styles.statLabel}>⏱️ Fastest Laps</span>
-                            </div>
-                            <div className={styles.statCard}>
-                                <span className={styles.statValue}>{careerStats.totalRaces}</span>
-                                <span className={styles.statLabel}>🏎️ Race Starts</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            ) : (
-                <div className={styles.statsSection}>
-                    <div className="container">
-                        <h2 className={styles.sectionTitle}>Career Statistics</h2>
-                        <p className={styles.noStats}>
-                            Career statistics are not yet available for this driver.
-                        </p>
-                    </div>
-                </div>
-            )}
-
-            {/* Driver Details */}
-            <div className={styles.detailsSection}>
-                <div className="container">
-                    <div className={styles.detailsGrid}>
-                        {/* Personal Info */}
-                        <div className={styles.detailCard}>
-                            <h3>🧑 Personal Information</h3>
-                            <div className={styles.detailsList}>
-                                <div className={styles.detailItem}>
-                                    <span className={styles.detailLabel}>Full Name</span>
-                                    <span className={styles.detailValue}>{driver.full_name || `${driver.first_name} ${driver.last_name}`}</span>
-                                </div>
-                                <div className={styles.detailItem}>
-                                    <span className={styles.detailLabel}>Nationality</span>
-                                    <span className={styles.detailValue}>{driver.country_code}</span>
-                                </div>
-                                <div className={styles.detailItem}>
-                                    <span className={styles.detailLabel}>Driver Number</span>
-                                    <span className={styles.detailValue}>#{driver.driver_number}</span>
-                                </div>
-                                <div className={styles.detailItem}>
-                                    <span className={styles.detailLabel}>Abbreviation</span>
-                                    <span className={styles.detailValue}>{driver.name_acronym}</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Team Info */}
-                        <div className={styles.detailCard}>
-                            <h3>🏎️ Current Team</h3>
-                            <div className={styles.teamCard}>
-                                <div className={styles.teamColorStripe}></div>
-                                <h4>{driver.team_name}</h4>
-                                <p className={styles.teamColour}>Team Colour: {driver.team_colour ? `#${driver.team_colour}` : teamColor}</p>
-                            </div>
-                        </div>
-
-                        {/* Broadcast Info */}
-                        <div className={styles.detailCard}>
-                            <h3>📺 Broadcast Name</h3>
-                            <div className={styles.broadcastName}>
-                                {driver.broadcast_name || `${driver.first_name.charAt(0)}. ${driver.last_name}`.toUpperCase()}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Season Results (real Ergast data) */}
-            {recentResults.length > 0 && (
-                <div className={styles.sessionsSection}>
-                    <div className="container">
-                        <h2 className={styles.sectionTitle}>Recent Results</h2>
-                        <div className={styles.resultsTable}>
-                            <div className={`${styles.resultRow} ${styles.resultHead}`}>
-                                <span>Round</span>
-                                <span>Grand Prix</span>
-                                <span>Grid</span>
-                                <span>Finish</span>
-                                <span>Points</span>
-                            </div>
-                            {recentResults.map((r) => (
-                                <div key={r.round} className={styles.resultRow}>
-                                    <span className={styles.resultRound}>{r.round}</span>
-                                    <span className={styles.resultRace}>{r.raceName}</span>
-                                    <span>{r.grid ?? '—'}</span>
-                                    <span className={styles.resultFinish}>
-                                        {r.position
-                                            ? `P${r.position}`
-                                            : (r.status || '—')}
-                                    </span>
-                                    <span className={styles.resultPoints}>{r.points}</span>
+                        <h2 id="career-heading" className={styles.sectionTitle}>Career</h2>
+                        <dl className={styles.statsGrid}>
+                            {careerStats.map(([label, value]) => (
+                                <div key={label} className={styles.statCard}>
+                                    <dt className={styles.statLabel}>{label}</dt>
+                                    <dd className={styles.statValue}>{value}</dd>
                                 </div>
                             ))}
+                        </dl>
+                        {span.teams.length > 0 ? (
+                            <p className={styles.teams}>
+                                <span className={styles.teamsLabel}>Teams</span> {span.teams.join(', ')}
+                            </p>
+                        ) : null}
+                    </div>
+                </section>
+            ) : null}
+
+            {recent.rows.length > 0 ? (
+                <section className={styles.sessionsSection} aria-labelledby="results-heading">
+                    <div className="container">
+                        <h2 id="results-heading" className={styles.sectionTitle}>{recent.label}</h2>
+                        <div className={styles.tableWrap}>
+                            <table className={styles.resultsTable}>
+                                <thead>
+                                    <tr>
+                                        <th scope="col">{recent.showSeason ? 'Season' : 'Round'}</th>
+                                        <th scope="col">Grand Prix</th>
+                                        <th scope="col">Grid</th>
+                                        <th scope="col">Finish</th>
+                                        <th scope="col">Points</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {recent.rows.map((row) => (
+                                        <tr key={`${row.season}-${row.round}`}>
+                                            <td className={styles.resultRound}>{recent.showSeason ? row.season : row.round}</td>
+                                            <th scope="row" className={styles.resultRace}>{row.raceName}</th>
+                                            <td>{row.grid ? row.grid : '—'}</td>
+                                            <td className={styles.resultFinish}>{finishLabel(row)}</td>
+                                            <td className={styles.resultPoints}>{formatPoints(row.points)}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
                         </div>
                     </div>
-                </div>
-            )}
+                </section>
+            ) : null}
 
-            {/* Compare Action */}
-            <div className={styles.actionsSection}>
-                <div className="container">
-                    <div className={styles.actionsCard}>
-                        <h3>Compare with another driver</h3>
-                        <p>See how {driver.first_name} stacks up against other drivers</p>
-                        <Link href="/compare" className={styles.compareBtn}>
-                            📊 Go to Compare
+            {driverId ? (
+                <section className={styles.actionsSection}>
+                    <div className="container">
+                        <Link href={`/compare?a=${driverId}`} className={styles.compareBtn}>
+                            Compare {driver.lastName} with another driver
                         </Link>
                     </div>
-                </div>
-            </div>
+                </section>
+            ) : null}
         </div>
     );
 }

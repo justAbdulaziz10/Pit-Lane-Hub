@@ -1,284 +1,285 @@
 'use client';
 
-import { getDriverStatsAction } from '@/app/actions/compare-actions';
+import Link from 'next/link';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
+import { compareDriversAction, searchDriversAction } from '@/app/actions/compare-actions';
 import styles from '@/app/compare/page.module.css';
-import { getTeamColor } from '@/lib/f1api';
-import { useEffect, useState } from 'react';
 
-export default function CompareContent({ initialDrivers = [] }) {
-    const [drivers] = useState(initialDrivers);
+const COLOURS = ['#FF4D45', '#4FC3F7'];
 
-    // Selection State (defaults to the first two drivers when available)
-    const hasDefaults = initialDrivers.length >= 2;
-    const [selectedDriver1, setSelectedDriver1] = useState(hasDefaults ? initialDrivers[0] : null);
-    const [selectedDriver2, setSelectedDriver2] = useState(hasDefaults ? initialDrivers[1] : null);
+const ERRORS = {
+    invalid: 'Choose two different drivers.',
+    'not-found': 'One of these drivers is not in the Formula 1 records.',
+    'rate-limited': 'Too many comparisons in a short time. Wait a minute and try again.',
+    unavailable: 'The results service did not respond. Try again.',
+};
 
-    // Data State
-    const [stats1, setStats1] = useState(null);
-    const [stats2, setStats2] = useState(null);
-    const [loading1, setLoading1] = useState(false);
-    const [loading2, setLoading2] = useState(false);
-    const [error1, setError1] = useState(null);
-    const [error2, setError2] = useState(null);
+function DriverPicker({ index, label, selected, onSelect }) {
+    const inputId = useId();
+    const listId = useId();
+    const [query, setQuery] = useState('');
+    const [results, setResults] = useState([]);
+    const [status, setStatus] = useState('idle');
+    const latest = useRef(0);
 
-    // Fetch Helper
-    const fetchDriverStats = async (driver, setStats, setLoading, setError) => {
-        if (!driver) return;
+    useEffect(() => {
+        const trimmed = query.trim();
+        const requestId = ++latest.current;
+        if (trimmed.length < 2) return undefined;
+        const timer = setTimeout(async () => {
+            setStatus('loading');
+            let response;
+            try {
+                response = await searchDriversAction(trimmed);
+            } catch {
+                response = { ok: false, error: 'unavailable' };
+            }
+            if (requestId !== latest.current) return;
+            if (response.ok) {
+                setResults(response.drivers);
+                setStatus(response.drivers.length ? 'done' : 'empty');
+            } else {
+                setResults([]);
+                setStatus(response.error);
+            }
+        }, 250);
+        return () => clearTimeout(timer);
+    }, [query]);
+
+    const open = query.trim().length >= 2;
+
+    return (
+        <div className={styles.picker} style={{ '--driver-color': COLOURS[index] }}>
+            <label htmlFor={inputId} className={styles.pickerLabel}>{label}</label>
+            <p className={styles.pickerSelected}>{selected?.fullName || selected?.driverId || 'None selected'}</p>
+            <input
+                id={inputId}
+                type="search"
+                className={styles.pickerInput}
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Search any driver since 1950"
+                autoComplete="off"
+                aria-controls={listId}
+            />
+            {open ? (
+                <div id={listId} className={styles.pickerResults} aria-live="polite">
+                    {status === 'loading' && results.length === 0 ? <p className={styles.pickerNote}>Searching…</p> : null}
+                    {status === 'empty' ? <p className={styles.pickerNote}>No drivers found.</p> : null}
+                    {ERRORS[status] ? <p className={styles.pickerNote}>{ERRORS[status]}</p> : null}
+                    {results.length > 0 ? (
+                        <ul>
+                            {results.map((driver) => (
+                                <li key={driver.driverId}>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setQuery('');
+                                            setResults([]);
+                                            onSelect(driver);
+                                        }}
+                                    >
+                                        <span>{driver.fullName}</span>
+                                        <span className={styles.pickerMeta}>{[driver.code, driver.nationality].filter(Boolean).join(' · ')}</span>
+                                    </button>
+                                </li>
+                            ))}
+                        </ul>
+                    ) : null}
+                </div>
+            ) : null}
+        </div>
+    );
+}
+
+function rate(part, whole) {
+    if (!whole) return '0.0%';
+    return `${((part / whole) * 100).toFixed(1)}%`;
+}
+
+function formatPoints(value) {
+    return Number.isInteger(value) ? String(value) : value.toFixed(1);
+}
+
+const FASTEST_LAP_DATA_FROM = 2004;
+
+/** Jolpica has fastest-lap ranks from 2004 only, so older careers can't be compared on it. */
+function fastestLapRow(a, b) {
+    const missing = (driver) => driver.lastSeason && driver.lastSeason < FASTEST_LAP_DATA_FROM;
+    const partial = [a, b].some((driver) => driver.firstSeason && driver.firstSeason < FASTEST_LAP_DATA_FROM);
+    const label = partial ? `Fastest laps since ${FASTEST_LAP_DATA_FROM}` : 'Fastest laps';
+    const valueA = missing(a) ? -1 : a.stats.fastestLaps;
+    const valueB = missing(b) ? -1 : b.stats.fastestLaps;
+    return [label, valueA, valueB, null, () => [missing(a) ? '—' : valueA, missing(b) ? '—' : valueB]];
+}
+
+function statRows([a, b]) {
+    return [
+        ['Championships', a.stats.championships, b.stats.championships],
+        ['Starts', a.stats.starts, b.stats.starts],
+        ['Wins', a.stats.wins, b.stats.wins],
+        ['Podiums', a.stats.podiums, b.stats.podiums],
+        ['Pole positions', a.stats.poles, b.stats.poles],
+        fastestLapRow(a, b),
+        ['Seasons', a.stats.seasons, b.stats.seasons],
+        ['Points', a.points, b.points, formatPoints],
+        ['Win rate', a.stats.wins / (a.stats.starts || 1), b.stats.wins / (b.stats.starts || 1), null, () => [rate(a.stats.wins, a.stats.starts), rate(b.stats.wins, b.stats.starts)]],
+        ['Podium rate', a.stats.podiums / (a.stats.starts || 1), b.stats.podiums / (b.stats.starts || 1), null, () => [rate(a.stats.podiums, a.stats.starts), rate(b.stats.podiums, b.stats.starts)]],
+    ];
+}
+
+function span(driver) {
+    if (!driver.firstSeason) return null;
+    return driver.firstSeason === driver.lastSeason ? String(driver.firstSeason) : `${driver.firstSeason}–${driver.lastSeason}`;
+}
+
+function Comparison({ comparison }) {
+    const [a, b] = comparison.drivers;
+    const h2h = comparison.headToHead;
+    return (
+        <div className={styles.comparison}>
+            <div className={styles.driversRow}>
+                {comparison.drivers.map((driver, index) => (
+                    <div key={driver.driverId} className={styles.driverProfile} style={{ '--driver-color': COLOURS[index] }}>
+                        <h2>
+                            <Link href={`/driver/${driver.driverId}`}>{driver.fullName}</Link>
+                        </h2>
+                        <p className={styles.profileMeta}>
+                            {[driver.nationality, span(driver)].filter(Boolean).join(' · ')}
+                        </p>
+                        {driver.teams.length > 0 ? <p className={styles.profileTeams}>{driver.teams.join(', ')}</p> : null}
+                    </div>
+                ))}
+            </div>
+
+            <section className={styles.h2h} aria-labelledby="h2h-heading">
+                <h3 id="h2h-heading">Head-to-head</h3>
+                {h2h.races > 0 ? (
+                    <>
+                        <p className={styles.h2hScore}>
+                            <span style={{ color: COLOURS[0] }}>{h2h.aheadA}</span>
+                            <span className={styles.h2hDash} aria-hidden="true">–</span>
+                            <span style={{ color: COLOURS[1] }}>{h2h.aheadB}</span>
+                        </p>
+                        <p className={styles.h2hNote}>
+                            Classified ahead in {h2h.races} {h2h.races === 1 ? 'race' : 'races'} together
+                            {h2h.first && h2h.last ? ` (${h2h.first.season}–${h2h.last.season})` : ''}
+                        </p>
+                        {h2h.teammateRaces > 0 ? (
+                            <p className={styles.h2hNote}>
+                                As teammates: {a.lastName} {h2h.teammateAheadA}, {b.lastName} {h2h.teammateAheadB} in {h2h.teammateRaces} {h2h.teammateRaces === 1 ? 'race' : 'races'}
+                            </p>
+                        ) : null}
+                    </>
+                ) : (
+                    <p className={styles.h2hNote}>{a.lastName} and {b.lastName} never started the same race.</p>
+                )}
+            </section>
+
+            <section className={styles.statsSection} aria-labelledby="career-heading">
+                <h3 id="career-heading">Career</h3>
+                <table className={styles.statsTable}>
+                    <thead>
+                        <tr>
+                            <th scope="col">Statistic</th>
+                            <th scope="col" style={{ color: COLOURS[0] }}>{a.fullName}</th>
+                            <th scope="col" style={{ color: COLOURS[1] }}>{b.fullName}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {statRows(comparison.drivers).map(([label, valueA, valueB, format, display]) => {
+                            const [textA, textB] = display ? display() : [format ? format(valueA) : valueA, format ? format(valueB) : valueB];
+                            return (
+                                <tr key={label}>
+                                    <th scope="row">{label}</th>
+                                    <td className={valueA > valueB ? styles.leader : undefined}>{textA}</td>
+                                    <td className={valueB > valueA ? styles.leader : undefined}>{textB}</td>
+                                </tr>
+                            );
+                        })}
+                    </tbody>
+                </table>
+            </section>
+        </div>
+    );
+}
+
+export default function CompareContent({ initialIds, initialComparison = null, initialError = null }) {
+    const [selected, setSelected] = useState(() => initialIds.map((driverId, index) => {
+        const known = initialComparison?.drivers?.[index];
+        return driverId ? { driverId, fullName: known?.fullName || null } : null;
+    }));
+    const [comparison, setComparison] = useState(initialComparison);
+    const [error, setError] = useState(initialError);
+    const [loading, setLoading] = useState(false);
+    const latest = useRef(0);
+
+    const run = useCallback(async (pair) => {
+        const requestId = ++latest.current;
+        const [a, b] = pair.map((driver) => driver?.driverId || '');
+        if (!a || !b) return;
+        const url = `/compare?a=${encodeURIComponent(a)}&b=${encodeURIComponent(b)}`;
+        window.history.replaceState(window.history.state, '', url);
+        if (a === b) {
+            setError('invalid');
+            setComparison(null);
+            setLoading(false);
+            return;
+        }
         setLoading(true);
         setError(null);
-        setStats(null);
-
+        let response;
         try {
-            const data = await getDriverStatsAction(driver.driver_number);
-            if (!data) {
-                throw new Error('Failed to fetch data');
-            }
-            setStats(data);
-        } catch (err) {
-            console.error(err);
-            setError('Could not load statistics');
-        } finally {
-            setLoading(false);
+            response = await compareDriversAction(a, b);
+        } catch {
+            response = { ok: false, error: 'unavailable' };
         }
-    };
+        // A newer selection was made while this request was in flight.
+        if (requestId !== latest.current) return;
+        setLoading(false);
+        if (response.ok) setComparison(response.comparison);
+        else {
+            setComparison(null);
+            setError(response.error);
+        }
+    }, []);
 
-    // Effect for Driver 1
-    useEffect(() => {
-        fetchDriverStats(selectedDriver1, setStats1, setLoading1, setError1);
-    }, [selectedDriver1]);
-
-    // Effect for Driver 2
-    useEffect(() => {
-        fetchDriverStats(selectedDriver2, setStats2, setLoading2, setError2);
-    }, [selectedDriver2]);
-
-
-    // --- Render Helpers ---
-
-    const getWinRate = (stats) => {
-        if (!stats || !stats.totalRaces) return '0.0';
-        return ((stats.wins / stats.totalRaces) * 100).toFixed(1);
-    };
-
-    const getBarPercent = (val1, val2, isFirst) => {
-        const v1 = parseFloat(val1) || 0;
-        const v2 = parseFloat(val2) || 0;
-        const max = Math.max(v1, v2);
-        if (max === 0) return 50; // Equal
-        return isFirst ? (v1 / max) * 100 : (v2 / max) * 100;
-    };
-
-    const compareClass = (val1, val2) => {
-        if (val1 > val2) return 'higher';
-        if (val2 > val1) return 'lower';
-        return 'equal';
-    };
-
-    // Colors
-    const color1 = selectedDriver1 ? getTeamColor(selectedDriver1.team_name) : '#E10600';
-    const color2 = selectedDriver2 ? getTeamColor(selectedDriver2.team_name) : '#3671C6';
-
-    const renderStatRow = (label, key, formatter = (v) => v) => {
-        const v1 = stats1 ? stats1[key] : 0;
-        const v2 = stats2 ? stats2[key] : 0;
-        return (
-            <div className={styles.statRow}>
-                <span className={`${styles.value} ${styles[compareClass(v1, v2)]}`}>
-                    {stats1 ? formatter(v1) : '-'}
-                </span>
-                <span className={styles.label}>{label}</span>
-                <span className={`${styles.value} ${styles[compareClass(v2, v1)]}`}>
-                    {stats2 ? formatter(v2) : '-'}
-                </span>
-            </div>
-        );
+    const choose = (index, driver) => {
+        const next = selected.map((item, position) => (position === index ? driver : item));
+        setSelected(next);
+        run(next);
     };
 
     return (
-        <div className={styles.compare}>
-            {/* Header */}
-            <div className={styles.header}>
-                <div className="container">
-                    <span className={styles.badge}>📊 COMPARE</span>
-                    <h1>Driver Comparison</h1>
-                    <p>Real-time career statistics from the F1 Archives</p>
+        <div className="container">
+            <div className={styles.selectorGrid}>
+                <DriverPicker index={0} label="Driver A" selected={selected[0]} onSelect={(driver) => choose(0, driver)} />
+                <div className={styles.versus} aria-hidden="true">vs</div>
+                <DriverPicker index={1} label="Driver B" selected={selected[1]} onSelect={(driver) => choose(1, driver)} />
+            </div>
+
+            <div aria-live="polite" aria-busy={loading}>
+                {loading ? (
+                    <div className={styles.loadingState} role="status">
+                        <div className={styles.spinner} aria-hidden="true" />
+                        <p>Loading career records…</p>
+                    </div>
+                ) : null}
+                {!loading && error ? (
+                    <div className={styles.errorState} role="alert">
+                        <p>{ERRORS[error] || ERRORS.unavailable}</p>
+                        {error === 'unavailable' ? (
+                            <button type="button" className="btn btn-secondary" onClick={() => run(selected)}>Try again</button>
+                        ) : null}
+                    </div>
+                ) : null}
+            </div>
+
+            {!error && comparison ? (
+                <div className={loading ? styles.stale : undefined}>
+                    <Comparison comparison={comparison} />
                 </div>
-            </div>
-
-            {/* Selectors */}
-            <div className={styles.selectors}>
-                <div className="container">
-                    <div className={styles.selectorGrid}>
-                        {/* Driver 1 */}
-                        <div className={styles.selectorCard} style={{ '--driver-color': color1 }}>
-                            <label>Driver 1</label>
-                            <select
-                                value={selectedDriver1?.driver_number || ''}
-                                onChange={(e) => {
-                                    const d = drivers.find(x => x.driver_number === parseInt(e.target.value));
-                                    setSelectedDriver1(d);
-                                }}
-                            >
-                                {drivers.map(d => (
-                                    <option key={d.driver_number} value={d.driver_number}>
-                                        {d.first_name} {d.last_name}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-
-                        <div className={styles.versus}>VS</div>
-
-                        {/* Driver 2 */}
-                        <div className={styles.selectorCard} style={{ '--driver-color': color2 }}>
-                            <label>Driver 2</label>
-                            <select
-                                value={selectedDriver2?.driver_number || ''}
-                                onChange={(e) => {
-                                    const d = drivers.find(x => x.driver_number === parseInt(e.target.value));
-                                    setSelectedDriver2(d);
-                                }}
-                            >
-                                {drivers.map(d => (
-                                    <option key={d.driver_number} value={d.driver_number}>
-                                        {d.first_name} {d.last_name}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Main Content Area */}
-            <div className="container">
-
-                {/* Visual Loading/Error Feedback */}
-                {(loading1 || loading2) && (
-                    <div className={styles.loadingState}>
-                        <div className={styles.spinner}></div>
-                        <p>Analysing career data...</p>
-                    </div>
-                )}
-
-                {(error1 || error2) && (
-                    <div className={styles.errorState}>
-                        <h3>Unable to load data</h3>
-                        <p>Historical data for one or more drivers is currently unavailable.</p>
-                        <p className={styles.subError}>{error1 || error2}</p>
-                    </div>
-                )}
-
-                {/* Statistics Display - Only if both ready */}
-                {!loading1 && !loading2 && stats1 && stats2 && selectedDriver1 && selectedDriver2 && (
-                    <div className={styles.comparison}>
-
-                        {/* Profiles */}
-                        <div className={styles.driversRow}>
-                            <div className={styles.driverProfile} style={{ borderColor: color1 }}>
-                                {selectedDriver1.headshot_url && (
-                                    // eslint-disable-next-line @next/next/no-img-element
-                                    <img src={selectedDriver1.headshot_url} alt={`${selectedDriver1.first_name} ${selectedDriver1.last_name}`} loading="lazy" decoding="async" />
-                                )}
-                                <h2>{selectedDriver1.first_name} <strong>{selectedDriver1.last_name}</strong></h2>
-                                <span className={styles.teamTag}>{selectedDriver1.team_name}</span>
-                            </div>
-                            <div className={styles.driverProfile} style={{ borderColor: color2 }}>
-                                {selectedDriver2.headshot_url && (
-                                    // eslint-disable-next-line @next/next/no-img-element
-                                    <img src={selectedDriver2.headshot_url} alt={`${selectedDriver2.first_name} ${selectedDriver2.last_name}`} loading="lazy" decoding="async" />
-                                )}
-                                <h2>{selectedDriver2.first_name} <strong>{selectedDriver2.last_name}</strong></h2>
-                                <span className={styles.teamTag}>{selectedDriver2.team_name}</span>
-                            </div>
-                        </div>
-
-                        {/* Charts Area */}
-                        <div className={styles.chartsSection}>
-                            <h3>Performance Overview</h3>
-                            {/* Example Bar: Wins */}
-                            <div className={styles.chartRow}>
-                                <div className={styles.chartLabel}>🏁 Wins</div>
-                                <div className={styles.chartBars}>
-                                    <div className={styles.barContainer}>
-                                        <div className={styles.bar} style={{ width: `${getBarPercent(stats1.wins, stats2.wins, true)}%`, background: color1 }}>
-                                            {stats1.wins}
-                                        </div>
-                                    </div>
-                                    <div className={styles.barContainer}>
-                                        <div className={styles.bar} style={{ width: `${getBarPercent(stats1.wins, stats2.wins, false)}%`, background: color2 }}>
-                                            {stats2.wins}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            {/* Championships */}
-                            <div className={styles.chartRow}>
-                                <div className={styles.chartLabel}>🏆 Titles</div>
-                                <div className={styles.chartBars}>
-                                    <div className={styles.barContainer}>
-                                        <div className={styles.bar} style={{ width: `${getBarPercent(stats1.championships, stats2.championships, true)}%`, background: color1 }}>
-                                            {stats1.championships}
-                                        </div>
-                                    </div>
-                                    <div className={styles.barContainer}>
-                                        <div className={styles.bar} style={{ width: `${getBarPercent(stats1.championships, stats2.championships, false)}%`, background: color2 }}>
-                                            {stats2.championships}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            {/* Podiums */}
-                            <div className={styles.chartRow}>
-                                <div className={styles.chartLabel}>🥇 Podiums</div>
-                                <div className={styles.chartBars}>
-                                    <div className={styles.barContainer}>
-                                        <div className={styles.bar} style={{ width: `${getBarPercent(stats1.podiums, stats2.podiums, true)}%`, background: color1 }}>
-                                            {stats1.podiums}
-                                        </div>
-                                    </div>
-                                    <div className={styles.barContainer}>
-                                        <div className={styles.bar} style={{ width: `${getBarPercent(stats1.podiums, stats2.podiums, false)}%`, background: color2 }}>
-                                            {stats2.podiums}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Detailed Stats Table */}
-                        <div className={styles.statsSection}>
-                            <h3>Full Career Comparison</h3>
-                            <div className={styles.statsTable}>
-                                {renderStatRow('World Championships', 'championships')}
-                                {renderStatRow('Grand Prix Wins', 'wins')}
-                                {renderStatRow('Podiums', 'podiums')}
-                                {renderStatRow('Pole Positions', 'poles')}
-                                {renderStatRow('Fastest Laps', 'fastestLaps')}
-                                {renderStatRow('Race Starts', 'totalRaces')}
-                                {renderStatRow('DNFs', 'dnfs')}
-                                {renderStatRow('Career Points', 'careerPoints', (v) => v.toFixed(1))}
-                                <div className={styles.statRow}>
-                                    <span className={`${styles.value} ${styles[compareClass(parseFloat(getWinRate(stats1)), parseFloat(getWinRate(stats2)))]}`}>
-                                        {getWinRate(stats1)}%
-                                    </span>
-                                    <span className={styles.label}>Win Rate</span>
-                                    <span className={`${styles.value} ${styles[compareClass(parseFloat(getWinRate(stats2)), parseFloat(getWinRate(stats1)))]}`}>
-                                        {getWinRate(stats2)}%
-                                    </span>
-                                </div>
-                            </div>
-
-                            {/* Data Source Footer */}
-                            <div className={styles.sourceFooter}>
-                                <p>Data Source: {stats1.source} • Last Updated: {stats1.lastUpdated}</p>
-                                <p>Note: Comparison includes full career statistics from all seasons.</p>
-                            </div>
-                        </div>
-
-                    </div>
-                )}
-            </div>
+            ) : null}
         </div>
     );
 }

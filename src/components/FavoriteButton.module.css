@@ -28,3 +28,8 @@
     color: var(--gold-accent);
     border-color: var(--gold-accent);
 }
+
+.fav:focus-visible {
+    outline: 2px solid var(--checkered-white);
+    outline-offset: 2px;
+}

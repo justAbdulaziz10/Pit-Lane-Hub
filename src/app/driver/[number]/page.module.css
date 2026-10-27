@@ -77,12 +77,12 @@
 .driverNumber {
     display: inline-block;
     padding: var(--space-sm) var(--space-lg);
-    background: var(--team-color, var(--racing-red));
+    border: 2px solid var(--team-color, var(--racing-red));
     border-radius: var(--radius-md);
     font-family: var(--font-display);
     font-size: 2rem;
     font-weight: 900;
-    color: var(--checkered-white);
+    color: var(--team-color, var(--racing-red));
     margin-bottom: var(--space-md);
 }
 
@@ -124,10 +124,6 @@
     background: var(--team-color, var(--racing-red));
 }
 
-.countryInfo {
-    color: rgba(255, 255, 255, 0.6);
-    font-size: 1rem;
-}
 
 /* Stats Section */
 .statsSection {
@@ -175,91 +171,18 @@
     color: rgba(255, 255, 255, 0.6);
 }
 
-/* Details Section */
-.detailsSection {
-    padding: var(--space-2xl) 0;
-}
 
-.detailsGrid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: var(--space-lg);
-}
 
-.detailCard {
-    background: var(--carbon-surface);
-    border: 1px solid var(--carbon-border);
-    border-radius: var(--radius-lg);
-    padding: var(--space-xl);
-}
 
-.detailCard h3 {
-    font-size: 1.1rem;
-    margin-bottom: var(--space-lg);
-    color: var(--checkered-white);
-}
 
-.detailsList {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-md);
-}
 
-.detailItem {
-    display: flex;
-    justify-content: space-between;
-    padding-bottom: var(--space-sm);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-}
 
-.detailLabel {
-    color: rgba(255, 255, 255, 0.5);
-    font-size: 0.9rem;
-}
 
-.detailValue {
-    font-weight: 600;
-    color: var(--checkered-white);
-}
 
-.teamCard {
-    position: relative;
-    padding: var(--space-lg);
-    background: rgba(255, 255, 255, 0.03);
-    border-radius: var(--radius-md);
-    overflow: hidden;
-}
 
-.teamColorStripe {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 4px;
-    background: var(--team-color, var(--racing-red));
-}
 
-.teamCard h4 {
-    font-size: 1.25rem;
-    margin-bottom: var(--space-xs);
-}
 
-.teamColour {
-    color: rgba(255, 255, 255, 0.5);
-    font-size: 0.85rem;
-}
 
-.broadcastName {
-    font-family: var(--font-display);
-    font-size: 1.5rem;
-    font-weight: 700;
-    letter-spacing: 0.1em;
-    color: var(--team-color, var(--racing-red));
-    background: rgba(255, 255, 255, 0.05);
-    padding: var(--space-lg);
-    border-radius: var(--radius-md);
-    text-align: center;
-}
 
 /* Sessions Section */
 .sessionsSection {
@@ -267,65 +190,19 @@
     background: var(--carbon-dark);
 }
 
-.sessionsGrid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: var(--space-md);
-}
 
-.sessionCard {
-    background: var(--carbon-surface);
-    border: 1px solid var(--carbon-border);
-    border-radius: var(--radius-md);
-    padding: var(--space-md);
-    transition: var(--transition-fast);
-}
 
-.sessionCard:hover {
-    border-color: var(--team-color, var(--racing-red));
-}
 
-.sessionType {
-    display: inline-block;
-    padding: 2px 8px;
-    background: var(--team-color, var(--racing-red));
-    border-radius: 4px;
-    font-size: 0.7rem;
-    font-weight: 700;
-    margin-bottom: var(--space-sm);
-}
 
-.sessionCard h4 {
-    font-size: 0.95rem;
-    margin-bottom: 4px;
-}
 
-.sessionCard p {
-    font-size: 0.8rem;
-    color: rgba(255, 255, 255, 0.5);
-}
 
 /* Actions Section */
 .actionsSection {
     padding: var(--space-2xl) 0;
 }
 
-.actionsCard {
-    background: linear-gradient(135deg, rgba(225, 6, 0, 0.1) 0%, var(--carbon-surface) 100%);
-    border: 1px solid var(--carbon-border);
-    border-radius: var(--radius-xl);
-    padding: var(--space-2xl);
-    text-align: center;
-}
 
-.actionsCard h3 {
-    margin-bottom: var(--space-sm);
-}
 
-.actionsCard p {
-    color: rgba(255, 255, 255, 0.6);
-    margin-bottom: var(--space-lg);
-}
 
 .compareBtn {
     display: inline-flex;
@@ -346,91 +223,15 @@
     transform: translateY(-2px);
 }
 
-/* Note */
-.note {
-    padding: var(--space-lg) 0;
-    text-align: center;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-}
 
-.note p {
-    font-size: 0.85rem;
-    color: rgba(255, 255, 255, 0.4);
-}
 
-.note a {
-    color: var(--racing-red);
-}
 
-/* No stats available */
-.noStats {
-    text-align: center;
-    color: rgba(255, 255, 255, 0.5);
-    font-size: 1rem;
-    padding: var(--space-xl) 0;
-}
 
-/* Loading */
-.loading {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    min-height: 60vh;
-    gap: var(--space-lg);
-}
 
-.spinner {
-    width: 60px;
-    height: 60px;
-    border: 4px solid rgba(255, 255, 255, 0.1);
-    border-top-color: var(--racing-red);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-}
 
-@keyframes spin {
-    to {
-        transform: rotate(360deg);
-    }
-}
 
-.loading p {
-    color: rgba(255, 255, 255, 0.5);
-}
 
-/* Not Found */
-.notFound {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    min-height: 60vh;
-    text-align: center;
-    gap: var(--space-md);
-}
 
-.notFound h1 {
-    font-size: 2rem;
-}
-
-.notFound p {
-    color: rgba(255, 255, 255, 0.5);
-}
-
-.backBtn {
-    padding: var(--space-md) var(--space-xl);
-    background: var(--racing-red);
-    border-radius: var(--radius-md);
-    color: var(--checkered-white);
-    text-decoration: none;
-    font-weight: 600;
-    transition: var(--transition-fast);
-}
-
-.backBtn:hover {
-    box-shadow: var(--shadow-glow);
-}
 
 /* Responsive */
 @media (max-width: 768px) {
@@ -452,42 +253,101 @@
         grid-template-columns: repeat(2, 1fr);
     }
 
-    .detailsGrid {
-        grid-template-columns: 1fr;
-    }
 }
-/* Season results table */
-.resultsTable {
+/* Hero facts */
+.facts,
+.seasonStanding {
     display: flex;
-    flex-direction: column;
-    gap: 2px;
-    background: var(--carbon-border);
-    border-radius: var(--radius-md);
-    overflow: hidden;
+    flex-wrap: wrap;
+    gap: var(--space-lg);
+    margin: var(--space-md) 0 0;
 }
 
-.resultRow {
-    display: grid;
-    grid-template-columns: 70px 1fr 70px 90px 80px;
-    align-items: center;
-    gap: var(--space-md);
-    padding: var(--space-md) var(--space-lg);
-    background: var(--carbon-surface);
-    font-size: 0.9rem;
-}
-
-.resultHead {
-    background: var(--carbon-dark);
+.facts dt,
+.seasonStanding dt {
     font-size: 0.75rem;
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    color: rgba(255, 255, 255, 0.5);
+    color: rgba(255, 255, 255, 0.55);
+}
+
+.facts dd,
+.seasonStanding dd {
+    margin: 0;
+    font-weight: 600;
+}
+
+.seasonStanding dd {
+    font-family: var(--font-display);
+    font-size: 1.75rem;
+    font-weight: 900;
+    color: var(--team-color, var(--racing-red));
+}
+
+.statsGrid {
+    margin: 0;
+}
+
+.statCard {
+    display: flex;
+    flex-direction: column-reverse;
+}
+
+.statCard dd {
+    margin: 0;
+}
+
+.teams {
+    margin-top: var(--space-lg);
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.teamsLabel {
+    margin-right: var(--space-sm);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: rgba(255, 255, 255, 0.55);
+}
+
+/* Results table */
+.tableWrap {
+    overflow-x: auto;
+    border: 1px solid var(--carbon-border);
+    border-radius: var(--radius-md);
+}
+
+.resultsTable {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+.resultsTable th,
+.resultsTable td {
+    padding: var(--space-md) var(--space-lg);
+    text-align: left;
+    background: var(--carbon-surface);
+    border-bottom: 1px solid var(--carbon-border);
+}
+
+.resultsTable thead th {
+    background: var(--carbon-dark);
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: rgba(255, 255, 255, 0.55);
+}
+
+.resultsTable tbody tr:last-child > * {
+    border-bottom: 0;
 }
 
 .resultRound {
     font-family: var(--font-display);
     font-weight: 700;
-    color: var(--racing-red);
+    color: var(--team-color, var(--racing-red));
 }
 
 .resultRace {
@@ -503,14 +363,21 @@
     font-weight: 700;
 }
 
+.compareBtn:focus-visible,
+.backLink:focus-visible {
+    outline: 2px solid var(--checkered-white);
+    outline-offset: 3px;
+}
+
 @media (max-width: 640px) {
-    .resultRow {
-        grid-template-columns: 40px 1fr 60px 60px;
-        gap: var(--space-sm);
+    .resultsTable th,
+    .resultsTable td {
         padding: var(--space-sm) var(--space-md);
         font-size: 0.8rem;
     }
-    .resultRow > :nth-child(3) {
-        display: none;
+
+    .facts,
+    .seasonStanding {
+        justify-content: center;
     }
 }
