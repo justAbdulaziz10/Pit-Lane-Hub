@@ -5,7 +5,7 @@
 
 .header {
     padding: var(--space-2xl) 0 var(--space-lg);
-    border-bottom: 1px solid var(--carbon-border);
+    border-bottom: 1px solid var(--border);
 }
 
 .headerRow {
@@ -21,11 +21,9 @@
     align-items: center;
     gap: var(--space-sm);
     margin-bottom: var(--space-xs);
-    color: var(--silver-chrome);
+    color: var(--text-2);
     font-size: 0.8rem;
     font-weight: 600;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
 }
 
 .liveBadge {
@@ -33,9 +31,9 @@
     align-items: center;
     gap: 0.4em;
     padding: 0.15rem 0.6rem;
-    background: var(--racing-red);
+    background: var(--accent);
     border-radius: var(--radius-sm);
-    color: var(--checkered-white);
+    color: var(--text-1);
 }
 
 .liveBadge::before {
@@ -59,14 +57,14 @@
 .weekendLink {
     display: inline-block;
     margin-top: var(--space-sm);
-    color: var(--silver-chrome);
+    color: var(--text-2);
     font-size: 0.9rem;
     text-decoration: underline;
     text-underline-offset: 3px;
 }
 
 .updated {
-    color: var(--silver-chrome);
+    color: var(--text-2);
     font-size: 0.85rem;
     font-variant-numeric: tabular-nums;
 }
@@ -85,7 +83,7 @@
 }
 
 .weather dt {
-    color: var(--silver-chrome);
+    color: var(--text-2);
     font-size: 0.8rem;
 }
 
@@ -104,22 +102,20 @@
 
 .sectionTitle {
     font-size: 1rem;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--silver-chrome);
+    color: var(--text-2);
     margin-bottom: var(--space-md);
 }
 
 .empty {
-    color: var(--silver-chrome);
+    color: var(--text-2);
     padding: var(--space-lg);
-    border: 1px solid var(--carbon-border);
+    border: 1px solid var(--border);
     border-radius: var(--radius-md);
 }
 
 .tableWrap {
     overflow-x: auto;
-    border: 1px solid var(--carbon-border);
+    border: 1px solid var(--border);
     border-radius: var(--radius-md);
 }
 
@@ -133,17 +129,15 @@
 .table td {
     padding: 0.6rem 0.75rem;
     text-align: left;
-    border-bottom: 1px solid var(--carbon-border);
+    border-bottom: 1px solid var(--border);
     white-space: nowrap;
 }
 
 .table thead th {
-    color: var(--silver-chrome);
+    color: var(--text-2);
     font-size: 0.75rem;
     font-weight: 600;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    background: var(--carbon-dark);
+    background: var(--surface-1);
 }
 
 .table tbody tr:last-child > * {
@@ -151,7 +145,7 @@
 }
 
 .table tbody tr:hover {
-    background: var(--carbon-light);
+    background: var(--surface-2);
 }
 
 .pos {
@@ -189,16 +183,17 @@
 
 .code {
     font-family: var(--font-display);
+    font-stretch: var(--stretch-display);
     font-weight: 700;
     letter-spacing: 0.04em;
 }
 
 .fullName {
-    color: var(--silver-chrome);
+    color: var(--text-2);
 }
 
 .team {
-    color: var(--silver-chrome);
+    color: var(--text-2);
     font-size: 0.8rem;
 }
 
@@ -207,7 +202,7 @@
 }
 
 .muted {
-    color: var(--silver-chrome);
+    color: var(--text-2);
 }
 
 .tyre {
@@ -228,7 +223,7 @@
 }
 
 .tyreAge {
-    color: var(--silver-chrome);
+    color: var(--text-2);
     font-size: 0.8rem;
     font-variant-numeric: tabular-nums;
 }
@@ -239,7 +234,7 @@
     padding: 0;
     max-height: 40rem;
     overflow-y: auto;
-    border: 1px solid var(--carbon-border);
+    border: 1px solid var(--border);
     border-radius: var(--radius-md);
 }
 
@@ -247,7 +242,7 @@
     display: grid;
     gap: 0.2rem;
     padding: 0.7rem 0.9rem;
-    border-bottom: 1px solid var(--carbon-border);
+    border-bottom: 1px solid var(--border);
     border-left: 3px solid transparent;
     font-size: 0.88rem;
 }
@@ -258,11 +253,11 @@
 
 .message[data-flag='YELLOW'],
 .message[data-flag='DOUBLE YELLOW'] {
-    border-left-color: var(--pit-lane-yellow);
+    border-left-color: var(--caution);
 }
 
 .message[data-flag='RED'] {
-    border-left-color: var(--racing-red);
+    border-left-color: var(--accent);
 }
 
 .message[data-flag='GREEN'],
@@ -271,11 +266,11 @@
 }
 
 .message[data-flag='CHEQUERED'] {
-    border-left-color: var(--checkered-white);
+    border-left-color: var(--text-1);
 }
 
 .messageMeta {
-    color: var(--silver-chrome);
+    color: var(--text-2);
     font-size: 0.75rem;
     font-variant-numeric: tabular-nums;
 }

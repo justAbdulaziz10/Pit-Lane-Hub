@@ -2,8 +2,17 @@ import Footer from '@/components/Footer';
 import Header from '@/components/Header';
 import Providers from '@/components/Providers';
 import { jsonLdScript } from '@/lib/jsonld';
+import { Archivo } from 'next/font/google';
 import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from '@/lib/site';
 import './globals.css';
+
+// One self-hosted family; the width axis gives condensed display type and normal-width body text.
+const archivo = Archivo({
+  subsets: ['latin', 'latin-ext'],
+  axes: ['wdth'],
+  display: 'swap',
+  variable: '--font-archivo',
+});
 
 export const metadata = {
   metadataBase: new URL(SITE_URL),
@@ -38,7 +47,7 @@ export const metadata = {
 export const viewport = {
   width: 'device-width',
   initialScale: 1,
-  themeColor: '#E10600',
+  themeColor: '#101218',
 };
 
 
@@ -52,7 +61,7 @@ const websiteJsonLd = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
+    <html lang="en" className={archivo.variable}>
       <body>
         <script
           type="application/ld+json"

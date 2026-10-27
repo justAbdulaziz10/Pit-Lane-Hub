@@ -5,35 +5,36 @@
 /* Hero */
 .hero {
     position: relative;
-    padding: var(--space-3xl) 0;
+    padding: var(--space-xl) 0 var(--space-2xl);
+    border-bottom: 1px solid var(--border);
     overflow: hidden;
 }
 
 .heroBackground {
     position: absolute;
     inset: 0;
-    background: linear-gradient(135deg, var(--team-color, var(--racing-red)) 0%, transparent 55%),
-        linear-gradient(to bottom, var(--carbon-dark) 0%, var(--carbon-surface) 100%);
-    opacity: 0.3;
+    background: var(--bg);
+    border-top: 3px solid var(--team-color, var(--border-strong));
 }
 
 .heroContent {
     position: relative;
-    max-width: 1400px;
+    max-width: var(--container);
     margin: 0 auto;
     padding: 0 var(--space-lg);
 }
 
 .backLink {
     display: inline-block;
-    color: rgba(255, 255, 255, 0.6);
+    color: var(--text-2);
     text-decoration: none;
-    margin-bottom: var(--space-xl);
+    margin-bottom: var(--space-lg);
+    font-size: var(--text-sm);
     transition: var(--transition-fast);
 }
 
 .backLink:hover {
-    color: var(--team-color, var(--racing-red));
+    color: var(--team-color, var(--accent));
 }
 
 .colorStripe {
@@ -41,26 +42,27 @@
     width: 80px;
     height: 6px;
     border-radius: var(--radius-full);
-    background: var(--team-color, var(--racing-red));
+    background: var(--team-color, var(--accent));
     margin-bottom: var(--space-md);
 }
 
 .heroContent h1 {
     font-family: var(--font-display);
+    font-stretch: var(--stretch-display);
     font-size: clamp(2rem, 6vw, 4rem);
-    font-weight: 900;
+    font-weight: 800;
     line-height: 1.05;
 }
 
 .nationality {
-    color: rgba(255, 255, 255, 0.6);
+    color: var(--text-2);
     margin-top: var(--space-sm);
 }
 
 /* Stats */
 .statsSection {
     padding: var(--space-xl) 0;
-    background: var(--carbon-dark);
+    background: var(--surface-1);
 }
 
 .statsGrid {
@@ -75,8 +77,8 @@
 }
 
 .statCard {
-    background: var(--carbon-surface);
-    border: 1px solid var(--carbon-border);
+    background: var(--surface-1);
+    border: 1px solid var(--border);
     border-radius: var(--radius-lg);
     padding: var(--space-lg);
     text-align: center;
@@ -90,18 +92,17 @@
 .statValue {
     display: block;
     font-family: var(--font-display);
+    font-stretch: var(--stretch-display);
     font-size: 2.25rem;
-    font-weight: 900;
-    color: var(--team-color, var(--racing-red));
+    font-weight: 800;
+    color: var(--team-color, var(--accent));
     line-height: 1;
     margin-bottom: var(--space-xs);
 }
 
 .statLabel {
     font-size: 0.8rem;
-    color: rgba(255, 255, 255, 0.6);
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
+    color: var(--text-2);
 }
 
 /* Sections */
@@ -138,8 +139,8 @@
     align-items: center;
     gap: var(--space-md);
     padding: var(--space-md) var(--space-lg);
-    background: var(--carbon-surface);
-    border: 1px solid var(--carbon-border);
+    background: var(--surface-1);
+    border: 1px solid var(--border);
     border-radius: var(--radius-md);
     text-decoration: none;
     color: inherit;
@@ -147,15 +148,15 @@
 }
 
 .driverCard:hover {
-    border-color: var(--team-color, var(--racing-red));
-    transform: translateY(-2px);
+    border-color: var(--team-color, var(--accent));
 }
 
 .driverNumber {
     font-family: var(--font-display);
+    font-stretch: var(--stretch-display);
     font-size: 1.5rem;
-    font-weight: 900;
-    color: var(--team-color, var(--racing-red));
+    font-weight: 800;
+    color: var(--team-color, var(--accent));
     min-width: 40px;
 }
 
@@ -170,7 +171,7 @@
 .subTitle {
     font-size: 1rem;
     margin: var(--space-xl) 0 var(--space-md);
-    color: rgba(255, 255, 255, 0.7);
+    color: var(--text-2);
 }
 
 .yearList {
@@ -185,15 +186,16 @@
 .yearList a {
     display: inline-block;
     padding: var(--space-xs) var(--space-md);
-    border: 1px solid var(--carbon-border);
+    border: 1px solid var(--border);
     border-radius: var(--radius-full);
-    color: var(--checkered-white);
+    color: var(--text-1);
     text-decoration: none;
     font-family: var(--font-display);
+    font-stretch: var(--stretch-display);
     font-weight: 700;
 }
 
 .yearList a:hover,
 .yearList a:focus-visible {
-    border-color: var(--team-color, var(--racing-red));
+    border-color: var(--team-color, var(--accent));
 }

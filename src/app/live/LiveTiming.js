@@ -172,7 +172,7 @@ export default function LiveTiming({ initial }) {
                                             <td className={styles.pos}>{row.position}</td>
                                             <th scope="row">
                                                 <div className={styles.driver}>
-                                                <span className={styles.teamBar} style={{ '--team': row.teamColor || 'var(--carbon-border)' }} />
+                                                <span className={styles.teamBar} style={{ '--team': row.teamColor || 'var(--border)' }} />
                                                 <Link href={`/driver/${row.driverNumber}`} className={styles.driverLink}>
                                                     <span className={styles.code}>{row.code || row.driverNumber}</span>
                                                     <span className={styles.fullName}>{row.name}</span>

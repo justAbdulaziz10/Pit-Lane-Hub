@@ -4,9 +4,8 @@
 
 /* Header */
 .header {
-    padding: var(--space-3xl) 0 var(--space-2xl);
-    text-align: center;
-    background: linear-gradient(to bottom, rgba(225, 6, 0, 0.1) 0%, transparent 100%);
+    padding: var(--space-2xl) 0 var(--space-lg);
+    background: none;
 }
 
 .header h1 {
@@ -14,7 +13,7 @@
 }
 
 .header p {
-    color: rgba(255, 255, 255, 0.6);
+    color: var(--text-2);
     font-size: 1.1rem;
 }
 
@@ -42,8 +41,8 @@
     position: relative;
     display: block;
     color: inherit;
-    background: var(--carbon-surface);
-    border: 1px solid var(--carbon-border);
+    background: var(--surface-1);
+    border: 1px solid var(--border);
     border-radius: var(--radius-xl);
     padding: var(--space-xl);
     overflow: hidden;
@@ -52,7 +51,7 @@
 
 .teamCard:hover,
 .teamCard:focus-within {
-    border-color: var(--team-color, var(--racing-red));
+    border-color: var(--team-color, var(--accent));
 }
 
 .teamColorBar {
@@ -61,7 +60,7 @@
     left: 0;
     right: 0;
     height: 4px;
-    background: var(--team-color, var(--racing-red));
+    background: var(--team-color, var(--accent));
 }
 
 .teamHeader {
@@ -73,9 +72,10 @@
 
 .teamPosition {
     font-family: var(--font-display);
+    font-stretch: var(--stretch-display);
     font-size: 1.5rem;
-    font-weight: 900;
-    color: var(--team-color, var(--racing-red));
+    font-weight: 800;
+    color: var(--team-color, var(--accent));
 }
 
 .teamPoints {
@@ -86,17 +86,16 @@
 
 .pointsValue {
     font-family: var(--font-display);
+    font-stretch: var(--stretch-display);
     font-size: 2rem;
-    font-weight: 900;
-    color: var(--checkered-white);
+    font-weight: 800;
+    color: var(--text-1);
     line-height: 1;
 }
 
 .pointsLabel {
     font-size: 0.7rem;
-    color: rgba(255, 255, 255, 0.5);
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
+    color: var(--text-3);
 }
 
 .teamName {
@@ -105,14 +104,14 @@
 }
 
 .teamName a {
-    color: var(--checkered-white);
+    color: var(--text-1);
     text-decoration: none;
 }
 
 .teamName a:hover,
 .teamName a:focus-visible {
     text-decoration: underline;
-    text-decoration-color: var(--team-color, var(--racing-red));
+    text-decoration-color: var(--team-color, var(--accent));
 }
 
 .empty {
@@ -140,7 +139,7 @@
 }
 
 .driverRow:focus-visible {
-    outline: 2px solid var(--checkered-white);
+    outline: 2px solid var(--text-1);
     outline-offset: 2px;
 }
 
@@ -153,7 +152,7 @@
     height: 60px;
     border-radius: 50%;
     object-fit: cover;
-    border: 2px solid var(--team-color, var(--racing-red));
+    border: 2px solid var(--team-color, var(--accent));
     image-rendering: -webkit-optimize-contrast;
 }
 
@@ -161,14 +160,15 @@
     width: 60px;
     height: 60px;
     border-radius: 50%;
-    background: var(--team-color, var(--racing-red));
+    background: var(--team-color, var(--accent));
     display: flex;
     align-items: center;
     justify-content: center;
     font-family: var(--font-display);
+    font-stretch: var(--stretch-display);
     font-weight: 800;
     font-size: 1rem;
-    color: var(--checkered-white);
+    color: var(--text-1);
 }
 
 .driverDetails {
@@ -177,7 +177,7 @@
 }
 
 .driverName {
-    color: var(--checkered-white);
+    color: var(--text-1);
     font-size: 0.95rem;
 }
 
@@ -188,7 +188,7 @@
 
 .driverNumber {
     font-size: 0.8rem;
-    color: rgba(255, 255, 255, 0.5);
+    color: var(--text-3);
 }
 
 /* Responsive */

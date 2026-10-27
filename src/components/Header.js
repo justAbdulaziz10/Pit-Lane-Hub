@@ -1,125 +1,191 @@
 'use client';
 
+import { useSession } from 'next-auth/react';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import styles from './Header.module.css';
 
-import { useSession } from "next-auth/react";
+const NAV_LINKS = [
+    { href: '/schedule', label: 'Calendar' },
+    { href: '/standings', label: 'Standings' },
+    { href: '/live', label: 'Live' },
+    { href: '/drivers', label: 'Drivers', match: ['/driver/'] },
+    { href: '/teams', label: 'Teams', match: ['/team/'] },
+    { href: '/compare', label: 'Compare' },
+    { href: '/tracks', label: 'Tracks' },
+    { href: '/history', label: 'History' },
+];
+
+function isCurrent(pathname, link) {
+    if (!pathname) return false;
+    if (pathname === link.href || pathname.startsWith(`${link.href}/`)) return true;
+    return (link.match || []).some((prefix) => pathname.startsWith(prefix));
+}
+
+/** Text wordmark with a slanted timing-tower bar; stays legible down to 320px. */
+export function Wordmark({ className = '' }) {
+    return (
+        <span className={`${styles.wordmark} ${className}`}>
+            <svg className={styles.mark} viewBox="0 0 10 24" aria-hidden="true" focusable="false">
+                <path d="M4 0h6L6 24H0z" />
+            </svg>
+            <span className={styles.wordmarkText}>
+                Pit Lane <span className={styles.wordmarkHub}>Hub</span>
+            </span>
+        </span>
+    );
+}
+
+function MenuIcon({ open }) {
+    return (
+        <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+            {open ? (
+                <path d="M5 5l10 10M15 5L5 15" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
+            ) : (
+                <path d="M3 6h14M3 10h14M3 14h14" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
+            )}
+        </svg>
+    );
+}
 
 export default function Header() {
-    const { data: session } = useSession()
-    const [isScrolled, setIsScrolled] = useState(false);
-    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-    useEffect(() => {
-        const handleScroll = () => {
-            setIsScrolled(window.scrollY > 50);
-        };
+    const { data: session } = useSession();
+    const pathname = usePathname();
+    const [menuOpen, setMenuOpen] = useState(false);
+    const [menuPath, setMenuPath] = useState(pathname);
+    const buttonRef = useRef(null);
+    const menuRef = useRef(null);
 
-        window.addEventListener('scroll', handleScroll);
+    // Close the menu after navigation (adjusting state during render, not in an effect).
+    if (menuPath !== pathname) {
+        setMenuPath(pathname);
+        setMenuOpen(false);
+    }
 
-        return () => {
-            window.removeEventListener('scroll', handleScroll);
-        };
+    const closeMenu = useCallback((returnFocus) => {
+        setMenuOpen(false);
+        if (returnFocus) buttonRef.current?.focus();
     }, []);
 
-    const navLinks = [
-        { href: '/', label: 'Home' },
-        { href: '/drivers', label: 'Drivers' },
-        { href: '/teams', label: 'Teams' },
-        { href: '/standings', label: 'Standings' },
-        { href: '/schedule', label: 'Calendar' },
-        { href: '/history', label: 'History' },
-        { href: '/tracks', label: 'Tracks' },
-        { href: '/live', label: 'Live', badge: true },
-    ];
+    useEffect(() => {
+        if (!menuOpen) return undefined;
+        menuRef.current?.querySelector('a')?.focus();
+
+        const onKeyDown = (event) => {
+            if (event.key === 'Escape') closeMenu(true);
+        };
+        const onPointerDown = (event) => {
+            if (!menuRef.current?.contains(event.target) && !buttonRef.current?.contains(event.target)) {
+                closeMenu(false);
+            }
+        };
+        document.addEventListener('keydown', onKeyDown);
+        document.addEventListener('pointerdown', onPointerDown);
+        return () => {
+            document.removeEventListener('keydown', onKeyDown);
+            document.removeEventListener('pointerdown', onPointerDown);
+        };
+    }, [menuOpen, closeMenu]);
+
+    const user = session?.user;
+    const initial = (user?.name || user?.email || '?').trim().charAt(0).toUpperCase();
 
     return (
-        <header className={`${styles.header} ${isScrolled ? styles.scrolled : ''}`}>
-            <div className={styles.container}>
-                {/* Logo */}
-                <Link href="/" className={styles.logo}>
-                    <span className={styles.logoIcon}>🏎️</span>
-                    <span className={styles.logoText}>
-                        <span className={styles.logoPrimary}>PIT LANE</span>
-                        <span className={styles.logoSecondary}>HUB</span>
-                    </span>
-                    {session?.user?.isPro && (
-                        <span className={styles.proBadge}>PRO</span>
-                    )}
+        <header className={styles.header}>
+            <div className={styles.bar}>
+                <Link href="/" className={styles.brand} aria-label="Pit Lane Hub home">
+                    <Wordmark />
                 </Link>
 
-                {/* Desktop Navigation */}
-                <nav className={styles.nav}>
-                    {navLinks.map((link) => (
-                        <Link key={link.href} href={link.href} className={styles.navLink}>
-                            {link.label}
-                            {link.badge && <span className={styles.liveBadge}>●</span>}
-                        </Link>
-                    ))}
+                <nav className={styles.nav} aria-label="Main">
+                    <ul className={styles.navList}>
+                        {NAV_LINKS.map((link) => (
+                            <li key={link.href}>
+                                <Link
+                                    href={link.href}
+                                    className={styles.navLink}
+                                    aria-current={isCurrent(pathname, link) ? 'page' : undefined}
+                                >
+                                    {link.label}
+                                </Link>
+                            </li>
+                        ))}
+                    </ul>
                 </nav>
 
-                {/* Actions */}
-                <div className={styles.actions}>
-                    <Link href="/support" className={styles.coffeeButton} title="Buy us a coffee">
-                        <span>☕</span>
-                        <span className={styles.coffeeText}>Support</span>
-                    </Link>
-
-                    {!session ? (
-                        <div className={styles.authLinks}>
-                            <Link href="/login" className={styles.navLink}>Log In</Link>
-                            <Link href="/signup" className={styles.supportButton}>Sign Up</Link>
-                        </div>
+                <div className={styles.end}>
+                    {user ? (
+                        <Link
+                            href="/profile"
+                            className={styles.account}
+                            aria-current={pathname === '/profile' ? 'page' : undefined}
+                        >
+                            <span className={styles.avatar} aria-hidden="true">{initial}</span>
+                            <span className={styles.accountLabel}>Account</span>
+                            {user.isPro ? <span className={styles.pro}>Pro</span> : null}
+                        </Link>
                     ) : (
-                        <div className={styles.profileWrap}>
-                            <Link href="/profile" className={styles.profileLink}>
-                                <div className={styles.avatar}>
-                                    {session.user.name ? session.user.name[0].toUpperCase() : "U"}
-                                </div>
-                                <span className={styles.profileName}>
-                                    {session.user.name?.split(' ')[0] || "Profile"}
-                                </span>
-                            </Link>
-                        </div>
+                        <Link
+                            href="/login"
+                            className={styles.signIn}
+                            aria-current={pathname === '/login' ? 'page' : undefined}
+                        >
+                            Sign in
+                        </Link>
                     )}
 
-                    {/* Mobile Menu Toggle */}
                     <button
-                        className={styles.mobileToggle}
-                        onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                        aria-label="Toggle menu"
-                        aria-expanded={isMobileMenuOpen}
-                        aria-controls="mobile-menu"
+                        ref={buttonRef}
+                        type="button"
+                        className={styles.menuButton}
+                        aria-label="Menu"
+                        aria-expanded={menuOpen}
+                        aria-controls="site-menu"
+                        onClick={() => setMenuOpen((open) => !open)}
                     >
-                        <span className={`${styles.hamburger} ${isMobileMenuOpen ? styles.open : ''}`}>
-                            <span></span>
-                            <span></span>
-                            <span></span>
-                        </span>
+                        <MenuIcon open={menuOpen} />
+                        <span>Menu</span>
                     </button>
                 </div>
             </div>
 
-            {/* Mobile Menu */}
-            <div id="mobile-menu" className={`${styles.mobileMenu} ${isMobileMenuOpen ? styles.mobileMenuOpen : ''}`}>
-                {navLinks.map((link) => (
-                    <Link
-                        key={link.href}
-                        href={link.href}
-                        className={styles.mobileNavLink}
-                        onClick={() => setIsMobileMenuOpen(false)}
-                    >
-                        {link.label}
-                        {link.badge && <span className={styles.liveBadge}>●</span>}
-                    </Link>
-                ))}
-                <Link
-                    href="/support"
-                    className={styles.mobileNavLink}
-                    onClick={() => setIsMobileMenuOpen(false)}
+            <div id="site-menu" ref={menuRef} className={styles.menu} hidden={!menuOpen}>
+                <nav
+                    aria-label="Main menu"
+                    onClick={(event) => {
+                        if (event.target.closest('a')) setMenuOpen(false);
+                    }}
                 >
-                    ❤️ Support Us
-                </Link>
+                    <ul className={styles.menuList}>
+                        <li>
+                            <Link href="/" className={styles.menuLink} aria-current={pathname === '/' ? 'page' : undefined}>
+                                Home
+                            </Link>
+                        </li>
+                        {NAV_LINKS.map((link) => (
+                            <li key={link.href}>
+                                <Link
+                                    href={link.href}
+                                    className={styles.menuLink}
+                                    aria-current={isCurrent(pathname, link) ? 'page' : undefined}
+                                >
+                                    {link.label}
+                                </Link>
+                            </li>
+                        ))}
+                    </ul>
+                    <ul className={styles.menuSecondary}>
+                        <li>
+                            <Link href={user ? '/profile' : '/login'} className={styles.menuSmall}>
+                                {user ? 'Account' : 'Sign in'}
+                            </Link>
+                        </li>
+                        <li>
+                            <Link href="/support" className={styles.menuSmall}>Support</Link>
+                        </li>
+                    </ul>
+                </nav>
             </div>
         </header>
     );

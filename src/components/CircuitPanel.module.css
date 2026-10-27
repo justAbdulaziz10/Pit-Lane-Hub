@@ -8,8 +8,8 @@
     gap: 2px;
     padding: 3px;
     width: fit-content;
-    background: var(--carbon-dark);
-    border: 1px solid var(--carbon-border);
+    background: var(--surface-1);
+    border: 1px solid var(--border);
     border-radius: var(--radius-md);
 }
 
@@ -18,7 +18,7 @@
     border: 0;
     border-radius: calc(var(--radius-md) - 3px);
     background: transparent;
-    color: var(--silver-chrome);
+    color: var(--text-2);
     font: inherit;
     font-size: 0.85rem;
     font-weight: 600;
@@ -26,16 +26,16 @@
 }
 
 .tab[aria-selected='true'] {
-    background: var(--carbon-surface);
-    color: var(--checkered-white);
+    background: var(--surface-1);
+    color: var(--text-1);
 }
 
 .stage {
     aspect-ratio: 4 / 3;
     width: 100%;
     overflow: hidden;
-    background: var(--carbon-dark);
-    border: 1px solid var(--carbon-border);
+    background: var(--surface-1);
+    border: 1px solid var(--border);
     border-radius: var(--radius-md);
 }
 
@@ -54,15 +54,15 @@
 
 .track {
     fill: none;
-    stroke: var(--checkered-white);
+    stroke: var(--text-1);
     stroke-width: 9;
     stroke-linejoin: round;
     stroke-linecap: round;
 }
 
 .start {
-    fill: var(--racing-red);
-    stroke: var(--carbon-black);
+    fill: var(--accent);
+    stroke: var(--bg);
     stroke-width: 4;
 }
 
@@ -77,6 +77,6 @@
     display: grid;
     place-items: center;
     height: 100%;
-    color: var(--silver-chrome);
+    color: var(--text-2);
     font-size: 0.9rem;
 }
