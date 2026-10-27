@@ -257,8 +257,8 @@ export default function LiveTiming({ initial, lang, labels, nextSession, grandPr
                         <p className={styles.empty}>{t.noTimingData}</p>
                     )}
                     {positions.length > 0 && (
-                        <div className={styles.tableWrap}>
-                            <table className={styles.table}>
+                        <div className={styles.tableWrap} tabIndex={0} role="region" aria-labelledby="timing-heading">
+                            <table className={styles.table} aria-labelledby="timing-heading">
                                 <thead>
                                     <tr>
                                         <th scope="col">{t.position}</th>
@@ -320,13 +320,14 @@ export default function LiveTiming({ initial, lang, labels, nextSession, grandPr
                     {raceControl.length === 0 ? (
                         <p className={styles.empty}>{t.noMessages}</p>
                     ) : (
-                        <ol className={styles.messages}>
-                                    {raceControl.map((message, index) => (
+                        // Scrollable, so it must be reachable by keyboard.
+                        <ol className={styles.messages} tabIndex={0} aria-labelledby="rc-heading">
+                            {raceControl.map((message, index) => (
                                 <li key={`${message.date}-${index}`} className={styles.message} data-flag={message.flag || undefined}>
                                     <span className={styles.messageMeta}>
                                         <ClockTime iso={message.date} locale={locale} t={t} time={time} />
                                         {message.lapNumber != null && <> · {t.lap} <bdi dir="ltr">{formatNumber(locale, message.lapNumber)}</bdi></>}
-                                                {flagLabel(message, t) && <span className={styles.flagChip} data-flag={message.flag || undefined}>{flagLabel(message, t)}</span>}
+                                        {flagLabel(message, t) && <span className={styles.flagChip} data-flag={message.flag || undefined}>{flagLabel(message, t)}</span>}
                                     </span>
                                     <span><bdi lang="en">{message.message}</bdi></span>
                                 </li>
