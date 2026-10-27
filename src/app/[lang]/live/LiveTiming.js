@@ -180,12 +180,13 @@ export default function LiveTiming({ initial, lang, labels, nextSession, grandPr
                 <div className="container">
                     <div className={styles.headerRow}>
                         <div>
-                            <p className={styles.eyebrow}>
-                                {phase === 'live' && <span className={styles.liveBadge}>{t.live}</span>}
-                                {phase === 'finished' && t.finalClassification}
-                                {phase === 'upcoming' && t.nextSession}
-                                {phase === 'none' && t.liveTiming}
-                            </p>
+                            {phase !== 'none' && (
+                                <p className={styles.eyebrow}>
+                                    {phase === 'live' && <span className={styles.liveBadge}>{t.live}</span>}
+                                    {phase === 'finished' && t.finalClassification}
+                                    {phase === 'upcoming' && t.nextSession}
+                                </p>
+                            )}
                             <h1>
                                 {session ? (
                                     <>
@@ -223,119 +224,124 @@ export default function LiveTiming({ initial, lang, labels, nextSession, grandPr
             </header>
 
             {phase !== 'live' && (
-                <section className={`container ${styles.stateBanner}`} aria-labelledby="state-heading">
-                    <div className={styles.stateCopy}>
-                        {/* Without timing access we cannot tell whether a session is running. */}
-                        <h2 id="state-heading">{authUnavailable ? t.authUnavailable : t.noSessionRunning}</h2>
-                        {authUnavailable && <p>{t.authUnavailableMessage}</p>}
-                        {nextSession ? (
-                            <p>
-                                {t.nextSession}: <strong>{nextName}</strong>{' '}
-                                <ClockTime iso={nextSession.start} withDate locale={locale} t={t} time={time} />
-                            </p>
-                        ) : <p>{t.noUpcomingSession}</p>}
-                    </div>
-                    {nextSession && (
-                        <div className={styles.nextCountdown}>
-                            <p>{fill(t.countdownTo, { session: nextName })}</p>
-                            <Countdown
-                                target={nextSession.start}
-                                serverNow={serverNow}
-                                className={styles.countdown}
-                                unitClassName={styles.countdownUnit}
-                                labelClassName={styles.countdownLabel}
-                            />
+                <div className="container">
+                    <section className={styles.stateBanner} aria-labelledby="state-heading">
+                        <div className={styles.stateCopy}>
+                            {/* Without timing access we cannot tell whether a session is running. */}
+                            <h2 id="state-heading">{authUnavailable ? t.authUnavailable : t.noSessionRunning}</h2>
+                            {authUnavailable && <p>{t.authUnavailableMessage}</p>}
+                            {nextSession ? (
+                                <p>
+                                    {t.nextSession}: <strong>{nextName}</strong>{' '}
+                                    <ClockTime iso={nextSession.start} withDate locale={locale} t={t} time={time} />
+                                </p>
+                            ) : <p>{t.noUpcomingSession}</p>}
                         </div>
-                    )}
-                </section>
+                        {nextSession && (
+                            <div className={styles.nextCountdown}>
+                                <p>{fill(t.countdownTo, { session: nextName })}</p>
+                                <Countdown
+                                    target={nextSession.start}
+                                    serverNow={serverNow}
+                                    className={styles.countdown}
+                                    unitClassName={styles.countdownUnit}
+                                    labelClassName={styles.countdownLabel}
+                                />
+                            </div>
+                        )}
+                    </section>
+                </div>
             )}
 
-            <div className={`container ${styles.layout}`}>
-                <section aria-labelledby="timing-heading" className={styles.timing}>
-                    <h2 id="timing-heading" className={styles.sectionTitle}>{t.timing}</h2>
-                    {positions.length === 0 && (
-                        <p className={styles.empty}>{t.noTimingData}</p>
-                    )}
-                    {positions.length > 0 && (
-                        <div className={styles.tableWrap} tabIndex={0} role="region" aria-labelledby="timing-heading">
-                            <table className={styles.table} aria-labelledby="timing-heading">
-                                <thead>
-                                    <tr>
-                                        <th scope="col">{t.position}</th>
-                                        <th scope="col">{t.driver}</th>
-                                        {isRace ? (
-                                            <>
-                                                <th scope="col">{t.gap}</th>
-                                                <th scope="col" className={styles.optional}>{t.interval}</th>
-                                                <th scope="col">{t.lastLap}</th>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <th scope="col">{t.bestLap}</th>
-                                                <th scope="col">{t.gap}</th>
-                                                <th scope="col" className={styles.optional}>{t.laps}</th>
-                                            </>
-                                        )}
-                                        <th scope="col">{t.tyre}</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {positions.map((row, index) => (
-                                        <tr key={row.driverNumber} className={row.status && !positions[index - 1]?.status ? styles.retiredDivider : undefined}>
-                                            <td className={styles.pos}><bdi dir="ltr">{row.status || (row.position == null ? '—' : formatNumber(locale, row.position))}</bdi></td>
-                                            <th scope="row">
-                                                <div className={styles.driver}>
-                                                    <span className={styles.teamBar} style={{ '--team': row.teamColor || 'var(--border)' }} />
-                                                    <Link href={`/driver/${row.driverNumber}`} className={styles.driverLink}>
-                                                        <span className={styles.code}><bdi dir="ltr">{row.code || row.driverNumber}</bdi></span>
-                                                        <span className={styles.fullName}><bdi dir="ltr">{row.name}</bdi></span>
-                                                    </Link>
-                                                    <span className={styles.team}><bdi dir="ltr">{row.team}</bdi></span>
-                                                </div>
-                                            </th>
+            {/* Without timing access the panels could only ever be empty. */}
+            {!authUnavailable && (
+                <div className={`container ${styles.layout}`}>
+                    <section aria-labelledby="timing-heading" className={styles.timing}>
+                        <h2 id="timing-heading" className={styles.sectionTitle}>{t.timing}</h2>
+                        {positions.length === 0 && (
+                            <p className={styles.empty}>{t.noTimingData}</p>
+                        )}
+                        {positions.length > 0 && (
+                            <div className={styles.tableWrap} tabIndex={0} role="region" aria-labelledby="timing-heading">
+                                <table className={styles.table} aria-labelledby="timing-heading">
+                                    <thead>
+                                        <tr>
+                                            <th scope="col">{t.position}</th>
+                                            <th scope="col">{t.driver}</th>
                                             {isRace ? (
                                                 <>
-                                                    <td className={styles.mono}><LiveGap value={row.gapToLeader} index={index} t={t} /></td>
-                                                    <td className={`${styles.mono} ${styles.optional}`}><bdi dir="ltr">{index === 0 ? '—' : formatGap(row.interval)}</bdi></td>
-                                                    <td className={styles.mono}><bdi dir="ltr">{formatLapTime(row.lastLap?.duration)}</bdi></td>
+                                                    <th scope="col">{t.gap}</th>
+                                                    <th scope="col" className={styles.optional}>{t.interval}</th>
+                                                    <th scope="col">{t.lastLap}</th>
                                                 </>
                                             ) : (
                                                 <>
-                                                    <td className={styles.mono}><bdi dir="ltr">{formatLapTime(row.bestLap?.duration)}</bdi></td>
-                                                    <td className={styles.mono}><LiveGap value={row.gapToLeader} index={index} t={t} /></td>
-                                                    <td className={`${styles.mono} ${styles.optional}`}><bdi dir="ltr">{row.lastLap?.lapNumber == null ? '—' : formatNumber(locale, row.lastLap.lapNumber)}</bdi></td>
+                                                    <th scope="col">{t.bestLap}</th>
+                                                    <th scope="col">{t.gap}</th>
+                                                    <th scope="col" className={styles.optional}>{t.laps}</th>
                                                 </>
                                             )}
-                                            <td><Tyre stint={row.stint} locale={locale} t={t} /></td>
+                                            <th scope="col">{t.tyre}</th>
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    )}
-                </section>
+                                    </thead>
+                                    <tbody>
+                                        {positions.map((row, index) => (
+                                            <tr key={row.driverNumber} className={row.status && !positions[index - 1]?.status ? styles.retiredDivider : undefined}>
+                                                <td className={styles.pos}><bdi dir="ltr">{row.status || (row.position == null ? '—' : formatNumber(locale, row.position))}</bdi></td>
+                                                <th scope="row">
+                                                    <div className={styles.driver}>
+                                                        <span className={styles.teamBar} style={{ '--team': row.teamColor || 'var(--border)' }} />
+                                                        <Link href={`/driver/${row.driverNumber}`} className={styles.driverLink}>
+                                                            <span className={styles.code}><bdi dir="ltr">{row.code || row.driverNumber}</bdi></span>
+                                                            <span className={styles.fullName}><bdi dir="ltr">{row.name}</bdi></span>
+                                                        </Link>
+                                                        <span className={styles.team}><bdi dir="ltr">{row.team}</bdi></span>
+                                                    </div>
+                                                </th>
+                                                {isRace ? (
+                                                    <>
+                                                        <td className={styles.mono}><LiveGap value={row.gapToLeader} index={index} t={t} /></td>
+                                                        <td className={`${styles.mono} ${styles.optional}`}><bdi dir="ltr">{index === 0 ? '—' : formatGap(row.interval)}</bdi></td>
+                                                        <td className={styles.mono}><bdi dir="ltr">{formatLapTime(row.lastLap?.duration)}</bdi></td>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <td className={styles.mono}><bdi dir="ltr">{formatLapTime(row.bestLap?.duration)}</bdi></td>
+                                                        <td className={styles.mono}><LiveGap value={row.gapToLeader} index={index} t={t} /></td>
+                                                        <td className={`${styles.mono} ${styles.optional}`}><bdi dir="ltr">{row.lastLap?.lapNumber == null ? '—' : formatNumber(locale, row.lastLap.lapNumber)}</bdi></td>
+                                                    </>
+                                                )}
+                                                <td><Tyre stint={row.stint} locale={locale} t={t} /></td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+                    </section>
 
-                <section aria-labelledby="rc-heading" className={styles.raceControl}>
-                    <h2 id="rc-heading" className={styles.sectionTitle}>{t.raceControl}</h2>
-                    {raceControl.length === 0 ? (
-                        <p className={styles.empty}>{t.noMessages}</p>
-                    ) : (
-                        // Scrollable, so it must be reachable by keyboard.
-                        <ol className={styles.messages} tabIndex={0} aria-labelledby="rc-heading">
-                            {raceControl.map((message, index) => (
-                                <li key={`${message.date}-${index}`} className={styles.message} data-flag={message.flag || undefined}>
-                                    <span className={styles.messageMeta}>
-                                        <ClockTime iso={message.date} locale={locale} t={t} time={time} />
-                                        {message.lapNumber != null && <> · {t.lap} <bdi dir="ltr">{formatNumber(locale, message.lapNumber)}</bdi></>}
-                                        {flagLabel(message, t) && <span className={styles.flagChip} data-flag={message.flag || undefined}>{flagLabel(message, t)}</span>}
-                                    </span>
-                                    <span><bdi lang="en">{message.message}</bdi></span>
-                                </li>
-                            ))}
-                        </ol>
-                    )}
-                </section>
-            </div>
+                    <section aria-labelledby="rc-heading" className={styles.raceControl}>
+                        <h2 id="rc-heading" className={styles.sectionTitle}>{t.raceControl}</h2>
+                        {raceControl.length === 0 ? (
+                            <p className={styles.empty}>{t.noMessages}</p>
+                        ) : (
+                            // Scrollable, so it must be reachable by keyboard.
+                            <ol className={styles.messages} tabIndex={0} aria-labelledby="rc-heading">
+                                {raceControl.map((message, index) => (
+                                    <li key={`${message.date}-${index}`} className={styles.message} data-flag={message.flag || undefined}>
+                                        <span className={styles.messageMeta}>
+                                            <ClockTime iso={message.date} locale={locale} t={t} time={time} />
+                                            {message.lapNumber != null && <> · {t.lap} <bdi dir="ltr">{formatNumber(locale, message.lapNumber)}</bdi></>}
+                                            {flagLabel(message, t) && <span className={styles.flagChip} data-flag={message.flag || undefined}>{flagLabel(message, t)}</span>}
+                                        </span>
+                                        <span><bdi lang="en">{message.message}</bdi></span>
+                                    </li>
+                                ))}
+                            </ol>
+                        )}
+                    </section>
+                </div>
+            )}
         </div>
     );
 }
