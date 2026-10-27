@@ -4,7 +4,7 @@ vi.mock('next/cache', () => ({ unstable_cache: (callback) => callback }));
 
 import { ACTIVE_RESULTS_REVALIDATE, getAllTimeDriver, getCareerStats, RETIRED_RESULTS_REVALIDATE } from '@/lib/f1/compare';
 import { getAllTimeDrivers, searchDrivers } from '@/lib/f1/drivers';
-import { fetchJson } from '@/lib/f1/http';
+import { F1_USER_AGENT, fetchJson, fetchJolpicaPage, fetchOpenF1Json, getOpenF1Token } from '@/lib/f1/http';
 import { getSeasonSummary } from '@/lib/f1/history';
 
 const jsonResponse = (payload, { status = 200, headers = {} } = {}) => ({
@@ -35,7 +35,9 @@ function installJolpica() {
 
 afterEach(() => {
     vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
     vi.useRealTimers();
+    delete globalThis.__pitLaneOpenF1TokenCache;
 });
 
 describe('all-time drivers', () => {
@@ -109,5 +111,89 @@ describe('fetchJson throttling', () => {
         await expect(fetchJson('https://example.test/data')).rejects.toMatchObject({ status: 429 });
         expect(fetchMock).toHaveBeenCalledTimes(1);
         expect(Date.now() - start).toBeLessThan(500);
+    });
+});
+
+describe('OpenF1 authentication and request identity', () => {
+    it('memoizes one token for 50 calls and refreshes after expiry', async () => {
+        delete globalThis.__pitLaneOpenF1TokenCache;
+        vi.stubEnv('OPENF1_USERNAME', 'fixture-user');
+        vi.stubEnv('OPENF1_PASSWORD', 'fixture-password');
+        vi.useFakeTimers({ toFake: ['Date'] });
+        vi.setSystemTime(new Date('2026-10-27T00:00:00Z'));
+        let tokenRequests = 0;
+        vi.stubGlobal('fetch', vi.fn(async (input) => {
+            if (new URL(input).href === 'https://api.openf1.org/token') {
+                tokenRequests += 1;
+                return jsonResponse({ access_token: `fixture-token-${tokenRequests}`, expires_in: 3600 });
+            }
+            return jsonResponse([]);
+        }));
+
+        const initial = await Promise.all(Array.from({ length: 50 }, () => fetchOpenF1Json('meetings?year=2026')));
+        expect(initial).toHaveLength(50);
+        expect(tokenRequests).toBe(1);
+
+        vi.setSystemTime(new Date('2026-10-27T00:54:59Z'));
+        await fetchOpenF1Json('meetings?year=2026');
+        expect(tokenRequests).toBe(1);
+
+        vi.setSystemTime(new Date('2026-10-27T01:00:01Z'));
+        await expect(getOpenF1Token()).resolves.toBe('fixture-token-2');
+        expect(tokenRequests).toBe(2);
+    });
+
+    it('sends the canonical User-Agent and bearer token, refreshing once after a 401', async () => {
+        delete globalThis.__pitLaneOpenF1TokenCache;
+        vi.stubEnv('OPENF1_USERNAME', 'fixture-user');
+        vi.stubEnv('OPENF1_PASSWORD', 'fixture-password');
+        const requests = [];
+        const warning = vi.spyOn(console, 'warn').mockImplementation(() => {});
+        let tokenRequests = 0;
+        vi.stubGlobal('fetch', vi.fn(async (input, options) => {
+            const url = new URL(input);
+            requests.push({ url, options });
+            if (url.href === 'https://api.openf1.org/token') {
+                tokenRequests += 1;
+                expect(options.method).toBe('POST');
+                expect(options.headers['Content-Type']).toBe('application/x-www-form-urlencoded');
+                return jsonResponse({ access_token: `auth-token-${tokenRequests}`, expires_in: 3600 });
+            }
+            if (url.hostname === 'api.jolpi.ca') return jsonResponse({ MRData: { total: '0', RaceTable: { Races: [] } } });
+            if (options.headers.Authorization === 'Bearer auth-token-1') return jsonResponse({}, { status: 401 });
+            return jsonResponse([]);
+        }));
+
+        await fetchJolpicaPage('2026/races');
+        await expect(fetchOpenF1Json('meetings?year=2026')).resolves.toEqual([]);
+
+        expect(tokenRequests).toBe(2);
+        expect(requests.every(({ options }) => options.headers['User-Agent'] === F1_USER_AGENT)).toBe(true);
+        expect(requests.filter(({ url }) => url.hostname === 'api.openf1.org' && url.pathname === '/v1/meetings')
+            .map(({ options }) => options.headers.Authorization)).toEqual([
+            'Bearer auth-token-1',
+            'Bearer auth-token-2',
+        ]);
+        expect(warning).not.toHaveBeenCalled();
+    });
+
+    it('logs one safe warning for a failed authenticated call without exposing secrets', async () => {
+        delete globalThis.__pitLaneOpenF1TokenCache;
+        vi.stubEnv('OPENF1_USERNAME', 'private-fixture-user');
+        vi.stubEnv('OPENF1_PASSWORD', 'private-fixture-password');
+        const warning = vi.spyOn(console, 'warn').mockImplementation(() => {});
+        vi.stubGlobal('fetch', vi.fn(async (input) => {
+            if (new URL(input).href === 'https://api.openf1.org/token') {
+                return jsonResponse({ access_token: 'private-fixture-token', expires_in: 3600 });
+            }
+            return jsonResponse({}, { status: 403 });
+        }));
+
+        await expect(fetchOpenF1Json('meetings?year=2026')).rejects.toMatchObject({ status: 403 });
+
+        expect(warning).toHaveBeenCalledTimes(1);
+        const warningText = JSON.stringify(warning.mock.calls);
+        expect(warningText).toContain('HTTP 403');
+        expect(warningText).not.toContain('private-fixture');
     });
 });
