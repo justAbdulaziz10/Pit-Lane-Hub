@@ -12,8 +12,10 @@ import { SITE_NAME, SITE_URL } from '@/lib/site';
 import './globals.css';
 
 // One self-hosted family; the width axis gives condensed display type and normal-width body text.
+// Only Latin is preloaded (it covers Pérez, Hülkenberg, Räikkönen); latin-ext still loads on
+// demand through its unicode-range when a page needs it.
 const archivo = Archivo({
-  subsets: ['latin', 'latin-ext'],
+  subsets: ['latin'],
   axes: ['wdth'],
   display: 'swap',
   variable: '--font-archivo',
