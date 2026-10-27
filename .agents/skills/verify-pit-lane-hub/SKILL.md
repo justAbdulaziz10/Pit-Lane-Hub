@@ -1,11 +1,11 @@
 ---
 name: verify-pit-lane-hub
-description: Prove Pit Lane Hub (Next.js F1 site) behavior by launching the real dev server and driving it in headless Chromium like a user - home/nav, drivers + favorites, standings, live timing, 404. Use after any UI, route, or data change, before claiming a feature works.
+description: Prove Pit Lane Hub (Next.js F1 site) behavior by launching the real dev server and driving it in headless Chromium like a user - home/nav, drivers + favorites, driver/team/race detail, calendar, compare, history, 3D tracks, F2/F3, standings, live timing, account pages (render only), 404. Use after any UI, route, or data change, before claiming a feature works.
 ---
 
 # verify-pit-lane-hub
 
-Primary surface: the web UI (Next.js 16 App Router). Other surfaces: NextAuth login/signup, Polar checkout/webhook API routes (not driven here, see Unproven).
+Primary surface: the web UI (Next.js 16 App Router). Other surfaces: NextAuth login/signup and Polar checkout/webhook API routes. Their pages render-check only; submissions are not driven (see Unproven).
 Harness: `scripts/verify-pit-lane-hub.mjs`, a control CLI on the Playwright library already in devDependencies. Every command prints one JSON object; a failed check gives `"ok": false`, a `reason`, and exit 1.
 
 ## Setup (once per checkout)
@@ -65,8 +65,13 @@ Kills only the process group recorded at launch (never by name), waits for the p
 - launch, doctor, `drive all` (5/5 pass), stop, with evidence kept after cleanup.
 - Break caught: changing `DriversGrid` so it ignores favorites made `drive drivers-favorites` exit 1 with `favorite pulled to front after reload: expected "/driver/87", got "/driver/1"`. The code was restored and all drives passed again.
 
+## Maintenance pass (2026-10-28, macOS, Playwright 1.61.0)
+
+- Source check of every route under `src/app/`. Added drives and feature files for driver-detail, teams-detail, calendar-race, compare, history, tracks, junior, and auth-pages (render only). `drive all` passes 13/13 live.
+- Detail and calendar routes stream behind `loading.js`. Their first check waits with `visibleSoon` (40 s), because an immediate check sees only the spinner.
+
 ## Unproven / not mapped
 
-- Login, signup, profile, and support/checkout flows need Postgres (`POSTGRES_PRISMA_URL`), `AUTH_SECRET`, Resend, and Polar sandbox keys. None of these exist here, so they are not driven.
-- Compare, history, tracks (3D canvas), teams, team/driver/race detail pages are not mapped yet. Add them with `maintain-verification-skill`.
+- Submitting login, signup, profile, or support/checkout needs Postgres (`POSTGRES_PRISMA_URL`), `AUTH_SECRET`, Resend, and Polar sandbox keys. None of these exist here, so only page render and the signed-out `/profile` redirect are driven.
+- The Tracks 3D canvas (WebGL) is not asserted beyond the modal opening and closing.
 - Live Timing with real positions is only observable during a session weekend. Otherwise the page shows the "Entry List" fallback, which the drive accepts.
