@@ -151,6 +151,11 @@ async function expectSoon(steps, label, read, expected, timeout = 8000) {
     expectEq(steps, label, actual, expected);
 }
 
+// Detail routes stream behind a loading.js boundary while live APIs answer;
+// wait for the real content instead of checking the spinner.
+const visibleSoon = (locator, timeout = 40_000) =>
+    locator.waitFor({ state: 'visible', timeout }).then(() => true, () => false);
+
 const DRIVES = {
     async home(page, steps, base) {
         await page.goto(base + '/');
@@ -206,6 +211,138 @@ const DRIVES = {
         expectEq(steps, 'heading "Live Timing" visible', await page.getByRole('heading', { name: 'Live Timing' }).isVisible(), true);
         expectEq(steps, 'positions or honest entry list shown',
             await page.getByRole('heading', { name: /Live Positions|Entry List/ }).first().isVisible(), true);
+    },
+
+    async 'driver-detail'(page, steps, base) {
+        await page.goto(base + '/drivers');
+        const card = page.locator('main a[href^="/driver/"]').first();
+        const href = await card.getAttribute('href');
+        await card.locator('h3, h2, img').first().click();
+        await page.waitForURL((u) => u.pathname === href);
+        expectEq(steps, 'card click lands on driver page', new URL(page.url()).pathname, href);
+        expectEq(steps, 'driver name h1 visible', await visibleSoon(page.getByRole('heading', { level: 1 }).first()), true);
+        expectEq(steps, '"Career Statistics" section visible',
+            await page.getByRole('heading', { name: 'Career Statistics' }).first().isVisible(), true);
+        await page.getByRole('link', { name: /Back to Drivers/ }).click();
+        await page.waitForURL(/\/drivers$/);
+        expectEq(steps, 'back link returns to /drivers', new URL(page.url()).pathname, '/drivers');
+        await page.goto(base + '/driver/999');
+        expectEq(steps, 'unknown number shows "Driver Not Found"',
+            await visibleSoon(page.getByRole('heading', { name: 'Driver Not Found' })), true);
+    },
+
+    async 'teams-detail'(page, steps, base) {
+        await page.goto(base + '/teams');
+        expectEq(steps, 'h1 "<year> Team Standings" visible',
+            await page.getByRole('heading', { level: 1, name: /Team Standings/ }).isVisible(), true);
+        const team = page.locator('main a[href^="/team/"]').first();
+        await team.waitFor();
+        const href = await team.getAttribute('href');
+        await team.click();
+        await page.waitForURL((u) => u.pathname === href);
+        expectEq(steps, 'team card lands on team page', new URL(page.url()).pathname, href);
+        expectEq(steps, '"Drivers" section visible', await visibleSoon(page.getByRole('heading', { name: 'Drivers', exact: true })), true);
+        const driver = page.locator('main a[href^="/driver/"]').first();
+        const dHref = await driver.getAttribute('href');
+        await driver.click();
+        await page.waitForURL((u) => u.pathname === dHref);
+        expectEq(steps, 'team driver card lands on driver page', new URL(page.url()).pathname, dHref);
+        await page.goto(base + '/team/not-a-team');
+        expectEq(steps, 'unknown id shows "Team Not Found"',
+            await visibleSoon(page.getByRole('heading', { name: 'Team Not Found' })), true);
+    },
+
+    async 'calendar-race'(page, steps, base) {
+        await page.goto(base + '/schedule');
+        expectEq(steps, 'h1 "<year> Schedule" visible', await visibleSoon(page.getByRole('heading', { level: 1, name: /Schedule/ })), true);
+        const race = page.locator('main a[href^="/race/"]').first();
+        await race.waitFor();
+        const href = await race.getAttribute('href');
+        await race.click();
+        await page.waitForURL((u) => u.pathname === href, { timeout: 40_000 });
+        expectEq(steps, 'race card lands on race page', new URL(page.url()).pathname, href);
+        expectEq(steps, 'race h1 visible', await visibleSoon(page.getByRole('heading', { level: 1 }).first()), true);
+        expectEq(steps, '"Race Weekend Schedule" section visible',
+            await page.getByRole('heading', { name: /Race Weekend Schedule/ }).isVisible(), true);
+        expectEq(steps, '"Back to Calendar" link visible', await page.getByRole('link', { name: /Back to Calendar/ }).isVisible(), true);
+    },
+
+    async compare(page, steps, base) {
+        await page.goto(base + '/compare');
+        expectEq(steps, 'h1 "Driver Comparison" visible', await page.getByRole('heading', { name: 'Driver Comparison' }).isVisible(), true);
+        const second = page.getByRole('combobox').nth(1);
+        const options = await second.locator('option').evaluateAll((os) => os.map((o) => ({ value: o.value, text: o.textContent.trim() })));
+        steps.push({ info: 'driver options', count: options.length });
+        if (options.length < 3) throw new CheckError(`need >=3 drivers to change selection, got ${options.length}`);
+        const pick = options[options.length - 1];
+        // Retry until hydrated: a change before hydration is reverted by React.
+        await expectSoon(steps, 'driver 2 select holds picked driver', async () => {
+            if ((await second.inputValue()) !== pick.value) await second.selectOption(pick.value);
+            await page.waitForTimeout(250);
+            return second.inputValue();
+        }, pick.value, 15000);
+        const lastName = pick.text.split(/\s+/).pop();
+        await expectSoon(steps, `profile heading shows "${lastName}"`,
+            () => page.getByRole('heading', { level: 2, name: new RegExp(lastName, 'i') }).first().isVisible(), true, 20000);
+    },
+
+    async history(page, steps, base) {
+        await page.goto(base + '/history');
+        expectEq(steps, 'h1 "Historical Data" visible', await page.getByRole('heading', { level: 1, name: 'Historical Data' }).isVisible(), true);
+        const years = page.locator('main button').filter({ hasText: /^\d{4}$/ });
+        const count = await years.count();
+        steps.push({ info: 'season buttons', count });
+        if (count < 2) throw new CheckError(`need >=2 season buttons, got ${count}`);
+        const year = (await years.nth(1).textContent()).trim();
+        const race = page.getByRole('heading', { level: 3 }).first();
+        await expectSoon(steps, `season ${year} shows race cards`, async () => {
+            await years.nth(1).click();
+            await page.getByText(/Loading .* data/).waitFor({ state: 'hidden', timeout: 20_000 }).catch(() => {});
+            return (await race.isVisible()) && (await race.textContent()) !== 'No data available';
+        }, true, 30000);
+        await page.getByRole('button', { name: /Drivers/ }).click();
+        await page.getByText(/Loading .* data/).waitFor({ state: 'hidden', timeout: 20_000 }).catch(() => {});
+        await expectSoon(steps, 'drivers view lists drivers', () => page.getByRole('heading', { level: 4 }).count().then((n) => n > 0), true, 20000);
+    },
+
+    async tracks(page, steps, base) {
+        await page.goto(base + '/tracks');
+        expectEq(steps, 'h1 "F1 Circuits 3D" visible', await page.getByRole('heading', { name: 'F1 Circuits 3D' }).isVisible(), true);
+        const card = page.getByRole('heading', { level: 3 }).first();
+        const title = (await card.textContent()).trim();
+        const modalTitle = page.getByRole('heading', { level: 2, name: title, exact: true });
+        await expectSoon(steps, `track modal opens with "${title}"`, async () => {
+            if (!(await modalTitle.isVisible())) await card.click();
+            await page.waitForTimeout(250);
+            return modalTitle.isVisible();
+        }, true, 15000);
+        await page.getByRole('button', { name: /Map/ }).click();
+        await page.getByRole('button', { name: '×' }).click();
+        await expectSoon(steps, 'close button dismisses modal', () => modalTitle.isVisible(), false);
+    },
+
+    async junior(page, steps, base) {
+        await page.goto(base + '/junior');
+        expectEq(steps, 'h1 "F2 & F3 Racing" visible', await page.getByRole('heading', { level: 1, name: 'F2 & F3 Racing' }).isVisible(), true);
+        for (const h of ['Formula 2', 'Formula 3']) {
+            expectEq(steps, `"${h}" section visible`, await page.getByRole('heading', { name: h, exact: true }).first().isVisible(), true);
+        }
+    },
+
+    // Render-only: submitting needs Postgres, AUTH_SECRET, Resend, and Polar (see SKILL.md Unproven).
+    async 'auth-pages'(page, steps, base) {
+        await page.goto(base + '/');
+        await page.getByRole('link', { name: 'Log In' }).first().click();
+        await page.waitForURL(/\/login$/);
+        expectEq(steps, 'header "Log In" lands on /login', new URL(page.url()).pathname, '/login');
+        expectEq(steps, 'h1 "Welcome Back" visible', await page.getByRole('heading', { name: 'Welcome Back' }).isVisible(), true);
+        await page.goto(base + '/signup');
+        expectEq(steps, 'h1 "Create Account" visible', await page.getByRole('heading', { name: 'Create Account' }).isVisible(), true);
+        await page.goto(base + '/support');
+        expectEq(steps, 'h1 "Support Pit Lane Hub" visible', await page.getByRole('heading', { name: 'Support Pit Lane Hub' }).isVisible(), true);
+        await page.goto(base + '/profile');
+        await page.waitForURL(/\/login$/, { timeout: 20_000 }).catch(() => {});
+        expectEq(steps, 'signed-out /profile redirects to /login', new URL(page.url()).pathname, '/login');
     },
 
     async 'not-found'(page, steps, base) {
