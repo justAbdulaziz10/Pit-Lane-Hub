@@ -197,10 +197,11 @@ async function RaceWeekend({ resolved, title, now, lang }) {
     const raceResults = results?.race || [];
     const sprintResults = results?.sprint || [];
     const qualifyingResults = results?.qualifying || [];
+    const hasSprint = Boolean(event.sessions?.sprint) || sprintResults.length > 0;
     const sections = [
         ['results', t.resultsTab],
         ['qualifying', t.qualifying],
-        ['sprint', t.sprintTab],
+        ...(hasSprint ? [['sprint', t.sprintTab]] : []),
         ['strategy', t.tyreStrategy],
         ['map', t.mapTab],
     ];
@@ -277,12 +278,14 @@ async function RaceWeekend({ resolved, title, now, lang }) {
                         : <QualifyingTable results={qualifyingResults} links={links} caption={`${title} ${t.qualifying}`} lang={lang} />}
                 </section>
 
-                <section id="sprint" className={styles.block} aria-labelledby="sprint-heading">
-                    <h2 id="sprint-heading">{t.sprintResult}</h2>
-                    {sprintResults.length === 0
-                        ? <p className={styles.notice}>{t.sessionNotRun}</p>
-                        : <ClassificationTable results={sprintResults} links={links} caption={`${title} ${t.sprintResult}`} lang={lang} />}
-                </section>
+                {hasSprint && (
+                    <section id="sprint" className={styles.block} aria-labelledby="sprint-heading">
+                        <h2 id="sprint-heading">{t.sprintResult}</h2>
+                        {sprintResults.length === 0
+                            ? <p className={styles.notice}>{resultsFailed ? t.resultsUnavailable : t.sessionNotRun}</p>
+                            : <ClassificationTable results={sprintResults} links={links} caption={`${title} ${t.sprintResult}`} lang={lang} />}
+                    </section>
+                )}
 
                 <Suspense fallback={<section id="strategy" className={styles.block}><h2>{t.tyreStrategy}</h2><p className={styles.notice}>{t.loadingTyreStrategy}</p></section>}>
                     <Strategy
