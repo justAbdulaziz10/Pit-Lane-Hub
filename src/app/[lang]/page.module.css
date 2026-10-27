@@ -194,7 +194,7 @@
 .podiumTeam {
   font-size: var(--text-sm);
   color: var(--text-3);
-  text-align: right;
+  text-align: end;
 }
 
 .table {
@@ -206,17 +206,17 @@
 .table th,
 .table td {
   padding: var(--space-sm);
-  text-align: left;
+  text-align: start;
 }
 
 .table th:first-child,
 .table td:first-child {
-  padding-left: 0;
+  padding-inline-start: 0;
 }
 
 .table th:last-child,
 .table td:last-child {
-  padding-right: 0;
+  padding-inline-end: 0;
 }
 
 .table thead th {
@@ -239,7 +239,7 @@
 }
 
 .num {
-  text-align: right !important;
+  text-align: end !important;
   font-variant-numeric: tabular-nums;
   font-weight: 700;
 }

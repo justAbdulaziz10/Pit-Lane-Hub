@@ -1,3 +1,6 @@
+import scheduleMessages from '@/lib/i18n/messages/schedule';
+import { pick } from '@/lib/i18n/messages';
+
 export const STATUS_LABELS = Object.freeze({
     live: 'Live',
     weekend: 'Race weekend',
@@ -5,6 +8,11 @@ export const STATUS_LABELS = Object.freeze({
     upcoming: 'Upcoming',
     cancelled: 'Cancelled',
 });
+
+export function statusLabel(status, locale = 'en') {
+    const labels = pick(scheduleMessages, locale).status;
+    return labels[status] || STATUS_LABELS[status] || status;
+}
 
 /** Status of a testing meeting from its start and end dates. */
 export function meetingStatus(meeting, now = Date.now()) {

@@ -1,4 +1,5 @@
 import { CardSkeleton } from '@/components/LoadingSkeleton';
+import LoadingLabel from './LoadingLabel';
 import styles from './page.module.css';
 
 export default function Loading() {
@@ -6,8 +7,7 @@ export default function Loading() {
         <div className={styles.schedule} aria-busy="true">
             <header className={styles.header}>
                 <div className="container">
-                    <h1>F1 Calendar</h1>
-                    <p className={styles.summary}>Loading the calendar…</p>
+                    <LoadingLabel />
                 </div>
             </header>
             <div className={styles.content}>

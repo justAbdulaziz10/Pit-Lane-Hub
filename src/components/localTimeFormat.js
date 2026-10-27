@@ -1,4 +1,7 @@
 // Pure helpers for LocalTime and Countdown (kept JSX-free so they are unit-testable).
+import { intlLocale, formatNumber } from '@/lib/i18n/format';
+import timeMessages from '@/lib/i18n/messages/time';
+import { pick } from '@/lib/i18n/messages';
 
 const FORMATS = Object.freeze({
     datetime: { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' },
@@ -13,18 +16,42 @@ function hasTime(options) {
 }
 
 /** Format an ISO instant; on the server (and during hydration) always in UTC with a label. */
-export function formatInstant(iso, format = 'datetime', { local = false } = {}) {
+export function formatInstant(iso, format = 'datetime', { local = false, locale = 'en' } = {}) {
     const date = new Date(iso);
     if (!Number.isFinite(date.getTime())) return null;
     const options = FORMATS[format] || FORMATS.datetime;
     if (local) {
-        return new Intl.DateTimeFormat(undefined, {
+        return new Intl.DateTimeFormat(intlLocale(locale), {
             ...options,
             ...(hasTime(options) ? { timeZoneName: 'short' } : {}),
         }).format(date);
     }
-    const text = new Intl.DateTimeFormat('en-GB', { ...options, timeZone: 'UTC' }).format(date);
-    return hasTime(options) ? `${text} UTC` : text;
+    const text = new Intl.DateTimeFormat(intlLocale(locale), { ...options, timeZone: 'UTC' }).format(date);
+    return hasTime(options) ? `${text} ${pick(timeMessages, locale).utc}` : text;
+}
+
+export function hasTimeFormat(format = 'datetime') {
+    return hasTime(FORMATS[format] || FORMATS.datetime);
+}
+
+export function countdownUnitLabel(locale, unit, count) {
+    const messages = pick(timeMessages, locale);
+    const category = new Intl.PluralRules(locale === 'ar' ? 'ar' : 'en').select(count);
+    return messages[unit]?.[category] || messages[unit]?.other || unit;
+}
+
+export function countdownAnnouncement(locale, parts) {
+    const messages = pick(timeMessages, locale);
+    const values = [
+        ['day', parts.days],
+        ['hour', parts.hours],
+        ['minute', parts.minutes],
+    ];
+    const phrase = values.map(([unit, value]) => {
+        if (locale === 'ar' && new Intl.PluralRules('ar').select(value) === 'two') return messages[unit].two;
+        return `${formatNumber(locale, value)} ${countdownUnitLabel(locale, unit, value)}`;
+    }).join(locale === 'ar' ? '، ' : ', ');
+    return `${phrase} ${messages.toGo}`;
 }
 
 export function countdownParts(targetMs, nowMs) {

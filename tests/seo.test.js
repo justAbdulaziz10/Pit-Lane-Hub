@@ -1,17 +1,22 @@
 import { describe, expect, it } from 'vitest';
 import { jsonLdScript } from '@/lib/jsonld';
 import { resolveSiteUrl } from '@/lib/site';
-import { metadata as driversMetadata } from '@/app/[lang]/drivers/layout';
-import { metadata as teamsMetadata } from '@/app/[lang]/teams/layout';
-import { metadata as liveMetadata } from '@/app/[lang]/live/layout';
-import { metadata as tracksMetadata } from '@/app/[lang]/tracks/layout';
-import { metadata as historyMetadata } from '@/app/[lang]/history/layout';
-import { generateMetadata as supportMetadata } from '@/app/[lang]/support/layout';
+import { metadata as driversMetadata, generateMetadata as driversGenerateMetadata } from '@/app/[lang]/drivers/layout';
+import { metadata as teamsMetadata, generateMetadata as teamsGenerateMetadata } from '@/app/[lang]/teams/layout';
+import { metadata as liveMetadata, generateMetadata as liveGenerateMetadata } from '@/app/[lang]/live/layout';
+import { metadata as tracksMetadata, generateMetadata as tracksGenerateMetadata } from '@/app/[lang]/tracks/layout';
+import { metadata as historyMetadata, generateMetadata as historyGenerateMetadata } from '@/app/[lang]/history/layout';
+import { metadata as supportMetadata, generateMetadata as supportGenerateMetadata } from '@/app/[lang]/support/layout';
 import { localizedPageMetadata } from '@/lib/i18n/metadata';
 import authMessages from '@/lib/i18n/messages/auth';
 import accountMessages from '@/lib/i18n/messages/account';
 import supportMessages from '@/lib/i18n/messages/support';
 import errorMessages from '@/lib/i18n/messages/errors';
+
+async function readMetadata(metadata, generateMetadata) {
+  if (metadata) return metadata;
+  return generateMetadata?.({ params: Promise.resolve({ lang: 'en' }) });
+}
 
 describe('jsonLdScript', () => {
   it('escapes script-sensitive characters and round-trips through JSON.parse', () => {
@@ -49,22 +54,23 @@ describe('resolveSiteUrl', () => {
 });
 
 describe('segment metadata', () => {
-  it('uses distinct plain titles and unique descriptions for each new layout', async () => {
-    const support = await supportMetadata({ params: Promise.resolve({ lang: 'en' }) });
-    const metadata = [
-      driversMetadata,
-      teamsMetadata,
-      liveMetadata,
-      tracksMetadata,
-      historyMetadata,
-      support,
-    ];
-    const titles = metadata.map((segment) => segment.title);
-    const descriptions = metadata.map((segment) => segment.description);
+  it('uses distinct plain titles and unique descriptions for each new layout', () => {
+    const metadata = Promise.all([
+      readMetadata(driversMetadata, driversGenerateMetadata),
+      readMetadata(teamsMetadata, teamsGenerateMetadata),
+      readMetadata(liveMetadata, liveGenerateMetadata),
+      readMetadata(tracksMetadata, tracksGenerateMetadata),
+      readMetadata(historyMetadata, historyGenerateMetadata),
+      readMetadata(supportMetadata, supportGenerateMetadata),
+    ]);
+    return metadata.then((segments) => {
+    const titles = segments.map((segment) => segment.title);
+    const descriptions = segments.map((segment) => segment.description);
 
     expect(new Set(titles).size).toBe(titles.length);
     expect(new Set(descriptions).size).toBe(descriptions.length);
     expect(titles.every((title) => !title.includes('| Pit Lane Hub'))).toBe(true);
+    });
   });
 
   it('localizes owned route metadata and emits matching canonical and language alternates', async () => {
