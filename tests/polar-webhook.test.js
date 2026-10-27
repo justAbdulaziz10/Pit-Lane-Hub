@@ -71,6 +71,7 @@ import { POST } from '@/app/api/polar/webhook/route';
 
 const SECRET = 'whsec_dGVzdC13ZWJob29rLXNlY3JldA==';
 const ORIGINAL_SECRET = process.env.POLAR_WEBHOOK_SECRET;
+const ORIGINAL_PRODUCT_ID = process.env.POLAR_PRODUCT_ID;
 let messageCounter = 0;
 
 /** Builds a request signed exactly like Polar (Standard Webhooks, base64 key after whsec_). */
@@ -101,6 +102,7 @@ function subscriptionEvent(type, overrides = {}) {
             created_at: '2026-10-01T00:00:00.000Z',
             modified_at: '2026-10-01T00:00:00.000Z',
             customer_id: 'cus_test_123',
+            product_id: 'prod_pit_lane_pro',
             customer: { id: 'cus_test_123', external_id: 'user_123' },
             current_period_end: '2026-12-01T00:00:00.000Z',
             cancel_at_period_end: false,
@@ -115,6 +117,7 @@ const stored = (id = 'user_123') => store.users.get(id);
 
 beforeEach(() => {
     process.env.POLAR_WEBHOOK_SECRET = SECRET;
+    process.env.POLAR_PRODUCT_ID = 'prod_pit_lane_pro';
     store.reset([{ id: 'user_123' }]);
 });
 
@@ -122,6 +125,8 @@ afterEach(() => {
     vi.restoreAllMocks();
     if (ORIGINAL_SECRET === undefined) delete process.env.POLAR_WEBHOOK_SECRET;
     else process.env.POLAR_WEBHOOK_SECRET = ORIGINAL_SECRET;
+    if (ORIGINAL_PRODUCT_ID === undefined) delete process.env.POLAR_PRODUCT_ID;
+    else process.env.POLAR_PRODUCT_ID = ORIGINAL_PRODUCT_ID;
 });
 
 describe('Polar webhook route', () => {
@@ -177,6 +182,22 @@ describe('Polar webhook route', () => {
 
         expect(response.status).toBe(200);
         expect(stored('other_user').subscriptionStatus).toBe('active');
+    });
+
+    it('ignores subscriptions to other products in the same Polar organization', async () => {
+        const response = await deliver('subscription.active', { product_id: 'prod_other_site' });
+
+        expect(response.status).toBe(202);
+        expect(stored().subscriptionStatus).toBeNull();
+    });
+
+    it('fails closed when the Pro product id is not configured', async () => {
+        delete process.env.POLAR_PRODUCT_ID;
+
+        const response = await deliver('subscription.active');
+
+        expect(response.status).toBe(503);
+        expect(stored().subscriptionStatus).toBeNull();
     });
 
     it('acknowledges unrelated events without touching users', async () => {

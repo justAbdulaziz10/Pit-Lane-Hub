@@ -82,11 +82,12 @@ export function orderingGuard({ subscriptionId, updatedAt, data }) {
 
 export async function POST(req) {
     const webhookSecret = process.env.POLAR_WEBHOOK_SECRET;
+    const proProductId = process.env.POLAR_PRODUCT_ID;
 
-    // Fail closed: never process unverified payment events.
-    if (!webhookSecret) {
-        // 503 so Polar retries once the secret is configured.
-        return new NextResponse("Webhook secret not configured", { status: 503 });
+    // Fail closed: never process unverified payment events, nor events we cannot tie to our product.
+    if (!webhookSecret || !proProductId) {
+        // 503 so Polar retries once the configuration is in place.
+        return new NextResponse("Webhook not configured", { status: 503 });
     }
 
     const body = await req.text();
@@ -108,6 +109,13 @@ export async function POST(req) {
 
     if (!SUBSCRIPTION_EVENTS.has(event.type)) {
         return new NextResponse("Ignored", { status: 202 });
+    }
+
+    // The Polar organization (and its customers) is shared with other products; only a
+    // subscription to Pit Lane Pro may change a user's Pro status here.
+    const productId = event.data?.product_id ?? event.data?.product?.id;
+    if (productId !== proProductId) {
+        return new NextResponse("Ignored (other product)", { status: 202 });
     }
 
     const update = subscriptionUpdateFromEvent(event);
