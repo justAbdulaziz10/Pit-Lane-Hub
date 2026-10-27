@@ -4,6 +4,7 @@ import {
     fetchJolpicaPages,
 } from './http';
 import { getGrid, getSeasonDriverList } from './drivers';
+import { latestList } from './history';
 import { canonicalTeamNameForId, ensureTeamColorContrast } from './team-utils';
 import { getSeasonYear } from './year';
 
@@ -31,7 +32,7 @@ async function loadTeams(year) {
         getGrid(year),
         getSeasonDriverList(year),
     ]);
-    const standings = [...standingLists].sort((a, b) => Number(b.round) - Number(a.round))[0]?.DriverStandings || [];
+    const standings = latestList(standingLists)?.DriverStandings || [];
     const gridById = new Map(grid.filter((driver) => driver.driverId).map((driver) => [driver.driverId, driver]));
     const seasonById = new Map(seasonDrivers.map((driver) => [driver.driverId, driver]));
     const membersByConstructor = new Map();
@@ -46,9 +47,12 @@ async function loadTeams(year) {
     return constructors.map((constructor) => {
         const constructorId = constructor.constructorId;
         const canonicalName = canonicalTeamNameForId(constructorId, constructor.name);
-        // Before round 1 there are no standings yet: fall back to the current grid.
-        const memberIds = membersByConstructor.get(constructorId)
-            || new Set(grid.filter((driver) => driver.team === canonicalName).map((driver) => driver.driverId));
+        // The latest grid is the current line-up (standings also list replaced
+        // drivers); standings cover teams missing from the grid.
+        const lineup = grid.filter((driver) => driver.team === canonicalName && driver.driverId);
+        const memberIds = lineup.length > 0
+            ? new Set(lineup.map((driver) => driver.driverId))
+            : (membersByConstructor.get(constructorId) || new Set());
         const drivers = [...memberIds].map((driverId) => {
             const current = gridById.get(driverId);
             if (current && current.team !== canonicalName) return null;

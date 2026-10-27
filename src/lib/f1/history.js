@@ -11,8 +11,19 @@ function standingsLists(mrData) {
     return mrData?.StandingsTable?.StandingsLists || [];
 }
 
-function latestList(lists) {
-    return [...lists].sort((a, b) => Number(b.round) - Number(a.round))[0] || null;
+/**
+ * Jolpica pages standings by entry, so a season with more than 100 entrants
+ * (1952 has 103) arrives as several lists for the same round: merge them.
+ */
+export function latestList(lists) {
+    const round = Math.max(...lists.map((list) => Number(list.round)).filter(Number.isFinite));
+    const latest = lists.filter((list) => Number(list.round) === round);
+    if (latest.length === 0) return null;
+    return {
+        ...latest[0],
+        DriverStandings: latest.flatMap((list) => list.DriverStandings || []),
+        ConstructorStandings: latest.flatMap((list) => list.ConstructorStandings || []),
+    };
 }
 
 function mapDriverStanding(item) {
@@ -77,7 +88,7 @@ async function loadSeasonSummary(year) {
             return {
                 round: race.round,
                 raceName: race.raceName,
-                date: race.raceStart,
+                date: race.raceStart || race.raceDate,
                 winner: result?.Driver
                     ? {
                         driverId: result.Driver.driverId,

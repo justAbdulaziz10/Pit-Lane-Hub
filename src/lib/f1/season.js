@@ -174,6 +174,8 @@ function mapRace(race, year, meetings, sessions) {
         },
         meetingKey: meeting?.meeting_key ?? null,
         raceStart: starts.race,
+        // Jolpica has no start time for most races before 2005.
+        raceDate: (race.Race || race).date || null,
         sessions: starts,
         sessionWindows,
         is_testing: false,
@@ -248,6 +250,8 @@ export function eventStatus(event, now = Date.now()) {
     if (isLive) return 'live';
     const raceStart = Date.parse(event.raceStart || '');
     if (Number.isFinite(raceStart) && now >= raceStart + RACE_DURATION_MS) return 'completed';
+    const raceDayEnd = Date.parse(event.raceDate ? `${event.raceDate}T23:59:59Z` : '');
+    if (!Number.isFinite(raceStart) && Number.isFinite(raceDayEnd) && now > raceDayEnd) return 'completed';
     const firstSession = Math.min(...Object.values(event.sessions || {})
         .map((value) => Date.parse(value || ''))
         .filter(Number.isFinite));

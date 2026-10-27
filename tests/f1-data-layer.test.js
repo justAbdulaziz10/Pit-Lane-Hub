@@ -275,7 +275,7 @@ describe('grid and driver resolution', () => {
                 expect(url.searchParams.get('session_key')).toBe('200');
                 return openDrivers;
             }
-            if (url.hostname === 'api.jolpi.ca') return mrData(2, { DriverTable: { Drivers: seasonDrivers } });
+            if (url.hostname === 'api.jolpi.ca') return mrData(3, { DriverTable: { Drivers: seasonDrivers } });
             throw new Error(`Unexpected test request: ${url}`);
         });
 
@@ -304,16 +304,19 @@ describe('teams and career/history data', () => {
         const seasonDrivers = [
             driver('max_verstappen', 'VER', 3, 'Max', 'Verstappen', 'Dutch'),
             driver('tsunoda', 'TSU', 22, 'Yuki', 'Tsunoda', 'Japanese'),
+            // Scored for Racing Bulls earlier in the season, since replaced.
+            driver('lawson', 'LAW', 30, 'Liam', 'Lawson', 'New Zealander'),
         ];
         installFetch((url) => {
             if (url.hostname === 'api.openf1.org' && url.pathname.endsWith('/sessions')) return [{ session_key: 200, session_name: 'Race', date_start: '2026-10-25T19:00:00Z' }];
             if (url.hostname === 'api.openf1.org' && url.pathname.endsWith('/drivers')) return openDrivers;
             if (url.hostname === 'api.jolpi.ca' && url.pathname.endsWith('/2026/constructors.json')) return mrData(2, { ConstructorTable: { Constructors: constructors } });
-            if (url.hostname === 'api.jolpi.ca' && url.pathname.endsWith('/2026/drivers.json')) return mrData(2, { DriverTable: { Drivers: seasonDrivers } });
+            if (url.hostname === 'api.jolpi.ca' && url.pathname.endsWith('/2026/drivers.json')) return mrData(3, { DriverTable: { Drivers: seasonDrivers } });
             if (url.hostname === 'api.jolpi.ca' && url.pathname.endsWith('/2026/driverstandings.json')) {
                 return mrData(1, { StandingsTable: { StandingsLists: [{ season: '2026', round: '18', DriverStandings: [
                     { Driver: seasonDrivers[0], Constructors: [{ constructorId: 'red_bull', name: 'Red Bull' }] },
                     { Driver: seasonDrivers[1], Constructors: [{ constructorId: 'racing_bulls', name: 'RB F1 Team' }] },
+                    { Driver: seasonDrivers[2], Constructors: [{ constructorId: 'racing_bulls', name: 'RB F1 Team' }] },
                 ] }] } });
             }
             throw new Error(`Unexpected test request: ${url}`);
