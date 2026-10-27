@@ -10,10 +10,16 @@ export default function RaceMap({ trackInfo, circuitId, lang }) {
     const t = pick(raceMessages, lang);
     const id = circuitId || trackInfo?.circuitId;
     const circuit = id ? getCircuitView(id) : null;
-    if (!circuit) return null;
+    if (!circuit) {
+        return (
+            <section id="map" className={styles.section} aria-labelledby="circuit-heading">
+                <div className="container"><h2 id="circuit-heading">{t.circuit}</h2><p>{t.mapUnavailable}</p></div>
+            </section>
+        );
+    }
 
     return (
-        <section className={styles.section} aria-labelledby="circuit-heading">
+        <section id="map" className={styles.section} aria-labelledby="circuit-heading">
             <div className="container">
                 <div className={styles.head}>
             <h2 id="circuit-heading">{t.circuit}</h2>

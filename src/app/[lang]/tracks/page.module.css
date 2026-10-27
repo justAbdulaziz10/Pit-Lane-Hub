@@ -104,6 +104,26 @@
     text-underline-offset: 3px;
 }
 
+.winnerList {
+    display: grid;
+    gap: var(--space-xs);
+    margin: var(--space-xs) 0 0;
+    padding-inline-start: 1.25rem;
+    font-weight: 400;
+}
+
+.winnerList li {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: var(--space-xs) var(--space-sm);
+}
+
+.winnerTeam {
+    color: var(--text-2);
+    font-size: 0.85rem;
+}
+
 @media (max-width: 860px) {
     .detail {
         grid-template-columns: 1fr;

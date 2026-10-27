@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import { connection } from 'next/server';
 import { getCircuitView } from '@/lib/f1/circuits';
 import { getCalendar } from '@/lib/f1/season';
 import { countryName } from '@/lib/i18n/f1-names';
@@ -10,10 +9,11 @@ import { fill, pick } from '@/lib/i18n/messages';
 import { circuitLength } from './length';
 import styles from './page.module.css';
 
+export const revalidate = 3600;
+
 export default async function TracksPage({ params }) {
     const { lang } = await params;
     const t = pick(tracksMessages, lang);
-    await connection();
     const calendar = await getCalendar();
     const seen = new Set();
     const circuits = calendar.rounds

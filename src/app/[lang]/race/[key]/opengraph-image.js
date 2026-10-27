@@ -1,10 +1,12 @@
 import { getRaceResults } from '@/lib/f1/results';
 import { getEventByMeetingKey } from '@/lib/f1/season';
 import { ImageResponse } from 'next/og';
+import { notFound } from 'next/navigation';
 
 export const alt = 'Formula 1 race weekend on Pit Lane Hub';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
+export const revalidate = 3600;
 
 function formatDate(iso) {
     const date = new Date(iso || '');
@@ -15,8 +17,9 @@ function formatDate(iso) {
 }
 
 async function cardData(key) {
-    if (!/^\d{1,7}$/.test(String(key || ''))) return null;
-    const resolved = await getEventByMeetingKey(key);
+    const value = String(key || '');
+    if (!/^\d{4}-\d{1,2}$/.test(value) && !/^\d{1,7}$/.test(value)) return null;
+    const resolved = await getEventByMeetingKey(value);
     if (!resolved) return null;
     if (resolved.kind !== 'race') {
         const { meeting } = resolved;
@@ -87,14 +90,16 @@ export default async function RaceOpenGraphImage({ params }) {
         data = await cardData(key);
     } catch (error) {
         console.error('Race share image data failed', error);
+        data = { eyebrow: '', title: 'Formula 1 race weekend', detail: null, date: null, winner: null };
     }
+    if (!data) notFound();
 
     return new ImageResponse(
         (
             <div style={frame}>
                 <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: 10, backgroundColor: '#E10600' }} />
                 <Brand />
-                {data ? (
+                {data.title !== 'Formula 1 race weekend' ? (
                     <div style={{ display: 'flex', flexDirection: 'column' }}>
                         <div style={{ fontSize: 24, letterSpacing: 4, color: '#E10600', fontWeight: 700 }}>{data.eyebrow}</div>
                         <div style={{ marginTop: 14, fontSize: 68, lineHeight: 1.05, fontWeight: 800, letterSpacing: -2 }}>{data.title}</div>

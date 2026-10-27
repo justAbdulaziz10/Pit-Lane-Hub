@@ -1,9 +1,11 @@
+import { Fragment } from 'react';
 import { fastestLapOf, gapText } from '@/lib/f1/results';
 import { localePath } from '@/lib/i18n/config';
 import { formatNumber } from '@/lib/i18n/format';
 import raceMessages from '@/lib/i18n/messages/race';
 import { pick } from '@/lib/i18n/messages';
 import Link from 'next/link';
+import { gapToPoleSeconds, podiumColorToken, qualifyingCutlinePositions } from './presentation';
 import styles from './page.module.css';
 
 export function DriverName({ driver, links, lang }) {
@@ -63,7 +65,11 @@ export function Podium({ results, links, lang }) {
         <div className={styles.podiumWrap}>
             <ol className={styles.podium}>
                 {podium.map((row) => (
-                    <li key={row.driver.id} className={styles.podiumStep}>
+                    <li
+                        key={row.driver.id}
+                        className={styles.podiumStep}
+                        style={{ '--podium-color': `var(${podiumColorToken(row.position)})` }}
+                    >
                         <span className={styles.podiumPos}><bdi dir="ltr">P{row.position}</bdi></span>
                         <span className={styles.podiumDriver}><DriverName driver={row.driver} links={links} lang={lang} /></span>
                         <span className={styles.podiumTeam}><TeamName team={row.team} links={links} lang={lang} /></span>
@@ -102,7 +108,7 @@ export function ClassificationTable({ results, links, caption, lang }) {
                 </thead>
                 <tbody>
                     {results.map((row) => (
-                        <tr key={row.driver.id}>
+                        <tr key={row.driver.id} className={styles.teamRow} style={{ '--team-color': links?.teamColors?.[row.team?.name] || 'var(--text-3)' }}>
                             <th scope="row" className={styles.pos}><bdi dir="ltr">{row.positionText}</bdi></th>
                             <td><DriverName driver={row.driver} links={links} lang={lang} /></td>
                             <td><TeamName team={row.team} links={links} lang={lang} /></td>
@@ -120,6 +126,7 @@ export function ClassificationTable({ results, links, caption, lang }) {
 
 export function QualifyingTable({ results, links, caption, lang }) {
     const t = pick(raceMessages, lang);
+    const cutlines = qualifyingCutlinePositions(results);
     return (
         <div className={styles.tableScroll}>
             <table className={styles.table}>
@@ -129,22 +136,42 @@ export function QualifyingTable({ results, links, caption, lang }) {
                         <th scope="col">{t.position}</th>
                         <th scope="col">{t.driver}</th>
                         <th scope="col">{t.team}</th>
-                        <th scope="col">Q1</th>
-                        <th scope="col">Q2</th>
-                        <th scope="col">Q3</th>
+                        <th scope="col"><bdi dir="ltr">Q1</bdi></th>
+                        <th scope="col"><bdi dir="ltr">Q2</bdi></th>
+                        <th scope="col"><bdi dir="ltr">Q3</bdi></th>
+                        <th scope="col">{t.gapToPole}</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {results.map((row) => (
-                        <tr key={row.driver.id}>
-                            <th scope="row" className={styles.pos}><bdi dir="ltr">{formatNumber(lang, row.position)}</bdi></th>
-                            <td><DriverName driver={row.driver} links={links} lang={lang} /></td>
-                            <td><TeamName team={row.team} links={links} lang={lang} /></td>
-                            <td className={styles.mono}><bdi dir="ltr">{row.q1 || '—'}</bdi></td>
-                            <td className={styles.mono}><bdi dir="ltr">{row.q2 || '—'}</bdi></td>
-                            <td className={styles.mono}><bdi dir="ltr">{row.q3 || '—'}</bdi></td>
-                        </tr>
-                    ))}
+                    {results.map((row) => {
+                        const position = Number(row.position);
+                        const cut = position === cutlines.q1 ? 'q1' : position === cutlines.q2 ? 'q2' : null;
+                        const gap = gapToPoleSeconds(row, results);
+                        return (
+                            <Fragment key={row.driver.id}>
+                                {cut && (
+                                    <tr className={styles.cutLine}>
+                                        <td colSpan={7}>
+                                            {lang === 'ar'
+                                                ? <>{t.cutlineAfter} <bdi dir="ltr">{cut.toUpperCase()}</bdi></>
+                                                : <><bdi dir="ltr">{cut.toUpperCase()}</bdi> {t.cutline}</>}
+                                        </td>
+                                    </tr>
+                                )}
+                                <tr className={styles.teamRow} style={{ '--team-color': links?.teamColors?.[row.team?.name] || 'var(--text-3)' }}>
+                                    <th scope="row" className={styles.pos}><bdi dir="ltr">{formatNumber(lang, row.position)}</bdi></th>
+                                    <td><DriverName driver={row.driver} links={links} lang={lang} /></td>
+                                    <td><TeamName team={row.team} links={links} lang={lang} /></td>
+                                    <td className={styles.mono}><bdi dir="ltr">{row.q1 || '—'}</bdi></td>
+                                    <td className={styles.mono}><bdi dir="ltr">{row.q2 || '—'}</bdi></td>
+                                    <td className={styles.mono}><bdi dir="ltr">{row.q3 || '—'}</bdi></td>
+                                    <td className={styles.mono}>
+                                        {position === 1 ? t.pole : gap === null ? '—' : <bdi dir="ltr">+{formatNumber(lang, gap, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}</bdi>}
+                                    </td>
+                                </tr>
+                            </Fragment>
+                        );
+                    })}
                 </tbody>
             </table>
         </div>
