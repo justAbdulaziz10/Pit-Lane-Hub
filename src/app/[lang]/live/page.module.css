@@ -98,10 +98,26 @@
 }
 
 .countdown {
+    display: flex;
+    gap: var(--space-md);
+    justify-content: flex-end;
+    margin-block-start: var(--space-xs);
     color: var(--text-1);
     font-family: var(--font-display);
     font-size: 1.25rem;
     font-variant-numeric: tabular-nums;
+}
+
+.countdownUnit {
+    display: inline-flex;
+    gap: 0.25em;
+    align-items: baseline;
+}
+
+.countdownLabel {
+    color: var(--text-2);
+    font-family: var(--font-body);
+    font-size: 0.75rem;
 }
 
 .weather {
@@ -350,6 +366,10 @@
 
     .nextCountdown {
         text-align: start;
+    }
+
+    .countdown {
+        justify-content: flex-start;
     }
 
     .fullName,

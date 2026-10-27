@@ -184,7 +184,7 @@ export default function LiveTiming({ initial, lang, labels, nextSession, grandPr
                                 {phase === 'live' && <span className={styles.liveBadge}>{t.live}</span>}
                                 {phase === 'finished' && t.finalClassification}
                                 {phase === 'upcoming' && t.nextSession}
-                                {phase === 'none' && (authUnavailable ? t.authUnavailable : t.liveTiming)}
+                                {phase === 'none' && t.liveTiming}
                             </p>
                             <h1>
                                 {session ? (
@@ -225,7 +225,8 @@ export default function LiveTiming({ initial, lang, labels, nextSession, grandPr
             {phase !== 'live' && (
                 <section className={`container ${styles.stateBanner}`} aria-labelledby="state-heading">
                     <div className={styles.stateCopy}>
-                        <h2 id="state-heading">{t.noSessionRunning}</h2>
+                        {/* Without timing access we cannot tell whether a session is running. */}
+                        <h2 id="state-heading">{authUnavailable ? t.authUnavailable : t.noSessionRunning}</h2>
                         {authUnavailable && <p>{t.authUnavailableMessage}</p>}
                         {nextSession ? (
                             <p>
@@ -237,7 +238,13 @@ export default function LiveTiming({ initial, lang, labels, nextSession, grandPr
                     {nextSession && (
                         <div className={styles.nextCountdown}>
                             <p>{fill(t.countdownTo, { session: nextName })}</p>
-                            <Countdown target={nextSession.start} serverNow={serverNow} className={styles.countdown} />
+                            <Countdown
+                                target={nextSession.start}
+                                serverNow={serverNow}
+                                className={styles.countdown}
+                                unitClassName={styles.countdownUnit}
+                                labelClassName={styles.countdownLabel}
+                            />
                         </div>
                     )}
                 </section>

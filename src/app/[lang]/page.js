@@ -60,7 +60,7 @@ function NextRace({ race, serverNow, now, t, lang }) {
             </section>
         );
     }
-    const href = localePath(lang, race.meetingKey != null ? `/race/${race.meetingKey}` : '/schedule');
+    const href = localePath(lang, race.routeKey != null ? `/race/${race.routeKey}` : '/schedule');
     const sessions = getWeekendSessions(race);
     const nextSession = nextWeekendSession(race, now);
     const sessionText = nextSession ? sessionLabel(nextSession.label, lang) : null;
@@ -152,7 +152,7 @@ function recapFacts(results, numbers, t, lang) {
 
 function LastRace({ race, results, numbers, teamsById, t, lang }) {
     if (!race) return null;
-    const href = localePath(lang, race.meetingKey != null ? `/race/${race.meetingKey}` : '/schedule');
+    const href = localePath(lang, race.routeKey != null ? `/race/${race.routeKey}` : '/schedule');
     const podium = (results || []).filter((row) => row.position != null).slice(0, 3);
     return (
         <section className={`${styles.card} ${styles.recapCard}`} aria-labelledby="last-heading">
