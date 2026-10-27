@@ -1,0 +1,1022 @@
+{
+ "drivers": [
+  {
+   "year": 1950,
+   "driverId": "farina",
+   "code": null,
+   "firstName": "Nino",
+   "lastName": "Farina",
+   "nationality": "Italian"
+  },
+  {
+   "year": 1951,
+   "driverId": "fangio",
+   "code": null,
+   "firstName": "Juan",
+   "lastName": "Fangio",
+   "nationality": "Argentine"
+  },
+  {
+   "year": 1952,
+   "driverId": "ascari",
+   "code": null,
+   "firstName": "Alberto",
+   "lastName": "Ascari",
+   "nationality": "Italian"
+  },
+  {
+   "year": 1953,
+   "driverId": "ascari",
+   "code": null,
+   "firstName": "Alberto",
+   "lastName": "Ascari",
+   "nationality": "Italian"
+  },
+  {
+   "year": 1954,
+   "driverId": "fangio",
+   "code": null,
+   "firstName": "Juan",
+   "lastName": "Fangio",
+   "nationality": "Argentine"
+  },
+  {
+   "year": 1955,
+   "driverId": "fangio",
+   "code": null,
+   "firstName": "Juan",
+   "lastName": "Fangio",
+   "nationality": "Argentine"
+  },
+  {
+   "year": 1956,
+   "driverId": "fangio",
+   "code": null,
+   "firstName": "Juan",
+   "lastName": "Fangio",
+   "nationality": "Argentine"
+  },
+  {
+   "year": 1957,
+   "driverId": "fangio",
+   "code": null,
+   "firstName": "Juan",
+   "lastName": "Fangio",
+   "nationality": "Argentine"
+  },
+  {
+   "year": 1958,
+   "driverId": "hawthorn",
+   "code": null,
+   "firstName": "Mike",
+   "lastName": "Hawthorn",
+   "nationality": "British"
+  },
+  {
+   "year": 1959,
+   "driverId": "jack_brabham",
+   "code": null,
+   "firstName": "Jack",
+   "lastName": "Brabham",
+   "nationality": "Australian"
+  },
+  {
+   "year": 1960,
+   "driverId": "jack_brabham",
+   "code": null,
+   "firstName": "Jack",
+   "lastName": "Brabham",
+   "nationality": "Australian"
+  },
+  {
+   "year": 1961,
+   "driverId": "phil_hill",
+   "code": null,
+   "firstName": "Phil",
+   "lastName": "Hill",
+   "nationality": "American"
+  },
+  {
+   "year": 1962,
+   "driverId": "hill",
+   "code": null,
+   "firstName": "Graham",
+   "lastName": "Hill",
+   "nationality": "British"
+  },
+  {
+   "year": 1963,
+   "driverId": "clark",
+   "code": null,
+   "firstName": "Jim",
+   "lastName": "Clark",
+   "nationality": "British"
+  },
+  {
+   "year": 1964,
+   "driverId": "surtees",
+   "code": null,
+   "firstName": "John",
+   "lastName": "Surtees",
+   "nationality": "British"
+  },
+  {
+   "year": 1965,
+   "driverId": "clark",
+   "code": null,
+   "firstName": "Jim",
+   "lastName": "Clark",
+   "nationality": "British"
+  },
+  {
+   "year": 1966,
+   "driverId": "jack_brabham",
+   "code": null,
+   "firstName": "Jack",
+   "lastName": "Brabham",
+   "nationality": "Australian"
+  },
+  {
+   "year": 1967,
+   "driverId": "hulme",
+   "code": null,
+   "firstName": "Denny",
+   "lastName": "Hulme",
+   "nationality": "New Zealander"
+  },
+  {
+   "year": 1968,
+   "driverId": "hill",
+   "code": null,
+   "firstName": "Graham",
+   "lastName": "Hill",
+   "nationality": "British"
+  },
+  {
+   "year": 1969,
+   "driverId": "stewart",
+   "code": null,
+   "firstName": "Jackie",
+   "lastName": "Stewart",
+   "nationality": "British"
+  },
+  {
+   "year": 1970,
+   "driverId": "rindt",
+   "code": null,
+   "firstName": "Jochen",
+   "lastName": "Rindt",
+   "nationality": "Austrian"
+  },
+  {
+   "year": 1971,
+   "driverId": "stewart",
+   "code": null,
+   "firstName": "Jackie",
+   "lastName": "Stewart",
+   "nationality": "British"
+  },
+  {
+   "year": 1972,
+   "driverId": "emerson_fittipaldi",
+   "code": null,
+   "firstName": "Emerson",
+   "lastName": "Fittipaldi",
+   "nationality": "Brazilian"
+  },
+  {
+   "year": 1973,
+   "driverId": "stewart",
+   "code": null,
+   "firstName": "Jackie",
+   "lastName": "Stewart",
+   "nationality": "British"
+  },
+  {
+   "year": 1974,
+   "driverId": "emerson_fittipaldi",
+   "code": null,
+   "firstName": "Emerson",
+   "lastName": "Fittipaldi",
+   "nationality": "Brazilian"
+  },
+  {
+   "year": 1975,
+   "driverId": "lauda",
+   "code": null,
+   "firstName": "Niki",
+   "lastName": "Lauda",
+   "nationality": "Austrian"
+  },
+  {
+   "year": 1976,
+   "driverId": "hunt",
+   "code": null,
+   "firstName": "James",
+   "lastName": "Hunt",
+   "nationality": "British"
+  },
+  {
+   "year": 1977,
+   "driverId": "lauda",
+   "code": null,
+   "firstName": "Niki",
+   "lastName": "Lauda",
+   "nationality": "Austrian"
+  },
+  {
+   "year": 1978,
+   "driverId": "mario_andretti",
+   "code": null,
+   "firstName": "Mario",
+   "lastName": "Andretti",
+   "nationality": "American"
+  },
+  {
+   "year": 1979,
+   "driverId": "scheckter",
+   "code": null,
+   "firstName": "Jody",
+   "lastName": "Scheckter",
+   "nationality": "South African"
+  },
+  {
+   "year": 1980,
+   "driverId": "jones",
+   "code": null,
+   "firstName": "Alan",
+   "lastName": "Jones",
+   "nationality": "Australian"
+  },
+  {
+   "year": 1981,
+   "driverId": "piquet",
+   "code": null,
+   "firstName": "Nelson",
+   "lastName": "Piquet",
+   "nationality": "Brazilian"
+  },
+  {
+   "year": 1982,
+   "driverId": "keke_rosberg",
+   "code": null,
+   "firstName": "Keke",
+   "lastName": "Rosberg",
+   "nationality": "Finnish"
+  },
+  {
+   "year": 1983,
+   "driverId": "piquet",
+   "code": null,
+   "firstName": "Nelson",
+   "lastName": "Piquet",
+   "nationality": "Brazilian"
+  },
+  {
+   "year": 1984,
+   "driverId": "lauda",
+   "code": null,
+   "firstName": "Niki",
+   "lastName": "Lauda",
+   "nationality": "Austrian"
+  },
+  {
+   "year": 1985,
+   "driverId": "prost",
+   "code": null,
+   "firstName": "Alain",
+   "lastName": "Prost",
+   "nationality": "French"
+  },
+  {
+   "year": 1986,
+   "driverId": "prost",
+   "code": null,
+   "firstName": "Alain",
+   "lastName": "Prost",
+   "nationality": "French"
+  },
+  {
+   "year": 1987,
+   "driverId": "piquet",
+   "code": null,
+   "firstName": "Nelson",
+   "lastName": "Piquet",
+   "nationality": "Brazilian"
+  },
+  {
+   "year": 1988,
+   "driverId": "senna",
+   "code": null,
+   "firstName": "Ayrton",
+   "lastName": "Senna",
+   "nationality": "Brazilian"
+  },
+  {
+   "year": 1989,
+   "driverId": "prost",
+   "code": null,
+   "firstName": "Alain",
+   "lastName": "Prost",
+   "nationality": "French"
+  },
+  {
+   "year": 1990,
+   "driverId": "senna",
+   "code": null,
+   "firstName": "Ayrton",
+   "lastName": "Senna",
+   "nationality": "Brazilian"
+  },
+  {
+   "year": 1991,
+   "driverId": "senna",
+   "code": null,
+   "firstName": "Ayrton",
+   "lastName": "Senna",
+   "nationality": "Brazilian"
+  },
+  {
+   "year": 1992,
+   "driverId": "mansell",
+   "code": null,
+   "firstName": "Nigel",
+   "lastName": "Mansell",
+   "nationality": "British"
+  },
+  {
+   "year": 1993,
+   "driverId": "prost",
+   "code": null,
+   "firstName": "Alain",
+   "lastName": "Prost",
+   "nationality": "French"
+  },
+  {
+   "year": 1994,
+   "driverId": "michael_schumacher",
+   "code": "MSC",
+   "firstName": "Michael",
+   "lastName": "Schumacher",
+   "nationality": "German"
+  },
+  {
+   "year": 1995,
+   "driverId": "michael_schumacher",
+   "code": "MSC",
+   "firstName": "Michael",
+   "lastName": "Schumacher",
+   "nationality": "German"
+  },
+  {
+   "year": 1996,
+   "driverId": "damon_hill",
+   "code": null,
+   "firstName": "Damon",
+   "lastName": "Hill",
+   "nationality": "British"
+  },
+  {
+   "year": 1997,
+   "driverId": "villeneuve",
+   "code": "VIL",
+   "firstName": "Jacques",
+   "lastName": "Villeneuve",
+   "nationality": "Canadian"
+  },
+  {
+   "year": 1998,
+   "driverId": "hakkinen",
+   "code": null,
+   "firstName": "Mika",
+   "lastName": "Häkkinen",
+   "nationality": "Finnish"
+  },
+  {
+   "year": 1999,
+   "driverId": "hakkinen",
+   "code": null,
+   "firstName": "Mika",
+   "lastName": "Häkkinen",
+   "nationality": "Finnish"
+  },
+  {
+   "year": 2000,
+   "driverId": "michael_schumacher",
+   "code": "MSC",
+   "firstName": "Michael",
+   "lastName": "Schumacher",
+   "nationality": "German"
+  },
+  {
+   "year": 2001,
+   "driverId": "michael_schumacher",
+   "code": "MSC",
+   "firstName": "Michael",
+   "lastName": "Schumacher",
+   "nationality": "German"
+  },
+  {
+   "year": 2002,
+   "driverId": "michael_schumacher",
+   "code": "MSC",
+   "firstName": "Michael",
+   "lastName": "Schumacher",
+   "nationality": "German"
+  },
+  {
+   "year": 2003,
+   "driverId": "michael_schumacher",
+   "code": "MSC",
+   "firstName": "Michael",
+   "lastName": "Schumacher",
+   "nationality": "German"
+  },
+  {
+   "year": 2004,
+   "driverId": "michael_schumacher",
+   "code": "MSC",
+   "firstName": "Michael",
+   "lastName": "Schumacher",
+   "nationality": "German"
+  },
+  {
+   "year": 2005,
+   "driverId": "alonso",
+   "code": "ALO",
+   "firstName": "Fernando",
+   "lastName": "Alonso",
+   "nationality": "Spanish"
+  },
+  {
+   "year": 2006,
+   "driverId": "alonso",
+   "code": "ALO",
+   "firstName": "Fernando",
+   "lastName": "Alonso",
+   "nationality": "Spanish"
+  },
+  {
+   "year": 2007,
+   "driverId": "raikkonen",
+   "code": "RAI",
+   "firstName": "Kimi",
+   "lastName": "Räikkönen",
+   "nationality": "Finnish"
+  },
+  {
+   "year": 2008,
+   "driverId": "hamilton",
+   "code": "HAM",
+   "firstName": "Lewis",
+   "lastName": "Hamilton",
+   "nationality": "British"
+  },
+  {
+   "year": 2009,
+   "driverId": "button",
+   "code": "BUT",
+   "firstName": "Jenson",
+   "lastName": "Button",
+   "nationality": "British"
+  },
+  {
+   "year": 2010,
+   "driverId": "vettel",
+   "code": "VET",
+   "firstName": "Sebastian",
+   "lastName": "Vettel",
+   "nationality": "German"
+  },
+  {
+   "year": 2011,
+   "driverId": "vettel",
+   "code": "VET",
+   "firstName": "Sebastian",
+   "lastName": "Vettel",
+   "nationality": "German"
+  },
+  {
+   "year": 2012,
+   "driverId": "vettel",
+   "code": "VET",
+   "firstName": "Sebastian",
+   "lastName": "Vettel",
+   "nationality": "German"
+  },
+  {
+   "year": 2013,
+   "driverId": "vettel",
+   "code": "VET",
+   "firstName": "Sebastian",
+   "lastName": "Vettel",
+   "nationality": "German"
+  },
+  {
+   "year": 2014,
+   "driverId": "hamilton",
+   "code": "HAM",
+   "firstName": "Lewis",
+   "lastName": "Hamilton",
+   "nationality": "British"
+  },
+  {
+   "year": 2015,
+   "driverId": "hamilton",
+   "code": "HAM",
+   "firstName": "Lewis",
+   "lastName": "Hamilton",
+   "nationality": "British"
+  },
+  {
+   "year": 2016,
+   "driverId": "rosberg",
+   "code": "ROS",
+   "firstName": "Nico",
+   "lastName": "Rosberg",
+   "nationality": "German"
+  },
+  {
+   "year": 2017,
+   "driverId": "hamilton",
+   "code": "HAM",
+   "firstName": "Lewis",
+   "lastName": "Hamilton",
+   "nationality": "British"
+  },
+  {
+   "year": 2018,
+   "driverId": "hamilton",
+   "code": "HAM",
+   "firstName": "Lewis",
+   "lastName": "Hamilton",
+   "nationality": "British"
+  },
+  {
+   "year": 2019,
+   "driverId": "hamilton",
+   "code": "HAM",
+   "firstName": "Lewis",
+   "lastName": "Hamilton",
+   "nationality": "British"
+  },
+  {
+   "year": 2020,
+   "driverId": "hamilton",
+   "code": "HAM",
+   "firstName": "Lewis",
+   "lastName": "Hamilton",
+   "nationality": "British"
+  },
+  {
+   "year": 2021,
+   "driverId": "max_verstappen",
+   "code": "VER",
+   "firstName": "Max",
+   "lastName": "Verstappen",
+   "nationality": "Dutch"
+  },
+  {
+   "year": 2022,
+   "driverId": "max_verstappen",
+   "code": "VER",
+   "firstName": "Max",
+   "lastName": "Verstappen",
+   "nationality": "Dutch"
+  },
+  {
+   "year": 2023,
+   "driverId": "max_verstappen",
+   "code": "VER",
+   "firstName": "Max",
+   "lastName": "Verstappen",
+   "nationality": "Dutch"
+  },
+  {
+   "year": 2024,
+   "driverId": "max_verstappen",
+   "code": "VER",
+   "firstName": "Max",
+   "lastName": "Verstappen",
+   "nationality": "Dutch"
+  },
+  {
+   "year": 2025,
+   "driverId": "norris",
+   "code": "NOR",
+   "firstName": "Lando",
+   "lastName": "Norris",
+   "nationality": "British"
+  }
+ ],
+ "constructors": [
+  {
+   "year": 1958,
+   "constructorId": "vanwall",
+   "name": "Vanwall",
+   "nationality": "British"
+  },
+  {
+   "year": 1959,
+   "constructorId": "cooper-climax",
+   "name": "Cooper-Climax",
+   "nationality": "British"
+  },
+  {
+   "year": 1960,
+   "constructorId": "cooper-climax",
+   "name": "Cooper-Climax",
+   "nationality": "British"
+  },
+  {
+   "year": 1961,
+   "constructorId": "ferrari",
+   "name": "Ferrari",
+   "nationality": "Italian"
+  },
+  {
+   "year": 1962,
+   "constructorId": "brm",
+   "name": "BRM",
+   "nationality": "British"
+  },
+  {
+   "year": 1963,
+   "constructorId": "lotus-climax",
+   "name": "Lotus-Climax",
+   "nationality": "British"
+  },
+  {
+   "year": 1964,
+   "constructorId": "ferrari",
+   "name": "Ferrari",
+   "nationality": "Italian"
+  },
+  {
+   "year": 1965,
+   "constructorId": "lotus-climax",
+   "name": "Lotus-Climax",
+   "nationality": "British"
+  },
+  {
+   "year": 1966,
+   "constructorId": "brabham-repco",
+   "name": "Brabham-Repco",
+   "nationality": "British"
+  },
+  {
+   "year": 1967,
+   "constructorId": "brabham-repco",
+   "name": "Brabham-Repco",
+   "nationality": "British"
+  },
+  {
+   "year": 1968,
+   "constructorId": "lotus-ford",
+   "name": "Lotus-Ford",
+   "nationality": "British"
+  },
+  {
+   "year": 1969,
+   "constructorId": "matra-ford",
+   "name": "Matra-Ford",
+   "nationality": "French"
+  },
+  {
+   "year": 1970,
+   "constructorId": "team_lotus",
+   "name": "Team Lotus",
+   "nationality": "British"
+  },
+  {
+   "year": 1971,
+   "constructorId": "tyrrell",
+   "name": "Tyrrell",
+   "nationality": "British"
+  },
+  {
+   "year": 1972,
+   "constructorId": "team_lotus",
+   "name": "Team Lotus",
+   "nationality": "British"
+  },
+  {
+   "year": 1973,
+   "constructorId": "team_lotus",
+   "name": "Team Lotus",
+   "nationality": "British"
+  },
+  {
+   "year": 1974,
+   "constructorId": "mclaren",
+   "name": "McLaren",
+   "nationality": "British"
+  },
+  {
+   "year": 1975,
+   "constructorId": "ferrari",
+   "name": "Ferrari",
+   "nationality": "Italian"
+  },
+  {
+   "year": 1976,
+   "constructorId": "ferrari",
+   "name": "Ferrari",
+   "nationality": "Italian"
+  },
+  {
+   "year": 1977,
+   "constructorId": "ferrari",
+   "name": "Ferrari",
+   "nationality": "Italian"
+  },
+  {
+   "year": 1978,
+   "constructorId": "team_lotus",
+   "name": "Team Lotus",
+   "nationality": "British"
+  },
+  {
+   "year": 1979,
+   "constructorId": "ferrari",
+   "name": "Ferrari",
+   "nationality": "Italian"
+  },
+  {
+   "year": 1980,
+   "constructorId": "williams",
+   "name": "Williams",
+   "nationality": "British"
+  },
+  {
+   "year": 1981,
+   "constructorId": "williams",
+   "name": "Williams",
+   "nationality": "British"
+  },
+  {
+   "year": 1982,
+   "constructorId": "ferrari",
+   "name": "Ferrari",
+   "nationality": "Italian"
+  },
+  {
+   "year": 1983,
+   "constructorId": "ferrari",
+   "name": "Ferrari",
+   "nationality": "Italian"
+  },
+  {
+   "year": 1984,
+   "constructorId": "mclaren",
+   "name": "McLaren",
+   "nationality": "British"
+  },
+  {
+   "year": 1985,
+   "constructorId": "mclaren",
+   "name": "McLaren",
+   "nationality": "British"
+  },
+  {
+   "year": 1986,
+   "constructorId": "williams",
+   "name": "Williams",
+   "nationality": "British"
+  },
+  {
+   "year": 1987,
+   "constructorId": "williams",
+   "name": "Williams",
+   "nationality": "British"
+  },
+  {
+   "year": 1988,
+   "constructorId": "mclaren",
+   "name": "McLaren",
+   "nationality": "British"
+  },
+  {
+   "year": 1989,
+   "constructorId": "mclaren",
+   "name": "McLaren",
+   "nationality": "British"
+  },
+  {
+   "year": 1990,
+   "constructorId": "mclaren",
+   "name": "McLaren",
+   "nationality": "British"
+  },
+  {
+   "year": 1991,
+   "constructorId": "mclaren",
+   "name": "McLaren",
+   "nationality": "British"
+  },
+  {
+   "year": 1992,
+   "constructorId": "williams",
+   "name": "Williams",
+   "nationality": "British"
+  },
+  {
+   "year": 1993,
+   "constructorId": "williams",
+   "name": "Williams",
+   "nationality": "British"
+  },
+  {
+   "year": 1994,
+   "constructorId": "williams",
+   "name": "Williams",
+   "nationality": "British"
+  },
+  {
+   "year": 1995,
+   "constructorId": "benetton",
+   "name": "Benetton",
+   "nationality": "Italian"
+  },
+  {
+   "year": 1996,
+   "constructorId": "williams",
+   "name": "Williams",
+   "nationality": "British"
+  },
+  {
+   "year": 1997,
+   "constructorId": "williams",
+   "name": "Williams",
+   "nationality": "British"
+  },
+  {
+   "year": 1998,
+   "constructorId": "mclaren",
+   "name": "McLaren",
+   "nationality": "British"
+  },
+  {
+   "year": 1999,
+   "constructorId": "ferrari",
+   "name": "Ferrari",
+   "nationality": "Italian"
+  },
+  {
+   "year": 2000,
+   "constructorId": "ferrari",
+   "name": "Ferrari",
+   "nationality": "Italian"
+  },
+  {
+   "year": 2001,
+   "constructorId": "ferrari",
+   "name": "Ferrari",
+   "nationality": "Italian"
+  },
+  {
+   "year": 2002,
+   "constructorId": "ferrari",
+   "name": "Ferrari",
+   "nationality": "Italian"
+  },
+  {
+   "year": 2003,
+   "constructorId": "ferrari",
+   "name": "Ferrari",
+   "nationality": "Italian"
+  },
+  {
+   "year": 2004,
+   "constructorId": "ferrari",
+   "name": "Ferrari",
+   "nationality": "Italian"
+  },
+  {
+   "year": 2005,
+   "constructorId": "renault",
+   "name": "Renault",
+   "nationality": "French"
+  },
+  {
+   "year": 2006,
+   "constructorId": "renault",
+   "name": "Renault",
+   "nationality": "French"
+  },
+  {
+   "year": 2007,
+   "constructorId": "ferrari",
+   "name": "Ferrari",
+   "nationality": "Italian"
+  },
+  {
+   "year": 2008,
+   "constructorId": "ferrari",
+   "name": "Ferrari",
+   "nationality": "Italian"
+  },
+  {
+   "year": 2009,
+   "constructorId": "brawn",
+   "name": "Brawn",
+   "nationality": "British"
+  },
+  {
+   "year": 2010,
+   "constructorId": "red_bull",
+   "name": "Red Bull",
+   "nationality": "Austrian"
+  },
+  {
+   "year": 2011,
+   "constructorId": "red_bull",
+   "name": "Red Bull",
+   "nationality": "Austrian"
+  },
+  {
+   "year": 2012,
+   "constructorId": "red_bull",
+   "name": "Red Bull",
+   "nationality": "Austrian"
+  },
+  {
+   "year": 2013,
+   "constructorId": "red_bull",
+   "name": "Red Bull",
+   "nationality": "Austrian"
+  },
+  {
+   "year": 2014,
+   "constructorId": "mercedes",
+   "name": "Mercedes",
+   "nationality": "German"
+  },
+  {
+   "year": 2015,
+   "constructorId": "mercedes",
+   "name": "Mercedes",
+   "nationality": "German"
+  },
+  {
+   "year": 2016,
+   "constructorId": "mercedes",
+   "name": "Mercedes",
+   "nationality": "German"
+  },
+  {
+   "year": 2017,
+   "constructorId": "mercedes",
+   "name": "Mercedes",
+   "nationality": "German"
+  },
+  {
+   "year": 2018,
+   "constructorId": "mercedes",
+   "name": "Mercedes",
+   "nationality": "German"
+  },
+  {
+   "year": 2019,
+   "constructorId": "mercedes",
+   "name": "Mercedes",
+   "nationality": "German"
+  },
+  {
+   "year": 2020,
+   "constructorId": "mercedes",
+   "name": "Mercedes",
+   "nationality": "German"
+  },
+  {
+   "year": 2021,
+   "constructorId": "mercedes",
+   "name": "Mercedes",
+   "nationality": "German"
+  },
+  {
+   "year": 2022,
+   "constructorId": "red_bull",
+   "name": "Red Bull",
+   "nationality": "Austrian"
+  },
+  {
+   "year": 2023,
+   "constructorId": "red_bull",
+   "name": "Red Bull",
+   "nationality": "Austrian"
+  },
+  {
+   "year": 2024,
+   "constructorId": "mclaren",
+   "name": "McLaren",
+   "nationality": "British"
+  },
+  {
+   "year": 2025,
+   "constructorId": "mclaren",
+   "name": "McLaren",
+   "nationality": "British"
+  }
+ ]
+}

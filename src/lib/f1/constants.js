@@ -4,7 +4,7 @@
 export const CURRENT_YEAR = new Date().getFullYear();
 
 export function getCurrentYear() {
-    return CURRENT_YEAR;
+    return new Date().getFullYear();
 }
 
 // Hardcoded nationalities for the current grid as a fallback when OpenF1 omits

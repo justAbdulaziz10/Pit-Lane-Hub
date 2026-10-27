@@ -1,4 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+
+vi.mock('next/cache', () => ({ unstable_cache: (callback) => callback }));
+
 import {
     getConstructorInfo,
     getConstructorSeasonResults,
@@ -10,11 +13,23 @@ import {
     getSeasonDrivers,
     resolveErgastId,
 } from '@/lib/f1/ergast';
+import { UpstreamError } from '@/lib/f1/http';
 
-function mockFetchOnce(payload, ok = true) {
+function inferTotal(payload) {
+    const mrData = payload?.MRData;
+    if (!mrData || mrData.total != null) return payload;
+    const rows = mrData.DriverTable?.Drivers
+        || mrData.ConstructorTable?.Constructors
+        || mrData.RaceTable?.Races
+        || mrData.StandingsTable?.StandingsLists
+        || [];
+    return { ...payload, MRData: { ...mrData, total: String(rows.length) } };
+}
+
+function mockFetchOnce(payload, ok = true, status = ok ? 200 : 404) {
     vi.stubGlobal(
         'fetch',
-        vi.fn().mockResolvedValue({ ok, json: async () => payload })
+        vi.fn().mockResolvedValue({ ok, status, headers: { get: () => null }, json: async () => inferTotal(payload) })
     );
 }
 
@@ -37,7 +52,7 @@ describe('getDriverStandings', () => {
                                     Driver: {
                                         driverId: 'max_verstappen',
                                         code: 'VER',
-                                        permanentNumber: '1',
+                                        permanentNumber: '3',
                                         givenName: 'Max',
                                         familyName: 'Verstappen',
                                         nationality: 'Dutch',
@@ -62,40 +77,46 @@ describe('getDriverStandings', () => {
         });
     });
 
-    it('returns an empty array on failure', async () => {
+    it('throws a typed error on failure', async () => {
         mockFetchOnce(null, false);
-        expect(await getDriverStandings()).toEqual([]);
+        await expect(getDriverStandings()).rejects.toBeInstanceOf(UpstreamError);
     });
 });
 
 describe('getDriverCareerStats', () => {
-    it('counts wins, podiums, poles and fastest laps from race results', async () => {
-        mockFetchOnce({
-            MRData: {
-                RaceTable: {
-                    Races: [
-                        { Results: [{ position: '1', grid: '1', points: '25', FastestLap: { rank: '1' }, status: 'Finished' }] },
-                        { Results: [{ position: '3', grid: '4', points: '15', status: 'Finished' }] },
-                        { Results: [{ position: '18', grid: '10', points: '0', status: 'Accident' }] },
-                    ],
-                },
-            },
-        });
+    it('keeps the legacy shape and derives totals from MRData totals', async () => {
+        const totals = { results: 251, 'results/1': 73, 'results/2': 40, 'results/3': 24, 'grid/1/results': 50, 'fastest/1/results': 38, seasons: 12 };
+        vi.stubGlobal('fetch', vi.fn(async (input) => {
+            const url = new URL(input);
+            const match = url.pathname.match(/drivers\/max_verstappen\/(.+)\.json$/);
+            const races = url.pathname.match(/\/(\d{4})\/races\.json$/);
+            if (races) return { ok: true, status: 200, headers: { get: () => null }, json: async () => ({ MRData: { total: '0', RaceTable: { Races: [] } } }) };
+            if (url.hostname === 'api.openf1.org') return { ok: true, status: 200, headers: { get: () => null }, json: async () => [] };
+            const total = totals[match?.[1]];
+            if (total == null) throw new Error(`Unexpected request ${url}`);
+            return { ok: true, status: 200, headers: { get: () => null }, json: async () => ({ MRData: { total: String(total) } }) };
+        }));
 
         const stats = await getDriverCareerStats('max_verstappen');
-        expect(stats.totalRaces).toBe(3);
-        expect(stats.wins).toBe(1);
-        expect(stats.podiums).toBe(2);
-        expect(stats.poles).toBe(1);
-        expect(stats.fastestLaps).toBe(1);
-        expect(stats.dnfs).toBe(1);
-        expect(stats.careerPoints).toBe(40);
-        expect(stats.championships).toBe(4); // from DRIVER_TITLES
+
+        expect(stats).toEqual({
+            totalRaces: 251,
+            wins: 73,
+            podiums: 137,
+            poles: 50,
+            fastestLaps: 38,
+            championships: 4,
+            seasons: 12,
+        });
     });
 
-    it('returns null on failure', async () => {
-        mockFetchOnce(null, false);
-        expect(await getDriverCareerStats('nobody')).toBeNull();
+    it('rejects ids that are not Jolpica driver ids', async () => {
+        await expect(getDriverCareerStats('../../etc')).rejects.toBeInstanceOf(TypeError);
+    });
+
+    it('throws a typed error on failure', async () => {
+        mockFetchOnce({}, false, 500);
+        await expect(getDriverCareerStats('nobody')).rejects.toBeInstanceOf(UpstreamError);
     });
 });
 
@@ -173,8 +194,8 @@ describe('getSeasonDrivers + resolveErgastId', () => {
         MRData: {
             DriverTable: {
                 Drivers: [
-                    { driverId: 'max_verstappen', code: 'VER', permanentNumber: '1', givenName: 'Max', familyName: 'Verstappen', nationality: 'Dutch' },
-                    { driverId: 'norris', code: 'NOR', permanentNumber: '4', givenName: 'Lando', familyName: 'Norris', nationality: 'British' },
+                    { driverId: 'norris', code: 'NOR', permanentNumber: '1', givenName: 'Lando', familyName: 'Norris', nationality: 'British' },
+                    { driverId: 'max_verstappen', code: 'VER', permanentNumber: '3', givenName: 'Max', familyName: 'Verstappen', nationality: 'Dutch' },
                 ],
             },
         },
@@ -184,17 +205,19 @@ describe('getSeasonDrivers + resolveErgastId', () => {
         mockFetchOnce(payload);
         const drivers = await getSeasonDrivers(2026);
         expect(drivers).toHaveLength(2);
-        expect(drivers[0]).toMatchObject({ id: 'max_verstappen', number: 1 });
+        expect(drivers[0]).toMatchObject({ id: 'norris', number: 1 });
     });
 
     it('resolves an Ergast id from a driver number', async () => {
         mockFetchOnce(payload);
-        expect(await resolveErgastId(4, {})).toBe('norris');
+        expect(await resolveErgastId(1, {})).toBe('norris');
+        mockFetchOnce(payload);
+        expect(await resolveErgastId(3, {})).toBe('max_verstappen');
     });
 
-    it('falls back to the static map when not in the live list', async () => {
+    it('does not guess from a stale number map when absent from the live list', async () => {
         mockFetchOnce({ MRData: { DriverTable: { Drivers: [] } } });
-        expect(await resolveErgastId(44, { 44: 'hamilton' })).toBe('hamilton');
+        expect(await resolveErgastId(44, { 44: 'hamilton' })).toBeNull();
     });
 });
 

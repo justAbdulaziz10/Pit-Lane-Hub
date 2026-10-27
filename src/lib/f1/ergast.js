@@ -1,422 +1,262 @@
-// Ergast API for historical F1 data (standings, results, career stats).
-// Using the Jolpica mirror because the original Ergast is deprecated and blocks Vercel.
-import { DRIVER_TITLES } from './constants';
+import { getCareerStats } from './career';
+import {
+    F1_CACHE_TAGS,
+    fetchJolpicaPages,
+    UpstreamError,
+} from './http';
+import { getCurrentYear } from './constants';
 
-const ERGAST_URL = 'https://api.jolpi.ca/ergast/f1';
+function standingsLists(mrData) {
+    return mrData?.StandingsTable?.StandingsLists || [];
+}
+function latestStandings(lists) {
+    return [...lists].sort((a, b) => Number(b.round) - Number(a.round))[0];
+}
 
-/**
- * Fetch driver standings from Ergast.
- * @param {number|null} year - Season year (defaults to current).
- */
+function raceRows(mrData) {
+    return mrData?.RaceTable?.Races || [];
+}
+
+function driverRows(mrData) {
+    return mrData?.DriverTable?.Drivers || [];
+}
+
+function constructorRows(mrData) {
+    return mrData?.ConstructorTable?.Constructors || [];
+}
+
+async function getList(path, select, revalidate = 300, tags = []) {
+    return fetchJolpicaPages(path, { select, revalidate, tags });
+}
+
+function mapDriver(driver) {
+    return {
+        id: driver.driverId,
+        code: driver.code || null,
+        number: driver.permanentNumber ? Number(driver.permanentNumber) : null,
+        firstName: driver.givenName || '',
+        lastName: driver.familyName || '',
+        nationality: driver.nationality || null,
+    };
+}
+
+/** Fetch driver standings from Jolpica. */
 export async function getDriverStandings(year = null) {
-    try {
-        const seasonYear = year || 'current';
-        const response = await fetch(`${ERGAST_URL}/${seasonYear}/driverStandings.json`, {
-            next: { revalidate: 300 },
-        });
-        if (!response.ok) throw new Error('Failed to fetch driver standings');
-        const data = await response.json();
-        const standings = data?.MRData?.StandingsTable?.StandingsLists?.[0]?.DriverStandings || [];
-        return standings.map((s) => ({
-            position: parseInt(s.position),
-            points: parseFloat(s.points),
-            wins: parseInt(s.wins),
-            driver: {
-                id: s.Driver.driverId,
-                code: s.Driver.code,
-                number: s.Driver.permanentNumber,
-                firstName: s.Driver.givenName,
-                lastName: s.Driver.familyName,
-                nationality: s.Driver.nationality,
-            },
-            team: {
-                id: s.Constructors?.[0]?.constructorId,
-                name: s.Constructors?.[0]?.name,
-                nationality: s.Constructors?.[0]?.nationality,
-            },
-        }));
-    } catch (error) {
-        console.error('Error fetching driver standings:', error);
-        return [];
-    }
-}
-
-/**
- * Fetch constructor standings from Ergast.
- * @param {number|null} year - Season year (defaults to current).
- */
-export async function getConstructorStandings(year = null) {
-    try {
-        const seasonYear = year || 'current';
-        const response = await fetch(`${ERGAST_URL}/${seasonYear}/constructorStandings.json`, {
-            next: { revalidate: 300 },
-        });
-        if (!response.ok) throw new Error('Failed to fetch constructor standings');
-        const data = await response.json();
-        const standings = data?.MRData?.StandingsTable?.StandingsLists?.[0]?.ConstructorStandings || [];
-        return standings.map((s) => ({
-            position: parseInt(s.position),
-            points: parseFloat(s.points),
-            wins: parseInt(s.wins),
-            team: {
-                id: s.Constructor.constructorId,
-                name: s.Constructor.name,
-                nationality: s.Constructor.nationality,
-            },
-        }));
-    } catch (error) {
-        console.error('Error fetching constructor standings:', error);
-        return [];
-    }
-}
-
-/**
- * Fetch race results from Ergast.
- * @param {number|null} year - Season year (defaults to current).
- * @param {number|null} round - Race round number (defaults to last).
- */
-export async function getRaceResults(year = null, round = null) {
-    try {
-        const seasonYear = year || 'current';
-        const roundPath = round ? `/${round}` : '/last';
-        const response = await fetch(`${ERGAST_URL}/${seasonYear}${roundPath}/results.json`, {
-            next: { revalidate: 300 },
-        });
-        if (!response.ok) throw new Error('Failed to fetch race results');
-        const data = await response.json();
-        const race = data?.MRData?.RaceTable?.Races?.[0];
-        if (!race) return null;
-
-        return {
-            season: race.season,
-            round: parseInt(race.round),
-            raceName: race.raceName,
-            circuit: {
-                id: race.Circuit.circuitId,
-                name: race.Circuit.circuitName,
-                location: race.Circuit.Location.locality,
-                country: race.Circuit.Location.country,
-            },
-            date: race.date,
-            results: race.Results.map((r) => ({
-                position: parseInt(r.position),
-                number: r.Driver.permanentNumber,
-                driver: {
-                    id: r.Driver.driverId,
-                    code: r.Driver.code,
-                    firstName: r.Driver.givenName,
-                    lastName: r.Driver.familyName,
-                },
-                team: r.Constructor.name,
-                grid: parseInt(r.grid),
-                laps: parseInt(r.laps),
-                status: r.status,
-                time: r.Time?.time || null,
-                points: parseFloat(r.points),
-                fastestLap: r.FastestLap
-                    ? {
-                          rank: parseInt(r.FastestLap.rank),
-                          lap: parseInt(r.FastestLap.lap),
-                          time: r.FastestLap.Time?.time,
-                          avgSpeed: r.FastestLap.AverageSpeed?.speed,
-                      }
-                    : null,
-            })),
-        };
-    } catch (error) {
-        console.error('Error fetching race results:', error);
-        return null;
-    }
-}
-
-/**
- * Fetch the full race calendar for a season, including session times when
- * Ergast provides them (sprint, qualifying, practices).
- * @param {number|null} year - Season year (defaults to current).
- */
-export async function getSchedule(year = null) {
-    try {
-        const seasonYear = year || 'current';
-        const response = await fetch(`${ERGAST_URL}/${seasonYear}/races.json?limit=100`, {
-            next: { revalidate: 3600 },
-        });
-        if (!response.ok) throw new Error('Failed to fetch schedule');
-        const data = await response.json();
-        const races = data?.MRData?.RaceTable?.Races || [];
-        return races.map((race) => ({
-            season: race.season,
-            round: parseInt(race.round),
-            raceName: race.raceName,
-            circuit: {
-                id: race.Circuit.circuitId,
-                name: race.Circuit.circuitName,
-                location: race.Circuit.Location?.locality,
-                country: race.Circuit.Location?.country,
-            },
-            date: race.date,
-            time: race.time || null,
-            hasSprint: Boolean(race.Sprint),
-            sessions: {
-                firstPractice: race.FirstPractice || null,
-                secondPractice: race.SecondPractice || null,
-                thirdPractice: race.ThirdPractice || null,
-                qualifying: race.Qualifying || null,
-                sprint: race.Sprint || null,
-                sprintQualifying: race.SprintQualifying || null,
-            },
-        }));
-    } catch (error) {
-        console.error('Error fetching schedule:', error);
-        return [];
-    }
-}
-
-/**
- * Fetch qualifying results for a given race.
- * @param {number|string} year
- * @param {number} round
- */
-export async function getQualifyingResults(year, round) {
-    try {
-        const response = await fetch(`${ERGAST_URL}/${year}/${round}/qualifying.json`, {
-            next: { revalidate: 3600 },
-        });
-        if (!response.ok) throw new Error('Failed to fetch qualifying');
-        const data = await response.json();
-        const race = data?.MRData?.RaceTable?.Races?.[0];
-        if (!race) return null;
-        return {
-            raceName: race.raceName,
-            round: parseInt(race.round),
-            results: (race.QualifyingResults || []).map((q) => ({
-                position: parseInt(q.position),
-                number: q.Driver.permanentNumber,
-                driver: {
-                    id: q.Driver.driverId,
-                    code: q.Driver.code,
-                    firstName: q.Driver.givenName,
-                    lastName: q.Driver.familyName,
-                },
-                team: q.Constructor.name,
-                q1: q.Q1 || null,
-                q2: q.Q2 || null,
-                q3: q.Q3 || null,
-            })),
-        };
-    } catch (error) {
-        console.error('Error fetching qualifying:', error);
-        return null;
-    }
-}
-
-/**
- * Fetch a driver's results for a single season (recent form).
- * @param {string} driverId - Ergast driver ID.
- * @param {number|null} year - Season year (defaults to current).
- */
-export async function getDriverSeasonResults(driverId, year = null) {
-    try {
-        const seasonYear = year || 'current';
-        const response = await fetch(
-            `${ERGAST_URL}/${seasonYear}/drivers/${driverId}/results.json?limit=100`,
-            { next: { revalidate: 3600 } }
-        );
-        if (!response.ok) throw new Error('Failed to fetch driver season results');
-        const data = await response.json();
-        const races = data?.MRData?.RaceTable?.Races || [];
-        return races.map((race) => {
-            const result = race.Results?.[0] || {};
-            return {
-                round: parseInt(race.round),
-                raceName: race.raceName,
-                country: race.Circuit?.Location?.country,
-                date: race.date,
-                position: result.position ? parseInt(result.position) : null,
-                grid: result.grid ? parseInt(result.grid) : null,
-                points: result.points ? parseFloat(result.points) : 0,
-                status: result.status || null,
-            };
-        });
-    } catch (error) {
-        console.error('Error fetching driver season results:', error);
-        return [];
-    }
-}
-
-/**
- * Fetch the list of drivers for a season (id, code, number) so we can map an
- * OpenF1 driver number to its Ergast id dynamically instead of hardcoding.
- * @param {number|null} year - Season year (defaults to current).
- */
-export async function getSeasonDrivers(year = null) {
-    try {
-        const seasonYear = year || 'current';
-        const response = await fetch(`${ERGAST_URL}/${seasonYear}/drivers.json?limit=100`, {
-            next: { revalidate: 86400 },
-        });
-        if (!response.ok) throw new Error('Failed to fetch season drivers');
-        const data = await response.json();
-        const drivers = data?.MRData?.DriverTable?.Drivers || [];
-        return drivers.map((d) => ({
-            id: d.driverId,
-            code: d.code,
-            number: d.permanentNumber ? parseInt(d.permanentNumber) : null,
-            firstName: d.givenName,
-            lastName: d.familyName,
-            nationality: d.nationality,
-        }));
-    } catch (error) {
-        console.error('Error fetching season drivers:', error);
-        return [];
-    }
-}
-
-/**
- * Resolve an Ergast driver id from an OpenF1 driver number, preferring live
- * season data and falling back to a static map for drivers not yet in Ergast.
- * @param {number|string} driverNumber
- * @param {Record<number, string>} fallbackMap
- * @returns {Promise<string|null>}
- */
-export async function resolveErgastId(driverNumber, fallbackMap = {}) {
-    const num = parseInt(driverNumber);
-    const seasonDrivers = await getSeasonDrivers();
-    const match = seasonDrivers.find((d) => d.number === num);
-    return match?.id || fallbackMap[num] || null;
-}
-
-/**
- * Fetch basic constructor (team) info.
- * @param {string} constructorId - Ergast constructor id (e.g. 'ferrari').
- */
-export async function getConstructorInfo(constructorId) {
-    try {
-        const response = await fetch(`${ERGAST_URL}/constructors/${constructorId}.json`, {
-            next: { revalidate: 86400 },
-        });
-        if (!response.ok) throw new Error('Failed to fetch constructor');
-        const data = await response.json();
-        const c = data?.MRData?.ConstructorTable?.Constructors?.[0];
-        if (!c) return null;
-        return { id: c.constructorId, name: c.name, nationality: c.nationality, url: c.url };
-    } catch (error) {
-        console.error('Error fetching constructor info:', error);
-        return null;
-    }
-}
-
-/**
- * Fetch the drivers who raced for a constructor in a season.
- * @param {string} constructorId
- * @param {number|null} year - defaults to current.
- */
-export async function getConstructorDrivers(constructorId, year = null) {
-    try {
-        const seasonYear = year || 'current';
-        const response = await fetch(
-            `${ERGAST_URL}/${seasonYear}/constructors/${constructorId}/drivers.json`,
-            { next: { revalidate: 86400 } }
-        );
-        if (!response.ok) throw new Error('Failed to fetch constructor drivers');
-        const data = await response.json();
-        const drivers = data?.MRData?.DriverTable?.Drivers || [];
-        return drivers.map((d) => ({
-            id: d.driverId,
-            code: d.code,
-            number: d.permanentNumber ? parseInt(d.permanentNumber) : null,
-            firstName: d.givenName,
-            lastName: d.familyName,
-            nationality: d.nationality,
-        }));
-    } catch (error) {
-        console.error('Error fetching constructor drivers:', error);
-        return [];
-    }
-}
-
-/**
- * Fetch a constructor's race-by-race results for a season (both cars combined).
- * @param {string} constructorId
- * @param {number|null} year - defaults to current.
- */
-export async function getConstructorSeasonResults(constructorId, year = null) {
-    try {
-        const seasonYear = year || 'current';
-        const response = await fetch(
-            `${ERGAST_URL}/${seasonYear}/constructors/${constructorId}/results.json?limit=100`,
-            { next: { revalidate: 3600 } }
-        );
-        if (!response.ok) throw new Error('Failed to fetch constructor results');
-        const data = await response.json();
-        const races = data?.MRData?.RaceTable?.Races || [];
-        return races.map((race) => {
-            const cars = (race.Results || []).map((r) => ({
-                code: r.Driver.code || r.Driver.familyName,
-                position: r.position ? parseInt(r.position) : null,
-                points: r.points ? parseFloat(r.points) : 0,
-                status: r.status || null,
-            }));
-            return {
-                round: parseInt(race.round),
-                raceName: race.raceName,
-                country: race.Circuit?.Location?.country,
-                date: race.date,
-                cars,
-                points: cars.reduce((sum, c) => sum + c.points, 0),
-            };
-        });
-    } catch (error) {
-        console.error('Error fetching constructor results:', error);
-        return [];
-    }
-}
-
-/**
- * Fetch a driver's career stats, computed from their full Ergast results.
- * @param {string} driverId - Ergast driver ID (e.g. 'max_verstappen').
- */
-export async function getDriverCareerStats(driverId) {
-    try {
-        const response = await fetch(`${ERGAST_URL}/drivers/${driverId}/results.json?limit=500`, {
-            next: { revalidate: 86400 },
-        });
-        if (!response.ok) throw new Error('Failed to fetch driver stats');
-        const data = await response.json();
-        const races = data?.MRData?.RaceTable?.Races || [];
-
-        let wins = 0;
-        let podiums = 0;
-        let poles = 0;
-        let fastestLaps = 0;
-        let dnfs = 0;
-        let careerPoints = 0;
-
-        races.forEach((race) => {
-            const result = race.Results?.[0];
-            if (!result) return;
-            const pos = parseInt(result.position);
-            if (pos === 1) wins++;
-            if (pos <= 3) podiums++;
-            if (parseInt(result.grid) === 1) poles++;
-            if (result.FastestLap?.rank === '1') fastestLaps++;
-            if (result.status && !result.status.includes('Lap') && result.status !== 'Finished') {
-                dnfs++;
+    const seasonYear = year || 'current';
+    const lists = await getList(`${seasonYear}/driverstandings`, standingsLists, 300, [F1_CACHE_TAGS.standings]);
+    return (latestStandings(lists)?.DriverStandings || []).map((standing) => ({
+        position: Number(standing.position),
+        points: Number(standing.points),
+        wins: Number(standing.wins),
+        driver: mapDriver(standing.Driver),
+        team: standing.Constructors?.[0]
+            ? {
+                id: standing.Constructors[0].constructorId,
+                name: standing.Constructors[0].name,
+                nationality: standing.Constructors[0].nationality || null,
             }
-            if (result.points) careerPoints += parseFloat(result.points);
-        });
+            : null,
+    }));
+}
 
+/** Fetch constructor standings from Jolpica. */
+export async function getConstructorStandings(year = null) {
+    const seasonYear = year || 'current';
+    const lists = await getList(`${seasonYear}/constructorstandings`, standingsLists, 300, [F1_CACHE_TAGS.standings]);
+    return (latestStandings(lists)?.ConstructorStandings || []).map((standing) => ({
+        position: Number(standing.position),
+        points: Number(standing.points),
+        wins: Number(standing.wins),
+        team: {
+            id: standing.Constructor.constructorId,
+            name: standing.Constructor.name,
+            nationality: standing.Constructor.nationality || null,
+        },
+    }));
+}
+
+function mapRaceResult(race) {
+    return {
+        season: race.season,
+        round: Number(race.round),
+        raceName: race.raceName,
+        circuit: {
+            id: race.Circuit?.circuitId,
+            name: race.Circuit?.circuitName,
+            location: race.Circuit?.Location?.locality || null,
+            country: race.Circuit?.Location?.country || null,
+        },
+        date: race.date,
+        results: (race.Results || []).map((result) => ({
+            position: Number.parseInt(result.position, 10),
+            number: result.Driver?.permanentNumber ? Number(result.Driver.permanentNumber) : null,
+            driver: {
+                id: result.Driver?.driverId,
+                code: result.Driver?.code || null,
+                firstName: result.Driver?.givenName || '',
+                lastName: result.Driver?.familyName || '',
+            },
+            team: result.Constructor?.name || null,
+            grid: Number.parseInt(result.grid, 10),
+            laps: Number.parseInt(result.laps, 10),
+            status: result.status || null,
+            time: result.Time?.time || null,
+            points: Number(result.points) || 0,
+            fastestLap: result.FastestLap
+                ? {
+                    rank: Number.parseInt(result.FastestLap.rank, 10),
+                    lap: Number.parseInt(result.FastestLap.lap, 10),
+                    time: result.FastestLap.Time?.time || null,
+                    avgSpeed: result.FastestLap.AverageSpeed?.speed || null,
+                }
+                : null,
+        })),
+    };
+}
+
+/** Fetch race results for a round or the last completed round. */
+export async function getRaceResults(year = null, round = null) {
+    const seasonYear = year || 'current';
+    const roundPath = round ? `/${encodeURIComponent(round)}` : '/last';
+    const races = await getList(`${seasonYear}${roundPath}/results`, raceRows, 300, [F1_CACHE_TAGS.results]);
+    return races[0] ? mapRaceResult(races[0]) : null;
+}
+
+/** Fetch the canonical Jolpica calendar for a season in the legacy shape. */
+export async function getSchedule(year = null) {
+    const seasonYear = year || 'current';
+    const races = await getList(`${seasonYear}/races`, raceRows, 3600, [F1_CACHE_TAGS.calendar]);
+    return races.map((race) => ({
+        season: race.season,
+        round: Number(race.round),
+        raceName: race.raceName,
+        circuit: {
+            id: race.Circuit?.circuitId,
+            name: race.Circuit?.circuitName,
+            location: race.Circuit?.Location?.locality || null,
+            country: race.Circuit?.Location?.country || null,
+        },
+        date: race.date,
+        time: race.time || null,
+        hasSprint: Boolean(race.Sprint),
+        sessions: {
+            firstPractice: race.FirstPractice || null,
+            secondPractice: race.SecondPractice || null,
+            thirdPractice: race.ThirdPractice || null,
+            qualifying: race.Qualifying || null,
+            sprint: race.Sprint || null,
+            sprintQualifying: race.SprintQualifying || null,
+        },
+    }));
+}
+
+/** Fetch qualifying results for one round. */
+export async function getQualifyingResults(year, round) {
+    const races = await getList(`${year}/${encodeURIComponent(round)}/qualifying`, raceRows, 3600, [F1_CACHE_TAGS.results]);
+    const race = races[0];
+    if (!race) return null;
+    return {
+        raceName: race.raceName,
+        round: Number(race.round),
+        results: (race.QualifyingResults || []).map((result) => ({
+            position: Number(result.position),
+            number: result.Driver?.permanentNumber ? Number(result.Driver.permanentNumber) : null,
+            driver: {
+                id: result.Driver?.driverId,
+                code: result.Driver?.code || null,
+                firstName: result.Driver?.givenName || '',
+                lastName: result.Driver?.familyName || '',
+            },
+            team: result.Constructor?.name || null,
+            q1: result.Q1 || null,
+            q2: result.Q2 || null,
+            q3: result.Q3 || null,
+        })),
+    };
+}
+
+/** Fetch a driver's results in one season. */
+export async function getDriverSeasonResults(driverId, year = null) {
+    const seasonYear = year || 'current';
+    const races = await getList(`${seasonYear}/drivers/${encodeURIComponent(driverId)}/results`, raceRows, 3600, [F1_CACHE_TAGS.results]);
+    return races.map((race) => {
+        const result = race.Results?.[0] || {};
         return {
-            totalRaces: races.length,
-            wins,
-            podiums,
-            poles,
-            fastestLaps,
-            dnfs,
-            careerPoints,
-            championships: DRIVER_TITLES[driverId] || 0,
+            round: Number(race.round),
+            raceName: race.raceName,
+            country: race.Circuit?.Location?.country || null,
+            date: race.date,
+            position: result.position ? Number.parseInt(result.position, 10) : null,
+            grid: result.grid ? Number.parseInt(result.grid, 10) : null,
+            points: Number(result.points) || 0,
+            status: result.status || null,
         };
-    } catch (error) {
-        console.error('Error fetching driver career stats:', error);
-        return null;
-    }
+    });
+}
+
+/** Fetch the list of drivers for a season. */
+export async function getSeasonDrivers(year = null) {
+    const seasonYear = year || 'current';
+    const drivers = await getList(`${seasonYear}/drivers`, driverRows, 86400, [F1_CACHE_TAGS.drivers]);
+    return drivers.map(mapDriver);
+}
+
+/** Resolve a permanent racing number from live season data. */
+export async function resolveErgastId(driverNumber) {
+    const number = Number.parseInt(driverNumber, 10);
+    const seasonDrivers = await getSeasonDrivers();
+    const match = seasonDrivers.find((driver) => driver.number === number);
+    return match?.id || null;
+}
+
+/** Fetch basic constructor information. */
+export async function getConstructorInfo(constructorId) {
+    const constructors = await getList(`constructors/${encodeURIComponent(constructorId)}`, constructorRows, 86400, [F1_CACHE_TAGS.teams]);
+    const constructor = constructors[0];
+    return constructor
+        ? { id: constructor.constructorId, name: constructor.name, nationality: constructor.nationality, url: constructor.url }
+        : null;
+}
+
+/** Fetch constructors' drivers in a season. */
+export async function getConstructorDrivers(constructorId, year = null) {
+    const seasonYear = year || 'current';
+    const drivers = await getList(`${seasonYear}/constructors/${encodeURIComponent(constructorId)}/drivers`, driverRows, 86400, [F1_CACHE_TAGS.teams]);
+    return drivers.map(mapDriver);
+}
+
+/** Fetch a constructor's season results, combining both cars per race. */
+export async function getConstructorSeasonResults(constructorId, year = null) {
+    const seasonYear = year || 'current';
+    const races = await getList(`${seasonYear}/constructors/${encodeURIComponent(constructorId)}/results`, raceRows, 3600, [F1_CACHE_TAGS.results]);
+    return races.map((race) => {
+        const cars = (race.Results || []).map((result) => ({
+            code: result.Driver?.code || result.Driver?.familyName || null,
+            position: result.position ? Number.parseInt(result.position, 10) : null,
+            points: Number(result.points) || 0,
+            status: result.status || null,
+        }));
+        return {
+            round: Number(race.round),
+            raceName: race.raceName,
+            country: race.Circuit?.Location?.country || null,
+            date: race.date,
+            cars,
+            points: cars.reduce((sum, car) => sum + car.points, 0),
+        };
+    });
+}
+
+/** Keep the old shape while sourcing totals and championships from Jolpica data. */
+export async function getDriverCareerStats(driverId) {
+    const career = await getCareerStats(driverId);
+    return {
+        totalRaces: career.starts,
+        wins: career.wins,
+        podiums: career.podiums,
+        poles: career.poles,
+        fastestLaps: career.fastestLaps,
+        championships: career.championships,
+        seasons: career.seasons,
+    };
 }
