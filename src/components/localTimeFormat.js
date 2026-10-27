@@ -21,10 +21,15 @@ export function formatInstant(iso, format = 'datetime', { local = false, locale 
     if (!Number.isFinite(date.getTime())) return null;
     const options = FORMATS[format] || FORMATS.datetime;
     if (local) {
-        return new Intl.DateTimeFormat(intlLocale(locale), {
+        const parts = new Intl.DateTimeFormat(intlLocale(locale), {
             ...options,
             ...(hasTime(options) ? { timeZoneName: 'short' } : {}),
-        }).format(date);
+        }).formatToParts(date);
+        // In right-to-left text an offset such as "غرينتش+3" would show its sign on the wrong
+        // side; a left-to-right isolate keeps the zone name and offset together and in order.
+        return parts.map(({ type, value }) => (
+            type === 'timeZoneName' && locale === 'ar' ? `\u2066${value}\u2069` : value
+        )).join('');
     }
     const text = new Intl.DateTimeFormat(intlLocale(locale), { ...options, timeZone: 'UTC' }).format(date);
     return hasTime(options) ? `${text} ${pick(timeMessages, locale).utc}` : text;

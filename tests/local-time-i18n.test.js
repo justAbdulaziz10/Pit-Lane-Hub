@@ -13,6 +13,12 @@ describe('localized time and session labels', () => {
         expect(formatInstant('2026-11-01T20:00:00Z', 'datetime', { locale: 'ar' })).toContain('UTC');
     });
 
+    it('keeps the local time zone offset readable inside Arabic text', () => {
+        const arabic = formatInstant('2026-11-01T20:00:00Z', 'datetime', { local: true, locale: 'ar' });
+        expect(arabic).toMatch(/\u2066[^\u2069]+\u2069/);
+        expect(formatInstant('2026-11-01T20:00:00Z', 'datetime', { local: true })).not.toContain('\u2066');
+    });
+
     it('uses Arabic plural forms in countdown announcements', () => {
         expect(countdownUnitLabel('ar', 'day', 3)).toBe('أيام');
         expect(countdownAnnouncement('ar', { days: 2, hours: 3, minutes: 4 })).toBe('يومان، 3 ساعات، 4 دقائق متبقية');
