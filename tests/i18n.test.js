@@ -50,3 +50,16 @@ describe('Arabic F1 names', () => {
         expect(nationalityName('British', 'en')).toBe('British');
     });
 });
+
+describe('locale formatting', async () => {
+    const { formatDate, formatNumber } = await import('@/lib/i18n/format');
+
+    it('uses Gregorian dates and Western digits in Arabic', () => {
+        const date = formatDate('ar', '2026-10-25T19:00:00Z', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
+        expect(date).toMatch(/25/);
+        expect(date).toMatch(/2026/);
+        expect(date).toMatch(/أكتوبر/);
+        expect(formatNumber('ar', 1234.5)).toMatch(/1[,٬]?234[.٫]5/);
+        expect(formatDate('en', '2026-10-25T19:00:00Z', { day: 'numeric', month: 'long', timeZone: 'UTC' })).toBe('25 October');
+    });
+});
