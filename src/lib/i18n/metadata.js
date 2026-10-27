@@ -1,6 +1,7 @@
 import { localeAlternates, localePath } from './config';
 import { pick } from './messages';
 import errorMessages from './messages/errors';
+import { SITE_NAME } from '../site';
 
 /** Shared localized SEO metadata shape for pages inside the [lang] route segment. */
 export function localizedPageMetadata(lang, path, { title, description, ...extra } = {}) {
@@ -33,6 +34,6 @@ export async function metadataOrNotFound(lang, build) {
     } catch (error) {
         if (!isNotFoundError(error)) throw error;
         const t = pick(errorMessages, lang);
-        return { title: t.notFoundMetadataTitle, description: t.notFoundDescription, robots: { index: false } };
+        return { title: { absolute: `${t.notFoundMetadataTitle} | ${SITE_NAME}` }, description: t.notFoundDescription, robots: { index: false } };
     }
 }
