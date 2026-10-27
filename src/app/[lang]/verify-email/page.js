@@ -4,6 +4,7 @@ import { localizedPageMetadata } from "@/lib/i18n/metadata";
 import { pick } from "@/lib/i18n/messages";
 import authMessages from "@/lib/i18n/messages/auth";
 import styles from "../status.module.css";
+import formStyles from "../login/page.module.css";
 
 export async function generateMetadata({ params }) {
     const { lang } = await params;
@@ -22,19 +23,40 @@ const TOKEN_PATTERN = /^[a-f0-9]{64}$/i;
 /** Confirmation step for emailed verification links: only the button's POST verifies. */
 export default async function VerifyEmailPage({ params, searchParams }) {
     const { lang } = await params;
-    const { token } = await searchParams;
+    const { token, verification } = await searchParams;
     const hasToken = typeof token === "string" && TOKEN_PATTERN.test(token);
+    const passwordMismatch = verification === "password";
     const t = pick(authMessages, lang);
 
     return (
         <div className={styles.wrapper}>
             <h1 className={styles.title}>{t.verifyTitle}</h1>
             {hasToken ? (
-                <form method="post" action={`/api/auth/verify?lang=${lang}`} className={styles.actions}>
-                    <input type="hidden" name="lang" value={lang} />
-                    <input type="hidden" name="token" value={token} />
-                    <button type="submit" className="btn btn-primary">{t.verifyButton}</button>
-                </form>
+                <>
+                    {passwordMismatch && (
+                        <p id="verify-password-error" className={styles.message} role="alert">
+                            {t.verificationPasswordMismatch}
+                        </p>
+                    )}
+                    <form method="post" action={`/api/auth/verify?lang=${lang}`} className={formStyles.form}>
+                        <input type="hidden" name="lang" value={lang} />
+                        <input type="hidden" name="token" value={token} />
+                        <div className={formStyles.field}>
+                            <label htmlFor="verify-password" className={formStyles.label}>{t.password}</label>
+                            <input
+                                id="verify-password"
+                                type="password"
+                                name="password"
+                                autoComplete="current-password"
+                                aria-invalid={passwordMismatch}
+                                aria-describedby={passwordMismatch ? "verify-password-error" : undefined}
+                                dir="ltr"
+                                required
+                            />
+                        </div>
+                        <button type="submit" className="btn btn-primary">{t.verifyButton}</button>
+                    </form>
+                </>
             ) : (
                 <>
                     <p className={styles.message}>{t.invalidVerificationLink}</p>

@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { getClientIp, rateLimit } from "@/lib/rate-limit";
 import { isLocale, localePath } from "@/lib/i18n/config";
@@ -7,17 +8,13 @@ import errorMessages from "@/lib/i18n/messages/errors";
 import { NextResponse } from "next/server";
 
 const TOKEN_PATTERN = /^[a-f0-9]{64}$/i;
+const CREDENTIALS_WINDOW_MS = 15 * 60 * 1000;
+const CREDENTIALS_IP_LIMIT = 10;
+const CREDENTIALS_EMAIL_FAILURE_LIMIT = 10;
+const DUMMY_PASSWORD_HASH = "$2b$10$CFQ8W3JJN2v6TZXERzjM1O3g/RvuvylIe5v/MpKNgUTtd2MYG5xX2";
 
 function sha256Hex(value) {
     return createHash("sha256").update(value).digest("hex");
-}
-
-function getSiteOrigin(request) {
-    try {
-        return new URL(process.env.NEXT_PUBLIC_SITE_URL || request.url).origin;
-    } catch {
-        return new URL(request.url).origin;
-    }
 }
 
 function requestLocale(request) {
@@ -29,7 +26,7 @@ function requestLocale(request) {
 function isForeignOrigin(request) {
     const origin = request.headers.get("origin");
     if (!origin || origin === "null") return false;
-    return origin !== new URL(request.url).origin && origin !== getSiteOrigin(request);
+    return origin !== new URL(request.url).origin;
 }
 
 /**
@@ -37,24 +34,22 @@ function isForeignOrigin(request) {
  * forwards to the confirmation page, which posts the token back.
  */
 export function GET(request) {
-    const siteOrigin = getSiteOrigin(request);
     const url = new URL(request.url);
     const lang = requestLocale(request);
     const token = url.searchParams.get("token");
     if (!token || !TOKEN_PATTERN.test(token)) {
-        return NextResponse.redirect(new URL(localePath(lang, "/login?verification=invalid"), siteOrigin));
+        return NextResponse.redirect(new URL(localePath(lang, "/login?verification=invalid"), request.url));
     }
-    const confirmUrl = new URL(localePath(lang, "/verify-email"), siteOrigin);
+    const confirmUrl = new URL(localePath(lang, "/verify-email"), request.url);
     confirmUrl.searchParams.set("token", token);
     return NextResponse.redirect(confirmUrl);
 }
 
 /** Verifies the address for a token posted from /verify-email. */
 export async function POST(request) {
-    const siteOrigin = getSiteOrigin(request);
     const urlLang = requestLocale(request);
     let lang = urlLang;
-    const invalid = () => NextResponse.redirect(new URL(localePath(lang, "/login?verification=invalid"), siteOrigin), 303);
+    const invalid = () => NextResponse.redirect(new URL(localePath(lang, "/login?verification=invalid"), request.url), 303);
 
     if (isForeignOrigin(request)) {
         const t = pick(errorMessages, lang);
@@ -69,6 +64,15 @@ export async function POST(request) {
     if (typeof token !== "string" || !TOKEN_PATTERN.test(token)) return invalid();
 
     try {
+        const credentialsWindow = { windowMs: CREDENTIALS_WINDOW_MS };
+        const credentialsIpLimit = await rateLimit(`auth:credentials:${getClientIp(request.headers)}`, {
+            ...credentialsWindow,
+            limit: CREDENTIALS_IP_LIMIT,
+        });
+        if (!credentialsIpLimit.success) {
+            return NextResponse.json({ error: t.tooManyVerificationAttempts }, { status: 429 });
+        }
+
         const limit = await rateLimit(`auth:verify:${getClientIp(request.headers)}`, {
             limit: 20,
             windowMs: 15 * 60 * 1000,
@@ -83,16 +87,42 @@ export async function POST(request) {
                 emailVerificationTokenHash: tokenHash,
                 emailVerificationTokenExpires: { gt: new Date() },
             },
-            select: { id: true, passwordHash: true, emailVerificationPasswordDigest: true },
+            select: { id: true, email: true, passwordHash: true, emailVerificationPasswordDigest: true },
         });
 
-        // The token only verifies the password it was issued for.
+        const password = form?.get("password");
+        const submittedPassword = typeof password === "string" ? password : "";
+        const emailFailureKey = user?.email ? `auth:credentials-email-failures:${user.email}` : null;
+        const emailFailureOptions = {
+            limit: CREDENTIALS_EMAIL_FAILURE_LIMIT,
+            windowMs: CREDENTIALS_WINDOW_MS,
+        };
+
+        if (emailFailureKey) {
+            const emailLimit = await rateLimit(emailFailureKey, { ...emailFailureOptions, consume: false });
+            if (!emailLimit.success) {
+                return NextResponse.json({ error: t.tooManyVerificationAttempts }, { status: 429 });
+            }
+        }
+
+        // Compare once even when a token is stale or unknown, and never skip bcrypt because a
+        // password is missing. This matches credentials sign-in's dummy-hash timing path.
+        const passwordValid = await bcrypt.compare(submittedPassword, user?.passwordHash || DUMMY_PASSWORD_HASH);
+
         if (
             !user?.passwordHash ||
             !user.emailVerificationPasswordDigest ||
             sha256Hex(user.passwordHash) !== user.emailVerificationPasswordDigest
         ) {
             return invalid();
+        }
+
+        if (!passwordValid) {
+            await rateLimit(emailFailureKey, emailFailureOptions);
+            const confirmationUrl = new URL(localePath(lang, "/verify-email"), request.url);
+            confirmationUrl.searchParams.set("token", token);
+            confirmationUrl.searchParams.set("verification", "password");
+            return NextResponse.redirect(confirmationUrl, 303);
         }
 
         // Conditional write: if the token or password changed since the read, nothing is verified.
@@ -111,7 +141,7 @@ export async function POST(request) {
         });
         if (result.count !== 1) return invalid();
 
-        return NextResponse.redirect(new URL(localePath(lang, "/login?verified=true"), siteOrigin), 303);
+        return NextResponse.redirect(new URL(localePath(lang, "/login?verified=true"), request.url), 303);
     } catch {
         return invalid();
     }

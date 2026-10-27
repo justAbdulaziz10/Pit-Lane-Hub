@@ -88,6 +88,16 @@ describe('NextAuth callbacks', () => {
         expect(token.isPro).toBe(false);
     });
 
+    it('drops a JWT when its user no longer exists in the database', async () => {
+        mocks.prisma.user.findUnique.mockResolvedValue(null);
+
+        const token = await authCallbacks.jwt({
+            token: { id: 'deleted_user', isPro: true, subscriptionCheckedAt: Date.now() - 6 * 60_000 },
+        });
+
+        expect(token).toBeNull();
+    });
+
     it('clears the password hash when a magic-link verification verifies an unverified account', async () => {
         const verifiedAt = new Date('2026-10-27T00:00:00.000Z');
         mocks.transaction.user.findUnique.mockResolvedValue({ emailVerified: null });

@@ -39,10 +39,16 @@ export function subscriptionUpdateFromEvent(event) {
     const updatedAt = toDate(subscription.modified_at) ?? toDate(subscription.created_at) ?? toDate(event.timestamp);
     if (updatedAt) data.polarSubscriptionUpdatedAt = updatedAt;
 
-    const metadataUserId = typeof subscription.metadata?.userId === "string" ? subscription.metadata.userId : null;
-    const userId = subscription.customer?.external_id || metadataUserId;
+    const metadataUserId = typeof subscription.metadata?.userId === "string" && subscription.metadata.userId
+        ? subscription.metadata.userId
+        : null;
+    const externalUserId = typeof subscription.customer?.external_id === "string" && subscription.customer.external_id
+        ? subscription.customer.external_id
+        : null;
+    const userId = metadataUserId || externalUserId;
     return {
         userId,
+        externalUserId,
         customerId: subscription.customer_id || null,
         subscriptionId: subscription.id || null,
         updatedAt,
@@ -115,23 +121,55 @@ export async function POST(req) {
     // subscription to Pit Lane Pro may change a user's Pro status here.
     const productId = event.data?.product_id ?? event.data?.product?.id;
     if (productId !== proProductId) {
-        return new NextResponse("Ignored (other product)", { status: 202 });
+        if (!productId) return new NextResponse("Ignored (other product)", { status: 202 });
+        const subscriptionId = event.data?.id;
+        if (!subscriptionId) return new NextResponse("Ignored (other product)", { status: 202 });
+
+        const updatedAt = toDate(event.data.modified_at) ?? toDate(event.data.created_at) ?? toDate(event.timestamp);
+        const data = { subscriptionStatus: "canceled" };
+        if (updatedAt) data.polarSubscriptionUpdatedAt = updatedAt;
+        const guard = orderingGuard({ subscriptionId, updatedAt, data });
+
+        try {
+            const result = await prisma.user.updateMany({
+                where: { AND: [{ polarSubscriptionId: subscriptionId }, guard] },
+                data,
+            });
+            return new NextResponse(result.count > 0 ? "Subscription product changed" : "Ignored (other product)", {
+                status: result.count > 0 ? 200 : 202,
+            });
+        } catch {
+            return new NextResponse("Internal Error", { status: 500 });
+        }
     }
 
     const update = subscriptionUpdateFromEvent(event);
-    const { userId, customerId, data } = update;
+    const { userId, externalUserId, customerId, data } = update;
     const guard = orderingGuard(update);
 
     try {
         let result = { count: 0 };
         let matchedUser = false;
 
-        if (userId) {
-            result = await prisma.user.updateMany({ where: { AND: [{ id: userId }, guard] }, data });
-            matchedUser = result.count > 0 || (await prisma.user.count({ where: { id: userId } })) > 0;
+        const userIdCandidates = [userId, externalUserId].filter((candidate, index, candidates) =>
+            candidate && candidates.indexOf(candidate) === index
+        );
+        for (const candidateId of userIdCandidates) {
+            result = await prisma.user.updateMany({ where: { AND: [{ id: candidateId }, guard] }, data });
+            matchedUser = result.count > 0 || (await prisma.user.count({ where: { id: candidateId } })) > 0;
+            if (matchedUser) break;
         }
         if (!matchedUser && customerId) {
             result = await prisma.user.updateMany({ where: { AND: [{ polarCustomerId: customerId }, guard] }, data });
+        }
+
+        if (!matchedUser && result.count === 0) {
+            console.error("[polar] Verified Pro subscription event matched no user", {
+                eventType: event.type,
+                userId,
+                customerId,
+                subscriptionId: update.subscriptionId,
+            });
         }
 
         // 200 either way: a stale or unmatched event must not be retried forever.

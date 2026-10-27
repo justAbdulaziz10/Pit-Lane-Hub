@@ -104,18 +104,20 @@ describe('registerUser', () => {
         expect(ttl).toBeLessThanOrEqual(24 * 60 * 60 * 1000 + 5000);
     });
 
-    it('never replaces the stored password of an unverified account; it resends a link for the existing one', async () => {
+    it('ignores an attacker-supplied password and resends a link bound to the pending account password', async () => {
         const fetch = vi.fn(async () => new Response(null, { status: 200 }));
         vi.stubGlobal('fetch', fetch);
         const pending = { id: 'pending_user', email: 'racer@example.com', name: 'Owner', emailVerified: null, passwordHash: 'owner-hash' };
         mocks.findUnique.mockResolvedValueOnce(pending);
+        const attackerPassword = 'attacker999';
 
-        const response = await registerUser(makeFormData());
+        const response = await registerUser(makeFormData('en', { password: attackerPassword }));
 
         expect(response).toEqual({
             success: true,
             message: 'If you can create an account with this address, check your inbox for the next step.',
         });
+        expect(mocks.hash).toHaveBeenCalledWith(attackerPassword, 10);
         expect(mocks.create).not.toHaveBeenCalled();
         for (const [args] of mocks.update.mock.calls) {
             expect(args.data).not.toHaveProperty('passwordHash');
