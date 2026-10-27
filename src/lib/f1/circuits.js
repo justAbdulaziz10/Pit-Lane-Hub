@@ -5,6 +5,17 @@ if (typeof window !== 'undefined') throw new Error('Circuit geometry is availabl
 
 // Jolpica circuit IDs are stable and intentionally mapped exactly. Never infer
 // a circuit from a Grand Prix name: Madrid's Spanish GP is not Spa.
+/**
+ * Official lap lengths (metres, F1.com) where the GeoJSON trace's measured length differs from the
+ * current layout. The trace stays the source for the outline; the label uses the official figure.
+ */
+export const OFFICIAL_LENGTH_M = Object.freeze({
+    'qa-2004': 5419, // Losail, 2023+ layout
+    'sg-2008': 4940, // Marina Bay, 2023+ layout (turns 16-19 removed)
+    'es-1991': 4657, // Catalunya, 2023+ layout
+    'us-2012': 5513, // Circuit of the Americas
+});
+
 export const CIRCUIT_FEATURE_IDS = Object.freeze({
     albert_park: 'au-1953',
     bahrain: 'bh-2002',
@@ -58,7 +69,7 @@ export function getCircuitGeometry(circuitId) {
     return {
         coordinates: feature.geometry?.coordinates || [],
         name: feature.properties?.Name || null,
-        length: feature.properties?.length || null,
+        length: OFFICIAL_LENGTH_M[featureId] ?? feature.properties?.length ?? null,
     };
 }
 

@@ -431,6 +431,14 @@ describe('circuit mapping', () => {
         expect(getTrackInfo('Spanish Grand Prix')).toBeNull();
         expect(getTrackInfo('Spanish Grand Prix', 'madring')?.title).toBe('Circuito de Madring');
     });
+
+    it('labels current layouts with the official lap length, not the trace length', () => {
+        expect(getCircuitGeometry('losail').length).toBe(5419);
+        expect(getCircuitGeometry('marina_bay').length).toBe(4940);
+        expect(getCircuitGeometry('catalunya').length).toBe(4657);
+        expect(getCircuitGeometry('americas').length).toBe(5513);
+        expect(getCircuitGeometry('monaco').length).toBe(3337);
+    });
 });
 
 describe('live snapshot', () => {
