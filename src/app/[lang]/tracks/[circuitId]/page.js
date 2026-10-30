@@ -80,11 +80,12 @@ export default async function CircuitPage({ params }) {
         <div className={styles.tracksPage}>
             <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdScript(jsonLd) }} />
             <div className={`container ${styles.detail}`}>
-                <header>
+                <header className={styles.detailInfo}>
                     <nav aria-label={t.breadcrumbLandmark} className={styles.breadcrumb}>
                         <Link href={localePath(lang, '/tracks')}>{t.breadcrumb}</Link>
                     </nav>
-                    <h1 className={styles.title}>{circuit.name}</h1>
+                    <span className={styles.detailBadge}><span aria-hidden="true">🏁</span>{t.heroBadge}</span>
+                    <h1 className={styles.detailTitle}><bdi dir="ltr">{circuit.name}</bdi></h1>
                     <dl className={styles.facts}>
                         {place && (
                             <div>
@@ -99,7 +100,7 @@ export default async function CircuitPage({ params }) {
                         {circuit.length && (
                             <div>
                                 <dt>{t.lapLength}</dt>
-                                <dd><bdi>{circuitLength(circuit.length, lang)}</bdi></dd>
+                                <dd className={styles.statValue}><bdi>{circuitLength(circuit.length, lang)}</bdi></dd>
                             </div>
                         )}
                         {events.map((event) => (
@@ -114,9 +115,9 @@ export default async function CircuitPage({ params }) {
                         ))}
                     </dl>
                     {history && (
-                        <dl className={styles.facts}>
+                        <dl className={`${styles.facts} ${styles.historyFacts}`}>
                             {history.firstGrandPrixYear != null && (
-                                <div><dt>{t.firstGrandPrix}</dt><dd><bdi dir="ltr">{String(history.firstGrandPrixYear)}</bdi></dd></div>
+                                <div><dt>{t.firstGrandPrix}</dt><dd className={styles.statValue}><bdi dir="ltr">{String(history.firstGrandPrixYear)}</bdi></dd></div>
                             )}
                             {history.winners.length > 0 && (
                                 <div>

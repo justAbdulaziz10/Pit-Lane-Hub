@@ -103,6 +103,7 @@ function LoginFormContent({ lang, searchParams }) {
     return (
         <div className={styles.page}>
             <div className={styles.panel}>
+                <span className={styles.badge}>{t.accountBadge}</span>
                 <h1 className={styles.title}>{t.loginTitle}</h1>
                 <p className={styles.intro}>{t.loginIntro}</p>
 

@@ -33,7 +33,7 @@ function TrackLine({ coordinates }) {
         <group>
             <mesh>
                 <tubeGeometry args={[curve, Math.max(200, coordinates.length * 3), 0.12, 8, true]} />
-                <meshStandardMaterial color="#f5f5f5" roughness={0.5} metalness={0.2} />
+                <meshStandardMaterial color="#f5f5f5" emissive="#e10600" emissiveIntensity={0.18} roughness={0.5} metalness={0.2} />
             </mesh>
             <mesh position={curve.getPoint(0)}>
                 <sphereGeometry args={[0.3, 16, 16]} />
@@ -51,7 +51,7 @@ export default function Track3D({ coordinates, label }) {
     const reduceMotion = typeof window !== 'undefined'
         && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
     return (
-        <div style={{ width: '100%', height: '100%', background: '#0d0d0d' }} role="img" aria-label={label}>
+        <div style={{ width: '100%', height: '100%', background: 'radial-gradient(ellipse at 50% 55%, #242424 0%, #151515 48%, #0d0d0d 100%)' }} role="img" aria-label={label}>
             <Canvas>
                 <PerspectiveCamera makeDefault position={[0, 16, 16]} fov={50} />
                 <ambientLight intensity={0.6} />

@@ -63,11 +63,12 @@ export default async function SchedulePage({ params }) {
 
     return (
         <div className={styles.schedule}>
-            <header className={styles.header}>
-                <div className="container">
-                    <h1>{fill(t.title, { year: String(calendar.year) })}</h1>
+            <header className={`page-hero ${styles.header}`}>
+                <div className="page-hero__content">
+                    <span className="page-hero__badge"><span aria-hidden="true">📅</span>{t.heroBadge}</span>
+                    <h1 className="page-hero__title">{fill(t.title, { year: String(calendar.year) })}</h1>
                     {rounds.length > 0 && (
-                        <p className={styles.summary}>
+                        <p className={`${styles.summary} page-hero__subline`}>
                             <bdi dir="auto">{fill(t.summary, {
                                 rounds: formatNumber(lang, rounds.length),
                                 completed: formatNumber(lang, completedCount),
@@ -76,7 +77,7 @@ export default async function SchedulePage({ params }) {
                     )}
                     <div className={styles.actions}>
                         <a href={webcalUrl(SITE_URL)} className="btn btn-primary">{t.subscribe}</a>
-                        <a href="/calendar.ics" download={`f1-${calendar.year}.ics`} className="btn btn-secondary">{t.downloadIcs}</a>
+                        <a href="/calendar.ics" download={`f1-${calendar.year}.ics`} className="btn btn-outline">{t.downloadIcs}</a>
                     </div>
                 </div>
             </header>

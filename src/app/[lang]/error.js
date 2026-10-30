@@ -5,7 +5,7 @@ import { Link, useLocale } from '@/lib/i18n/LocaleProvider';
 import { pick } from '@/lib/i18n/messages';
 import commonMessages from '@/lib/i18n/messages/common';
 import errorMessages from '@/lib/i18n/messages/errors';
-import styles from './status.module.css';
+import styles from './status-page.module.css';
 
 export default function Error({ error, reset }) {
     const locale = useLocale();

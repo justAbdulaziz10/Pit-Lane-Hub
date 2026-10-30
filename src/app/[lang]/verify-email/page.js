@@ -3,7 +3,7 @@ import { localePath } from "@/lib/i18n/config";
 import { localizedPageMetadata } from "@/lib/i18n/metadata";
 import { pick } from "@/lib/i18n/messages";
 import authMessages from "@/lib/i18n/messages/auth";
-import styles from "../status.module.css";
+import styles from "../status-page.module.css";
 import formStyles from "../login/page.module.css";
 
 export async function generateMetadata({ params }) {
@@ -30,6 +30,7 @@ export default async function VerifyEmailPage({ params, searchParams }) {
 
     return (
         <div className={styles.wrapper}>
+            <span className={styles.badge}>{t.accountBadge}</span>
             <h1 className={styles.title}>{t.verifyTitle}</h1>
             {hasToken ? (
                 <>

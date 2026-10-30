@@ -1,5 +1,6 @@
 const account = {
     en: {
+        accountBadge: 'Your Pit Lane account',
         metadataTitle: 'Your Account',
         metadataDescription: 'View your Pit Lane Hub membership and manage your Pit Lane Pro subscription.',
         title: 'Account',
@@ -14,6 +15,7 @@ const account = {
         signOut: 'Sign out',
     },
     ar: {
+        accountBadge: 'حسابك في Pit Lane',
         metadataTitle: 'حسابك',
         metadataDescription: 'اطّلع على عضويتك في Pit Lane Hub وأدِر اشتراك Pit Lane Pro.',
         title: 'الحساب',

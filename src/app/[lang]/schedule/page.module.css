@@ -2,52 +2,59 @@
     min-height: 100vh;
 }
 
-/* Header */
 .header {
-    padding: var(--space-2xl) 0 var(--space-xl);
-    background: none;
-}
-
-.header h1 {
-    margin-bottom: var(--space-xs);
+    padding-block-end: var(--space-2xl);
 }
 
 .summary {
-    color: var(--text-2);
-    font-size: 1rem;
+    margin-block-start: var(--space-md);
 }
 
 .actions {
     display: flex;
     flex-wrap: wrap;
+    justify-content: center;
     gap: var(--space-sm);
-    margin-top: var(--space-lg);
+    margin-block-start: var(--space-xl);
 }
 
-/* Content */
 .content {
-    padding: var(--space-lg) 0 var(--space-3xl);
+    padding-block: var(--space-xl) var(--space-3xl);
 }
 
 .section {
-    margin-top: var(--space-2xl);
+    margin-block-start: var(--space-3xl);
 }
 
 .sectionTitle {
-    font-family: var(--font-display);
-    font-stretch: var(--stretch-display);
-    font-size: 1.25rem;
-    font-weight: 700;
-    margin-bottom: var(--space-md);
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    margin-block-end: var(--space-md);
+    font-size: clamp(1.3rem, 2vw, 1.65rem);
+}
+
+.sectionTitle::before {
+    content: '';
+    width: 0.3rem;
+    height: 1.15em;
+    flex: 0 0 auto;
+    border-radius: var(--radius-full);
+    background: var(--accent);
+    box-shadow: 0 3px 12px rgba(225, 6, 0, 0.32);
 }
 
 .empty {
+    padding: var(--space-lg);
     color: var(--text-2);
+    border: 1px dashed var(--border-strong);
+    border-radius: var(--radius-lg);
+    background: var(--surface-1);
 }
 
 .grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: var(--space-md);
     list-style: none;
     padding: 0;
@@ -56,40 +63,48 @@
 
 .grid > li {
     display: flex;
+    min-width: 0;
 }
 
-/* Race Card */
 .raceCard {
     position: relative;
     display: flex;
     flex-direction: column;
     width: 100%;
-    background: var(--surface-1);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
+    min-width: 0;
+    min-height: 15rem;
     padding: var(--space-lg);
+    overflow: hidden;
     color: inherit;
     text-decoration: none;
-    transition: border-color var(--transition-fast), transform var(--transition-fast);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: linear-gradient(145deg, var(--surface-2), var(--surface-1) 68%);
+    box-shadow: var(--shadow-card);
+    transition: border-color var(--transition-fast), transform var(--transition-fast), box-shadow var(--transition-fast);
 }
 
-a.raceCard:hover {
-    border-color: var(--accent);
+.raceCard:hover {
+    transform: translateY(-3px);
+    border-color: var(--accent-text);
+    box-shadow: 0 16px 32px rgba(0, 0, 0, 0.35);
 }
 
-a.raceCard:focus-visible {
-    outline: 2px solid var(--text-1);
-    outline-offset: 2px;
-}
-
-.raceCard.past {
-    opacity: 0.7;
+.raceCard:focus-visible {
+    outline: 2px solid var(--accent-text);
+    outline-offset: 3px;
 }
 
 .raceCard.next {
     border-color: var(--accent);
-    background: var(--surface-1);
-    opacity: 1;
+    background:
+        radial-gradient(ellipse at 90% 0%, rgba(225, 6, 0, 0.22), transparent 55%),
+        linear-gradient(145deg, #291412, var(--surface-1) 76%);
+    box-shadow: var(--shadow-glow), var(--shadow-card);
+}
+
+.raceCard.next:hover {
+    box-shadow: 0 14px 38px rgba(225, 6, 0, 0.32), var(--shadow-card);
 }
 
 .cardTop {
@@ -97,7 +112,7 @@ a.raceCard:focus-visible {
     align-items: center;
     justify-content: space-between;
     gap: var(--space-sm);
-    margin-bottom: var(--space-sm);
+    margin-block-end: var(--space-md);
 }
 
 .cardTags {
@@ -109,81 +124,97 @@ a.raceCard:focus-visible {
 .sprintTag {
     display: inline-block;
     padding: 2px var(--space-sm);
-    border: 1px solid var(--border-strong);
+    border: 1px solid var(--gold);
     border-radius: var(--radius-sm);
-    color: var(--text-1);
+    color: var(--gold);
     font-size: 0.7rem;
     font-weight: 700;
 }
 
 .round {
-    font-size: 0.75rem;
-    font-weight: 600;
     color: var(--text-2);
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.raceCard.next .round {
+    color: #ff8b83;
 }
 
 .raceName {
-    font-family: var(--font-display);
-    font-stretch: var(--stretch-display);
-    font-size: 1.2rem;
-    font-weight: 700;
+    margin-block-end: var(--space-xs);
     color: var(--text-1);
-    margin-bottom: var(--space-xs);
-    line-height: 1.3;
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    font-weight: 800;
+    line-height: 1.2;
+    overflow-wrap: anywhere;
 }
 
 .circuit {
-    font-size: 0.875rem;
     color: var(--text-2);
+    font-size: 0.9rem;
 }
 
 .country {
-    font-size: 0.875rem;
     color: var(--text-3);
+    font-size: 0.85rem;
+}
+
+.cardTimes {
+    margin-block-start: auto;
+    padding-block-start: var(--space-lg);
 }
 
 .dates {
     display: flex;
     align-items: baseline;
+    flex-wrap: wrap;
     gap: var(--space-sm);
-    margin-top: auto;
-    padding-top: var(--space-md);
-    font-family: var(--font-display);
-    font-stretch: var(--stretch-display);
-    font-weight: 600;
     color: var(--text-1);
+    font-family: var(--font-display);
+    font-size: 1.2rem;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
 }
 
-.cardTimes {
-    margin-top: auto;
-    padding-top: var(--space-md);
-}
-
-.cardTimes .dates {
-    margin-top: 0;
-    padding-top: 0;
+.dateLabel {
+    color: var(--text-3);
+    font-family: var(--font-body);
+    font-size: 0.7rem;
+    font-weight: 600;
 }
 
 .countdown {
     display: flex;
-    gap: var(--space-md);
+    flex-wrap: wrap;
+    gap: var(--space-sm);
     margin-block-start: var(--space-md);
 }
 
 .countdownUnit {
     display: grid;
+    min-width: 3rem;
     gap: 2px;
+    justify-items: center;
+    padding: 0.35rem 0.45rem;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--radius-sm);
+    background: rgba(0, 0, 0, 0.24);
 }
 
 .countdownValue {
+    color: #ff5a50;
     font-family: var(--font-display);
-    font-stretch: var(--stretch-display);
+    font-size: 1.15rem;
+    font-weight: 900;
     font-variant-numeric: tabular-nums;
+    line-height: 1;
 }
 
 .countdownLabel {
     color: var(--text-2);
-    font-size: 0.65rem;
+    font-size: 0.62rem;
 }
 
 .sessionTimes {
@@ -191,8 +222,8 @@ a.raceCard:focus-visible {
     gap: var(--space-xs);
     list-style: none;
     padding: var(--space-sm) 0 0;
-    margin-top: var(--space-sm);
-    border-top: 1px solid var(--border);
+    margin-block-start: var(--space-md);
+    border-block-start: 1px solid var(--border);
     font-size: 0.8rem;
 }
 
@@ -208,133 +239,121 @@ a.raceCard:focus-visible {
 .sessionTimes li > :last-child {
     color: var(--text-1);
     font-family: var(--font-display);
-    font-stretch: var(--stretch-display);
     font-variant-numeric: tabular-nums;
 }
 
-.dateLabel {
-    font-size: 0.7rem;
-    color: var(--text-3);
-}
-
-/* Status */
 .status {
-    display: inline-block;
-    padding: 2px var(--space-sm);
-    border-radius: var(--radius-sm);
-    font-size: 0.7rem;
+    display: inline-flex;
+    align-items: center;
+    min-height: 1.4rem;
+    padding-inline: var(--space-sm);
+    border: 1px solid transparent;
+    border-radius: var(--radius-full);
+    color: var(--text-1);
+    background: var(--surface-3);
+    font-size: 0.68rem;
     font-weight: 700;
-    background: rgba(255, 255, 255, 0.08);
-    color: var(--text-2);
     white-space: nowrap;
 }
 
 .status_live {
-    background: var(--accent-hover);
     color: var(--text-1);
+    border-color: rgba(255, 90, 80, 0.65);
+    background: var(--accent-hover);
 }
 
 .status_weekend {
-    background: var(--caution);
     color: var(--bg);
+    background: var(--caution);
 }
 
 .status_upcoming {
-    background: rgba(255, 255, 255, 0.12);
     color: var(--text-1);
+    border-color: rgba(255, 255, 255, 0.16);
 }
 
 .status_cancelled {
-    background: transparent;
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: var(--text-2);
+    border-color: var(--border-strong);
 }
 
 .status_next {
-    border: 1px solid var(--accent);
-    color: var(--text-1);
+    border-color: var(--accent-text);
+    color: #fff;
+    background: rgba(225, 6, 0, 0.26);
 }
 
-/* Testing and cancelled */
-.meetingList {
+.meetingList,
+.completedList {
+    display: grid;
+    gap: var(--space-sm);
     list-style: none;
     padding: 0;
     margin: 0;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    overflow: hidden;
 }
 
-.meetingRow {
-    display: grid;
-    grid-template-columns: 1fr auto auto;
-    align-items: center;
-    gap: var(--space-md);
-    padding: var(--space-md) var(--space-lg);
-    background: var(--surface-1);
-    color: inherit;
-    text-decoration: none;
-}
-
-a.meetingRow:hover {
-    background: var(--surface-2);
-}
-
-.meetingRow + .meetingRow {
-    border-top: 1px solid var(--border);
-}
-
-.meetingName {
-    font-weight: 600;
-    color: var(--text-1);
-}
-
-a.meetingName:hover {
-    color: var(--accent-text);
-}
-
-.meetingDates {
-    font-size: 0.9rem;
-    color: var(--text-2);
+.meetingList {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .completedList {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    overflow: hidden;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
-.completedList > li + li {
-    border-top: 1px solid var(--border);
-}
-
+.meetingRow,
 .completedRow {
     display: grid;
-    grid-template-columns: 5.5rem minmax(10rem, 1fr) minmax(14rem, 0.9fr);
+    min-width: 0;
+    min-height: 4.5rem;
     align-items: center;
-    gap: var(--space-md);
-    padding: var(--space-sm) var(--space-md);
-    border-inline-start: 3px solid var(--winner-color);
+    gap: var(--space-sm) var(--space-md);
+    padding: var(--space-md);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
     background: var(--surface-1);
     color: inherit;
     text-decoration: none;
 }
 
+.meetingRow {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+}
+
+.completedRow {
+    display: flex;
+    min-height: 10rem;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: space-between;
+    border-block-start: 2px solid var(--winner-color);
+}
+
+.meetingRow:hover,
 .completedRow:hover {
     background: var(--surface-2);
+    border-color: var(--border-strong);
+}
+
+.meetingName,
+.completedRace {
+    color: var(--text-1);
+    font-weight: 700;
+}
+
+.meetingDates {
+    color: var(--text-1);
+    font-family: var(--font-display);
+    font-size: 0.9rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
 }
 
 .completedRound,
 .winnerLabel {
     color: var(--text-2);
     font-size: 0.75rem;
-    font-weight: 600;
-}
-
-.completedRace {
-    font-weight: 600;
+    font-weight: 700;
 }
 
 .completedWinner {
@@ -343,6 +362,7 @@ a.meetingName:hover {
     align-items: baseline;
     gap: var(--space-xs) var(--space-sm);
     min-width: 0;
+    margin-block-start: auto;
 }
 
 .winnerTeam {
@@ -350,27 +370,58 @@ a.meetingName:hover {
     font-size: 0.8rem;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 1120px) {
     .grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 860px) {
+    .grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .completedList {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 640px) {
+    .header {
+        padding-block-start: var(--space-3xl);
+    }
+
+    .grid,
+    .meetingList,
+    .completedList {
         grid-template-columns: 1fr;
     }
 
+    .raceCard {
+        min-height: 0;
+    }
+
     .meetingRow {
-        grid-template-columns: 1fr auto;
+        grid-template-columns: minmax(0, 1fr) auto;
     }
 
-    .completedRow {
-        grid-template-columns: auto minmax(0, 1fr);
-        gap: var(--space-xs) var(--space-sm);
-        padding-inline: var(--space-sm);
-    }
-
-    .completedWinner {
-        grid-column: 2;
+    .meetingRow > :last-child {
+        grid-column: 1 / -1;
+        justify-self: start;
     }
 
     .meetingDates {
         grid-column: 1 / -1;
         grid-row: 2;
+        white-space: normal;
+    }
+
+    .completedRow {
+        min-height: 8rem;
+        padding-inline: var(--space-sm);
+    }
+
+    .completedWinner {
+        margin-block-start: 0;
     }
 }

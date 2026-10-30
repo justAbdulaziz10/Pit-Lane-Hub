@@ -176,8 +176,8 @@ export default function LiveTiming({ initial, lang, labels, nextSession, grandPr
 
     return (
         <div className={styles.live}>
-            <header className={styles.header}>
-                <div className="container">
+            <header className={`page-hero ${styles.header}`}>
+                <div className={`container page-hero__content ${styles.headerContent}`}>
                     <div className={styles.headerRow}>
                         <div>
                             {phase !== 'none' && (
@@ -187,7 +187,7 @@ export default function LiveTiming({ initial, lang, labels, nextSession, grandPr
                                     {phase === 'upcoming' && t.nextSession}
                                 </p>
                             )}
-                            <h1>
+                            <h1 className="page-hero__title">
                                 {session ? (
                                     <>
                                         {title && <><bdi dir="auto">{title}</bdi>{sessionName && ' · '}</>}

@@ -1,5 +1,6 @@
 .section {
-    padding: var(--space-2xl) 0;
+    padding-block: var(--space-2xl);
+    background: linear-gradient(180deg, rgba(225, 6, 0, 0.045), transparent 44%);
 }
 
 .head {
@@ -23,4 +24,16 @@
     color: var(--text-1);
     text-decoration: underline;
     text-underline-offset: 3px;
+}
+
+.section h2 {
+    font-size: clamp(1.5rem, 2.5vw, 2rem);
+}
+
+.head p {
+    padding: 0.45rem 0.7rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-full);
+    background: var(--surface-1);
+    font-variant-numeric: tabular-nums;
 }

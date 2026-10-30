@@ -92,7 +92,7 @@ export function ClassificationTable({ results, links, caption, lang }) {
     const t = pick(raceMessages, lang);
     const leaderLaps = results[0]?.laps;
     return (
-        <div className={styles.tableScroll}>
+        <div className={styles.tableScroll} tabIndex={0} role="region" aria-label={caption}>
             <table className={styles.table}>
                 <caption className={styles.srOnly}>{caption}</caption>
                 <thead>
@@ -128,7 +128,7 @@ export function QualifyingTable({ results, links, caption, lang }) {
     const t = pick(raceMessages, lang);
     const cutlines = qualifyingCutlinePositions(results);
     return (
-        <div className={styles.tableScroll}>
+        <div className={styles.tableScroll} tabIndex={0} role="region" aria-label={caption}>
             <table className={styles.table}>
                 <caption className={styles.srOnly}>{caption}</caption>
                 <thead>

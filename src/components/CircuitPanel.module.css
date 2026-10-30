@@ -8,7 +8,7 @@
     gap: 2px;
     padding: 3px;
     width: fit-content;
-    background: var(--surface-1);
+    background: var(--bg);
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
 }
@@ -23,10 +23,17 @@
     font-size: 0.85rem;
     font-weight: 600;
     cursor: pointer;
+    transition: background-color var(--transition-fast), color var(--transition-fast);
 }
 
 .tab[aria-selected='true'] {
-    background: var(--surface-1);
+    background: var(--gradient-racing);
+    color: var(--text-1);
+    box-shadow: 0 5px 14px rgba(225, 6, 0, 0.24);
+}
+
+.tab:hover:not([aria-selected='true']) {
+    background: var(--surface-2);
     color: var(--text-1);
 }
 
@@ -34,7 +41,9 @@
     aspect-ratio: 4 / 3;
     width: 100%;
     overflow: hidden;
-    background: var(--surface-1);
+    background:
+        radial-gradient(ellipse at 50% 50%, rgba(225, 6, 0, 0.08), transparent 62%),
+        linear-gradient(145deg, var(--surface-2), var(--bg));
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
 }
@@ -47,15 +56,15 @@
 
 .trackShadow {
     fill: none;
-    stroke: rgba(255, 255, 255, 0.08);
-    stroke-width: 26;
+    stroke: rgba(225, 6, 0, 0.16);
+    stroke-width: 30;
     stroke-linejoin: round;
 }
 
 .track {
     fill: none;
     stroke: var(--text-1);
-    stroke-width: 9;
+    stroke-width: 8;
     stroke-linejoin: round;
     stroke-linecap: round;
 }

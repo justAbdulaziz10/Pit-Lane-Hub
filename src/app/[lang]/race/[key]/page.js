@@ -133,14 +133,14 @@ function MeetingPage({ resolved, title, now, lang }) {
     const status = resolved.kind === 'cancelled' ? 'cancelled' : meetingStatus(meeting, now);
     return (
         <>
-            <header className={styles.hero}>
-                <div className={styles.heroContent}>
+            <header className={`page-hero ${styles.hero}`}>
+                <div className={`page-hero__content ${styles.heroContent}`}>
                     <Link href={localePath(lang, '/schedule')} className={styles.backLink}>{t.backToCalendar}</Link>
-                    <div className={styles.heroMeta}>
+                    <div className={`page-hero__badge ${styles.heroMeta}`}>
                         <span className={styles.round}>{resolved.kind === 'testing' ? t.testing : t.notHeld}</span>
                         <StatusBadge status={status} lang={lang} />
                     </div>
-                    <h1>{title}</h1>
+                    <h1 className="page-hero__title">{title}</h1>
                     <p className={styles.circuit}>
                         {meeting.circuitShortName && <bdi dir="ltr">{meeting.circuitShortName}</bdi>}
                         {meeting.circuitShortName && meeting.country ? (lang === 'ar' ? '، ' : ', ') : ''}
@@ -208,14 +208,14 @@ async function RaceWeekend({ resolved, title, now, lang }) {
 
     return (
         <>
-            <header className={styles.hero}>
-                <div className={styles.heroContent}>
+            <header className={`page-hero ${styles.hero}`}>
+                <div className={`page-hero__content ${styles.heroContent}`}>
                     <Link href={localePath(lang, '/schedule')} className={styles.backLink}>{t.backToCalendar}</Link>
-                    <div className={styles.heroMeta}>
+                    <div className={`page-hero__badge ${styles.heroMeta}`}>
                         <span className={styles.round}><bdi dir="auto">{fill(t.round, { round: formatNumber(lang, event.round) })}</bdi></span>
                         <StatusBadge status={event.status} lang={lang} />
                     </div>
-                    <h1>{title}</h1>
+                    <h1 className="page-hero__title">{title}</h1>
                     <p className={styles.circuit}><bdi dir="ltr">{event.circuit.name}</bdi></p>
                     <p className={styles.location}>
                         {event.circuit.locality && <bdi dir="ltr">{event.circuit.locality}</bdi>}

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import styles from './global-error.module.css';
 
 // Replaces the root layout when it fails, so it carries its own document and minimal styles.
 // The locale comes from the URL because no provider is mounted here.
@@ -20,14 +21,15 @@ export default function GlobalError({ error, reset }) {
 
     return (
         <html lang={lang} dir={isArabic ? 'rtl' : 'ltr'}>
-            <body style={{ margin: 0, minHeight: '100vh', display: 'grid', placeItems: 'center', background: '#0f1115', color: '#f2f3f5', fontFamily: 'system-ui, sans-serif' }}>
-                <main style={{ textAlign: 'center', padding: '2rem' }}>
-                    <h1 style={{ fontSize: '1.5rem', marginBlockEnd: '1.5rem' }}>{t.title}</h1>
-                    <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
-                        <button type="button" onClick={() => reset()} style={{ padding: '0.6rem 1.1rem', border: 0, borderRadius: 8, background: '#e10600', color: '#fff', font: 'inherit', cursor: 'pointer' }}>
+            <body className={styles.body}>
+                <main className={styles.card}>
+                    <span className={styles.badge} aria-hidden="true">⚠</span>
+                    <h1 className={styles.title}>{t.title}</h1>
+                    <div className={styles.actions}>
+                        <button type="button" onClick={() => reset()} className={styles.primary}>
                             {t.retry}
                         </button>
-                        <a href={isArabic ? '/ar' : '/'} style={{ padding: '0.6rem 1.1rem', borderRadius: 8, border: '1px solid #3a3f4b', color: '#f2f3f5', textDecoration: 'none' }}>
+                        <a href={isArabic ? '/ar' : '/'} className={styles.secondary}>
                             {t.home}
                         </a>
                     </div>

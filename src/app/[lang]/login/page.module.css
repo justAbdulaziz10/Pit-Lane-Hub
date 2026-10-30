@@ -1,22 +1,66 @@
-/* Shared by /login and /signup. */
+/* Shared by /login, /signup and /verify-email. */
 .page {
-    display: flex;
-    justify-content: center;
-    padding: var(--space-2xl) var(--space-md) var(--space-xl);
+    position: relative;
+    isolation: isolate;
+    display: grid;
+    place-items: center;
+    min-height: min(860px, 100vh);
+    padding: var(--space-3xl) var(--space-md);
+    overflow: hidden;
+}
+
+.page::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background:
+        radial-gradient(ellipse at 50% 0%, rgba(225, 6, 0, 0.17), transparent 55%),
+        linear-gradient(180deg, var(--bg), #101010);
 }
 
 .panel {
+    position: relative;
     width: 100%;
-    max-width: 420px;
+    max-width: 500px;
+    padding: clamp(var(--space-lg), 4vw, var(--space-2xl));
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-xl);
+    background: linear-gradient(150deg, rgba(28, 28, 28, 0.98), rgba(17, 17, 17, 0.98));
+    box-shadow: var(--shadow-overlay), 0 16px 36px rgba(225, 6, 0, 0.12);
+}
+
+.badge {
+    display: flex;
+    width: fit-content;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto var(--space-md);
+    padding: 0.35rem 0.75rem;
+    border: 1px solid rgba(255, 90, 80, 0.45);
+    border-radius: var(--radius-full);
+    background: rgba(225, 6, 0, 0.15);
+    color: #ff8078;
+    font-size: var(--text-xs);
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
 }
 
 .title {
-    margin-bottom: var(--space-sm);
+    margin-block-end: var(--space-sm);
+    font-size: clamp(2rem, 5vw, 3rem);
+    font-weight: 900;
+    text-align: center;
 }
 
 .intro {
-    margin-bottom: var(--space-lg);
+    max-width: 48ch;
+    margin: 0 auto var(--space-xl);
+    color: var(--text-2);
     font-size: var(--text-sm);
+    line-height: 1.65;
+    text-align: center;
 }
 
 .form {
@@ -33,26 +77,27 @@
     display: flex;
     flex-direction: column;
     gap: 0.375rem;
+    min-width: 0;
 }
 
 .label {
-    font-size: var(--text-sm);
-    font-weight: 600;
     color: var(--text-1);
+    font-size: var(--text-sm);
+    font-weight: 700;
 }
 
 .hint {
+    color: var(--text-2);
     font-size: var(--text-xs);
-    color: var(--text-3);
 }
 
 .divider {
     display: flex;
     align-items: center;
     gap: var(--space-md);
-    margin: var(--space-lg) 0;
+    margin-block: var(--space-lg);
+    color: var(--text-2);
     font-size: var(--text-sm);
-    color: var(--text-3);
 }
 
 .divider::before,
@@ -64,40 +109,56 @@
 }
 
 .resend {
-    margin-top: var(--space-xl);
-    padding-top: var(--space-lg);
-    border-top: 1px solid var(--border);
+    margin-block-start: var(--space-xl);
+    padding-block-start: var(--space-lg);
+    border-block-start: 1px solid var(--border);
 }
 
 .error,
 .notice {
-    margin-bottom: var(--space-lg);
+    margin-block-end: var(--space-lg);
     padding: var(--space-sm) var(--space-md);
     border-radius: var(--radius-md);
-    font-size: var(--text-sm);
     color: var(--text-1);
+    font-size: var(--text-sm);
 }
 
 .error {
-    border: 1px solid var(--accent);
-    background: rgba(225, 6, 0, 0.1);
+    border: 1px solid var(--accent-text);
+    background: rgba(225, 6, 0, 0.16);
 }
 
 .notice {
     border: 1px solid var(--border-strong);
-    background: var(--surface-1);
+    background: var(--surface-2);
 }
 
 .switch {
-    margin-top: var(--space-xl);
+    margin-block-start: var(--space-xl);
+    color: var(--text-2);
     font-size: var(--text-sm);
+    text-align: center;
 }
 
 .switch a {
     color: var(--text-1);
+    font-weight: 700;
     text-decoration: underline;
+    text-decoration-color: var(--accent-text);
+    text-underline-offset: 3px;
 }
 
 .switch a:hover {
     color: var(--accent-text);
+}
+
+@media (max-width: 480px) {
+    .page {
+        min-height: 0;
+        padding-block: var(--space-2xl);
+    }
+
+    .panel {
+        padding: var(--space-lg);
+    }
 }
