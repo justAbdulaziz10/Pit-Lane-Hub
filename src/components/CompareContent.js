@@ -254,15 +254,11 @@ function Comparison({ comparison, t, locale, selected, onChoose, driverProfiles 
                             <bdi dir="ltr" style={{ color: 'color-mix(in srgb, var(--driver-b-color) 62%, white)' }}>{formatNumber(locale, h2h.aheadB)}</bdi>
                         </p>
                         <p className={styles.h2hNote}>
-                            {locale === 'ar'
-                                ? <>{t.classifiedAheadPrefix} <bdi dir="ltr">{formatNumber(locale, h2h.races)}</bdi> {t.classifiedAheadSuffix}{h2h.first && h2h.last ? <> (<bdi dir="ltr">{span({ firstSeason: h2h.first.season, lastSeason: h2h.last.season }, locale)}</bdi>)</> : null}</>
-                                : <>{fill(t.classifiedAhead, { count: formatNumber(locale, h2h.races), raceWord: h2h.races === 1 ? t.race : t.races })}{h2h.first && h2h.last ? ` (${formatNumber(locale, h2h.first.season, { useGrouping: false })}–${formatNumber(locale, h2h.last.season, { useGrouping: false })})` : ''}</>}
+                            <>{fill(t.classifiedAhead, { count: formatNumber(locale, h2h.races), raceWord: h2h.races === 1 ? t.race : t.races })}{h2h.first && h2h.last ? ` (${formatNumber(locale, h2h.first.season, { useGrouping: false })}–${formatNumber(locale, h2h.last.season, { useGrouping: false })})` : ''}</>
                         </p>
                         {h2h.teammateRaces > 0 ? (
                             <p className={styles.h2hNote}>
-                                {locale === 'ar'
-                                    ? <>{t.teammatesPrefix} <bdi dir="ltr">{a.lastName}</bdi> <bdi dir="ltr">{formatNumber(locale, h2h.teammateAheadA)}</bdi> {t.teammatesBetween} <bdi dir="ltr">{b.lastName}</bdi> <bdi dir="ltr">{formatNumber(locale, h2h.teammateAheadB)}</bdi> {t.teammatesTail} <bdi dir="ltr">{formatNumber(locale, h2h.teammateRaces)}</bdi> {t.teammatesRaceWord}</>
-                                    : fill(t.asTeammates, { aName: a.lastName, aCount: h2h.teammateAheadA, bName: b.lastName, bCount: h2h.teammateAheadB, count: h2h.teammateRaces, raceWord: h2h.teammateRaces === 1 ? t.race : t.races })}
+                                {fill(t.asTeammates, { aName: a.lastName, aCount: h2h.teammateAheadA, bName: b.lastName, bCount: h2h.teammateAheadB, count: h2h.teammateRaces, raceWord: h2h.teammateRaces === 1 ? t.race : t.races })}
                             </p>
                         ) : null}
                         {comparison.qualifyingHeadToHead?.races > 0 ? (
@@ -273,9 +269,7 @@ function Comparison({ comparison, t, locale, selected, onChoose, driverProfiles 
                         ) : null}
                     </>
                 ) : (
-                    <p className={styles.h2hNote}>{locale === 'ar'
-                        ? <>{t.neverSharedRacePrefix} <bdi dir="ltr">{a.lastName}</bdi> {t.neverSharedRaceJoiner} <bdi dir="ltr">{b.lastName}</bdi> {t.neverSharedRaceSuffix}</>
-                        : fill(t.neverSharedRace, { aName: a.lastName, bName: b.lastName })}</p>
+                    <p className={styles.h2hNote}>{fill(t.neverSharedRace, { aName: a.lastName, bName: b.lastName })}</p>
                 )}
             </section>
 

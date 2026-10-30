@@ -1,7 +1,5 @@
 import { getEventByMeetingKey } from '@/lib/f1/season';
-import { countryName, raceName } from '@/lib/i18n/f1-names';
-import raceMessages from '@/lib/i18n/messages/race';
-import { pick } from '@/lib/i18n/messages';
+import { raceName } from '@/lib/i18n/f1-names';
 import { notFound } from 'next/navigation';
 import { cache } from 'react';
 import { getSeasonYear } from '@/lib/f1/year';
@@ -26,15 +24,11 @@ export function eventYear(resolved) {
     return new Date(resolved.meeting.dateStart || Date.now()).getUTCFullYear();
 }
 
-export function eventTitle(resolved, locale = 'en') {
+export function eventTitle(resolved) {
     const year = eventYear(resolved);
-    if (resolved.kind === 'race') return `${year} ${raceName(resolved.event.raceName, locale)}`;
+    if (resolved.kind === 'race') return `${year} ${raceName(resolved.event.raceName)}`;
     const name = resolved.meeting.name;
-    if (locale === 'ar' && resolved.kind === 'testing') {
-        const place = resolved.meeting.circuitShortName || countryName(resolved.meeting.country, locale);
-        return `${year} ${place} · ${pick(raceMessages, locale).preSeasonTesting}`;
-    }
     const withoutYear = name.replace(new RegExp(`^${year}\\s+`), '');
-    const localizedName = resolved.kind === 'cancelled' ? raceName(withoutYear, locale) : withoutYear;
+    const localizedName = resolved.kind === 'cancelled' ? raceName(withoutYear) : withoutYear;
     return `${year} ${localizedName}`;
 }

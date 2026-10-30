@@ -14,7 +14,7 @@ export function useLocale() {
     return useContext(LocaleContext);
 }
 
-/** next/link that keeps the visitor in their language: href is an app path ("/teams"). */
+/** next/link for app paths such as "/teams". */
 export function Link({ href, ...props }) {
     const locale = useLocale();
     const target = typeof href === 'string' && href.startsWith('/') ? localePath(locale, href) : href;

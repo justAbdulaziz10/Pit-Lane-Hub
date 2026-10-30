@@ -2,7 +2,6 @@ import { createHash } from "node:crypto";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { getClientIp, rateLimit } from "@/lib/rate-limit";
-import { isLocale, localePath } from "@/lib/i18n/config";
 import { pick } from "@/lib/i18n/messages";
 import errorMessages from "@/lib/i18n/messages/errors";
 import { NextResponse } from "next/server";
@@ -15,11 +14,6 @@ const DUMMY_PASSWORD_HASH = "$2b$10$CFQ8W3JJN2v6TZXERzjM1O3g/RvuvylIe5v/MpKNgUTt
 
 function sha256Hex(value) {
     return createHash("sha256").update(value).digest("hex");
-}
-
-function requestLocale(request) {
-    const value = new URL(request.url).searchParams.get("lang");
-    return isLocale(value) ? value : "en";
 }
 
 /** Rejects cross-site form posts. A missing or opaque ("null") Origin is left to the token check. */
@@ -35,31 +29,26 @@ function isForeignOrigin(request) {
  */
 export function GET(request) {
     const url = new URL(request.url);
-    const lang = requestLocale(request);
     const token = url.searchParams.get("token");
     if (!token || !TOKEN_PATTERN.test(token)) {
-        return NextResponse.redirect(new URL(localePath(lang, "/login?verification=invalid"), request.url));
+        return NextResponse.redirect(new URL("/login?verification=invalid", request.url));
     }
-    const confirmUrl = new URL(localePath(lang, "/verify-email"), request.url);
+    const confirmUrl = new URL("/verify-email", request.url);
     confirmUrl.searchParams.set("token", token);
     return NextResponse.redirect(confirmUrl);
 }
 
 /** Verifies the address for a token posted from /verify-email. */
 export async function POST(request) {
-    const urlLang = requestLocale(request);
-    let lang = urlLang;
-    const invalid = () => NextResponse.redirect(new URL(localePath(lang, "/login?verification=invalid"), request.url), 303);
+    const invalid = () => NextResponse.redirect(new URL("/login?verification=invalid", request.url), 303);
 
     if (isForeignOrigin(request)) {
-        const t = pick(errorMessages, lang);
+        const t = pick(errorMessages);
         return NextResponse.json({ error: t.invalidRequestOrigin }, { status: 403 });
     }
 
     const form = await request.formData().catch(() => null);
-    const formLang = form?.get("lang");
-    if (isLocale(formLang)) lang = formLang;
-    const t = pick(errorMessages, lang);
+    const t = pick(errorMessages);
     const token = form?.get("token");
     if (typeof token !== "string" || !TOKEN_PATTERN.test(token)) return invalid();
 
@@ -119,7 +108,7 @@ export async function POST(request) {
 
         if (!passwordValid) {
             await rateLimit(emailFailureKey, emailFailureOptions);
-            const confirmationUrl = new URL(localePath(lang, "/verify-email"), request.url);
+            const confirmationUrl = new URL("/verify-email", request.url);
             confirmationUrl.searchParams.set("token", token);
             confirmationUrl.searchParams.set("verification", "password");
             return NextResponse.redirect(confirmationUrl, 303);
@@ -144,7 +133,7 @@ export async function POST(request) {
         });
         if (result.count !== 1) return invalid();
 
-        return NextResponse.redirect(new URL(localePath(lang, "/login?verified=true"), request.url), 303);
+        return NextResponse.redirect(new URL("/login?verified=true", request.url), 303);
     } catch {
         return invalid();
     }

@@ -23,28 +23,6 @@ const teams = {
         grandsPrix: 'Grands Prix',
         championshipSeasons: 'Championship seasons',
     },
-    ar: {
-        ...sharedStats.ar,
-        pageTitle: 'فرق {year}',
-        afterRound: 'ترتيب الصانعين بعد الجولة {round}',
-        noTeams: 'لم يُعلَن بعد عن فرق موسم {year}.',
-        teamDrivers: 'سائقو {team}',
-        metadataTitle: 'فرق الفورمولا 1 وسائقوها',
-        metadataDescription: 'تعرّف على فرق الفورمولا 1 الحالية وسائقيها وترتيبها ونقاطها في البطولة.',
-        metadataDetailTitle: '{name}: سائقو الفريق وترتيبه وتاريخه في الفورمولا 1',
-        currentTeamDescription: '{name} في الفورمولا 1: السائقون الحاليون وترتيب البطولة والانتصارات والألقاب.',
-        historicalTeamDescription: '{name} في الفورمولا 1: انتصارات السباقات والبطولات والمواسم المشاركة.',
-        allTeams: 'كل الفرق',
-        season: 'موسم {year}',
-        position: 'الترتيب',
-        nationality: 'الجنسية',
-        seasonDrivers: 'سائقو {year}',
-        allTimeRecord: 'السجل عبر التاريخ',
-        constructorTitles: 'ألقاب الصانعين',
-        raceWins: 'انتصارات السباقات',
-        grandsPrix: 'سباقات الجائزة الكبرى',
-        championshipSeasons: 'مواسم حصد البطولة',
-    },
 };
 
 export default teams;

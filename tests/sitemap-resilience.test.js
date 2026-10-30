@@ -12,6 +12,7 @@ vi.mock('@/lib/f1/drivers', () => ({ getGrid: mocks.getGrid }));
 vi.mock('@/lib/f1/teams', () => ({ getTeams: mocks.getTeams }));
 
 import sitemap from '@/app/sitemap';
+import robots from '@/app/robots';
 
 const completeData = {
     calendar: {
@@ -46,5 +47,13 @@ describe('sitemap upstream failure behavior', () => {
         const fallback = await sitemap();
 
         expect(fallback.map((entry) => entry.url)).toEqual(complete.map((entry) => entry.url));
+    });
+
+    it('returns one English URL per page and no legacy URLs or language alternates', async () => {
+        const entries = await sitemap();
+        expect(entries.length).toBeGreaterThan(0);
+        expect(entries.every(({ url }) => !new URL(url).pathname.startsWith('/ar'))).toBe(true);
+        expect(entries.every((entry) => !entry.alternates)).toBe(true);
+        expect(JSON.stringify(robots())).not.toContain('/ar');
     });
 });

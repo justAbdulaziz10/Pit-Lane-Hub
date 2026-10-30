@@ -30,10 +30,6 @@
     content: '\2190\00a0';
 }
 
-:global([dir='rtl']) .backLink::before {
-    content: '\2192\00a0';
-}
-
 .backLink:hover {
     color: var(--text-1);
 }
@@ -418,9 +414,6 @@
         mask-image: linear-gradient(to right, #000 85%, transparent);
     }
 
-    :global([dir='rtl']) .sectionTabList {
-        mask-image: linear-gradient(to left, #000 85%, transparent);
-    }
 }
 
 .sectionTab {

@@ -1,133 +1,83 @@
 import { describe, expect, it } from 'vitest';
-import { localeAlternates, localeDir, localePath, splitLocale } from '@/lib/i18n/config';
-import { countryName, nationalityName, raceName } from '@/lib/i18n/f1-names';
-import drivers, { sharedStats } from '@/lib/i18n/messages/drivers';
-import compare from '@/lib/i18n/messages/compare';
-import teams from '@/lib/i18n/messages/teams';
-import standings from '@/lib/i18n/messages/standings';
-import history from '@/lib/i18n/messages/history';
-import ALL_TIME_DRIVERS from '@/lib/f1/data/drivers-all-time.json';
+import { DEFAULT_LOCALE, LOCALES, localeAlternates, localePath, splitLocale } from '@/lib/i18n/config';
+import { formatDate, formatNumber, intlLocale } from '@/lib/i18n/format';
+import { resolveLocaleRoute } from '@/lib/i18n/routing';
+import { proxy } from '@/proxy';
 
-// Every race name in Jolpica's archive (1950–2026) and every circuit country.
-const RACE_NAMES = ['70th Anniversary Grand Prix', 'Abu Dhabi Grand Prix', 'Argentine Grand Prix', 'Australian Grand Prix', 'Austrian Grand Prix', 'Azerbaijan Grand Prix', 'Bahrain Grand Prix', 'Bahrain Grand Prix in Malaysia', 'Barcelona Grand Prix', 'Belgian Grand Prix', 'Brazilian Grand Prix', 'British Grand Prix', 'Caesars Palace Grand Prix', 'Canadian Grand Prix', 'Chinese Grand Prix', 'Dallas Grand Prix', 'Detroit Grand Prix', 'Dutch Grand Prix', 'Eifel Grand Prix', 'Emilia Romagna Grand Prix', 'European Grand Prix', 'French Grand Prix', 'German Grand Prix', 'Hungarian Grand Prix', 'Indian Grand Prix', 'Indianapolis 500', 'Italian Grand Prix', 'Japanese Grand Prix', 'Korean Grand Prix', 'Las Vegas Grand Prix', 'Luxembourg Grand Prix', 'Malaysian Grand Prix', 'Mexican Grand Prix', 'Mexico City Grand Prix', 'Miami Grand Prix', 'Monaco Grand Prix', 'Moroccan Grand Prix', 'Pacific Grand Prix', 'Pescara Grand Prix', 'Portuguese Grand Prix', 'Qatar Grand Prix', 'Russian Grand Prix', 'Sakhir Grand Prix', 'San Marino Grand Prix', 'Saudi Arabian Grand Prix', 'Singapore Grand Prix', 'South African Grand Prix', 'Spanish Grand Prix', 'Styrian Grand Prix', 'Swedish Grand Prix', 'Swiss Grand Prix', 'São Paulo Grand Prix', 'Turkish Grand Prix', 'Tuscan Grand Prix', 'United States Grand Prix', 'United States Grand Prix West'];
-const COUNTRIES = ['Argentina', 'Australia', 'Austria', 'Azerbaijan', 'Bahrain', 'Belgium', 'Brazil', 'Canada', 'China', 'France', 'Germany', 'Hungary', 'India', 'Italy', 'Japan', 'Korea', 'Malaysia', 'Mexico', 'Monaco', 'Morocco', 'Netherlands', 'Portugal', 'Qatar', 'Russia', 'Saudi Arabia', 'Singapore', 'South Africa', 'Spain', 'Sweden', 'Switzerland', 'Turkey', 'UAE', 'UK', 'USA', 'United Kingdom', 'United States', 'United Arab Emirates'];
-const ARABIC = /[؀-ۿ]/;
-
-describe('locale paths', () => {
-    it('keeps English URLs unprefixed and puts Arabic under /ar', () => {
+describe('English-only locale paths', () => {
+    it('keeps English URLs unprefixed and preserves query strings and hashes', () => {
+        expect(LOCALES).toEqual(['en']);
+        expect(DEFAULT_LOCALE).toBe('en');
         expect(localePath('en', '/driver/1')).toBe('/driver/1');
-        expect(localePath('ar', '/driver/1')).toBe('/ar/driver/1');
-        expect(localePath('ar', '/')).toBe('/ar');
-        expect(localePath('ar', '/history?year=1976#top')).toBe('/ar/history?year=1976#top');
-        expect(localePath('xx', 'teams')).toBe('/teams');
+        expect(localePath('en', '/history?year=1976#top')).toBe('/history?year=1976#top');
     });
 
-    it('splits a public pathname into locale and app path', () => {
-        expect(splitLocale('/ar/standings')).toEqual({ locale: 'ar', path: '/standings', prefixed: true });
-        expect(splitLocale('/ar')).toEqual({ locale: 'ar', path: '/', prefixed: true });
+    it('keeps the English internal segment and unknown-prefix behavior', () => {
         expect(splitLocale('/en/teams')).toEqual({ locale: 'en', path: '/teams', prefixed: true });
-        expect(splitLocale('/arabic-thing')).toEqual({ locale: 'en', path: '/arabic-thing', prefixed: false });
-        expect(splitLocale('/fr/teams')).toMatchObject({ locale: 'en', prefixed: false });
+        expect(splitLocale('/fr/teams')).toEqual({ locale: 'en', path: '/fr/teams', prefixed: false });
+        expect(splitLocale('/racing-thing')).toEqual({ locale: 'en', path: '/racing-thing', prefixed: false });
     });
 
-    it('builds hreflang alternates and text direction', () => {
-        expect(localeAlternates('ar', '/teams')).toEqual({
-            canonical: '/ar/teams',
-            languages: { en: '/teams', ar: '/ar/teams', 'x-default': '/teams' },
-        });
-        expect(localeDir('ar')).toBe('rtl');
-        expect(localeDir('en')).toBe('ltr');
+    it('emits only the canonical English URL', () => {
+        expect(localeAlternates('en', '/teams')).toEqual({ canonical: '/teams' });
     });
 });
 
-describe('Arabic F1 names', () => {
-    it('translates every Grand Prix in the archive', () => {
-        for (const name of RACE_NAMES) expect(raceName(name, 'ar'), name).toMatch(ARABIC);
-        expect(raceName('Bahrain Grand Prix', 'ar')).toBe('جائزة البحرين الكبرى');
-        expect(raceName('Bahrain Grand Prix', 'en')).toBe('Bahrain Grand Prix');
-        expect(raceName('Moon Grand Prix', 'ar')).toBe('Moon Grand Prix');
-    });
-
-    it('translates every circuit country and driver nationality', () => {
-        for (const country of COUNTRIES) expect(countryName(country, 'ar'), country).toMatch(ARABIC);
-        const nationalities = new Set(ALL_TIME_DRIVERS.map((driver) => driver.nationality).filter(Boolean));
-        for (const nationality of nationalities) expect(nationalityName(nationality, 'ar'), nationality).toMatch(ARABIC);
-        expect(nationalityName('British', 'en')).toBe('British');
+describe('English formatting', () => {
+    it('uses en-GB for dates and numbers', () => {
+        expect(intlLocale()).toBe('en-GB');
+        expect(formatNumber('en', 1234.5)).toBe('1,234.5');
+        expect(formatDate('en', '2026-10-25T19:00:00Z', {
+            day: 'numeric', month: 'long', timeZone: 'UTC',
+        })).toBe('25 October');
     });
 });
 
-describe('Arabic route messages', () => {
-    it('provides Arabic copy for each B2 namespace key', () => {
-        for (const namespace of [drivers, compare, teams, standings, history]) {
-            expect(Object.keys(namespace.ar).sort()).toEqual(Object.keys(namespace.en).sort());
-            for (const value of Object.values(namespace.ar)) expect(value).toMatch(ARABIC);
-        }
-    });
+describe('proxy locale routing', () => {
+    const requestFor = (path, userAgent = '') => {
+        const url = new URL(path, 'https://pitlane.test');
+        return { nextUrl: url, url: url.toString(), headers: new Headers({ 'user-agent': userAgent }) };
+    };
 
-    it('reuses the driver namespace for shared stat labels', () => {
-        for (const key of Object.keys(sharedStats.en)) {
-            expect(drivers.en[key]).toBe(sharedStats.en[key]);
-            expect(compare.ar[key]).toBe(sharedStats.ar[key]);
-            expect(teams.ar[key]).toBe(sharedStats.ar[key]);
-            expect(standings.ar[key]).toBe(sharedStats.ar[key]);
-            expect(history.ar[key]).toBe(sharedStats.ar[key]);
-        }
-    });
-});
-
-describe('locale formatting', async () => {
-    const { formatDate, formatNumber } = await import('@/lib/i18n/format');
-
-    it('uses Gregorian dates and Western digits in Arabic', () => {
-        const date = formatDate('ar', '2026-10-25T19:00:00Z', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
-        expect(date).toMatch(/25/);
-        expect(date).toMatch(/2026/);
-        expect(date).toMatch(/أكتوبر/);
-        expect(formatNumber('ar', 1234.5)).toMatch(/1[,٬]?234[.٫]5/);
-        expect(formatDate('en', '2026-10-25T19:00:00Z', { day: 'numeric', month: 'long', timeZone: 'UTC' })).toBe('25 October');
-    });
-});
-
-describe('proxy locale routing', async () => {
-    const { resolveLocaleRoute } = await import('@/lib/i18n/routing');
-
-    it('rewrites English internally, passes Arabic through and hides /en', () => {
+    it('rewrites English internally and removes the internal /en prefix', () => {
         expect(resolveLocaleRoute({ pathname: '/' })).toEqual({ action: 'rewrite', url: '/en', locale: 'en' });
-        expect(resolveLocaleRoute({ pathname: '/history', search: '?year=1976' })).toEqual({ action: 'rewrite', url: '/en/history?year=1976', locale: 'en' });
-        expect(resolveLocaleRoute({ pathname: '/ar/driver/1' })).toEqual({ action: 'next', locale: 'ar' });
-        expect(resolveLocaleRoute({ pathname: '/en/teams', search: '?x=1' })).toEqual({ action: 'redirect', url: '/teams?x=1' });
+        expect(resolveLocaleRoute({ pathname: '/history', search: '?year=1976' })).toEqual({
+            action: 'rewrite', url: '/en/history?year=1976', locale: 'en',
+        });
+        expect(resolveLocaleRoute({ pathname: '/en/teams', search: '?x=1' })).toEqual({
+            action: 'redirect', url: '/teams?x=1',
+        });
         expect(resolveLocaleRoute({ pathname: '/en' })).toEqual({ action: 'redirect', url: '/' });
     });
 
-    it('sends visitors who chose Arabic to /ar, but never bots or client navigations', () => {
-        expect(resolveLocaleRoute({ pathname: '/teams', cookieLocale: 'ar' })).toEqual({ action: 'redirect', url: '/ar/teams', temporary: true });
-        expect(resolveLocaleRoute({ pathname: '/teams', cookieLocale: 'ar', userAgent: 'Googlebot/2.1' }).action).toBe('rewrite');
-        expect(resolveLocaleRoute({ pathname: '/teams', cookieLocale: 'ar', isDocument: false }).action).toBe('rewrite');
-        expect(resolveLocaleRoute({ pathname: '/teams', cookieLocale: 'en' }).action).toBe('rewrite');
+    it('permanently redirects the legacy prefix for pages and bots, preserving the query', () => {
+        expect(resolveLocaleRoute({ pathname: '/ar' })).toEqual({ action: 'redirect', url: '/' });
+        expect(resolveLocaleRoute({
+            pathname: '/ar/drivers',
+            search: '?x=1',
+            userAgent: 'Googlebot/2.1',
+        })).toEqual({ action: 'redirect', url: '/drivers?x=1' });
+
+        const rootResponse = proxy(requestFor('/ar'));
+        expect(rootResponse.status).toBe(308);
+        expect(rootResponse.headers.get('location')).toBe('https://pitlane.test/');
+
+        const botResponse = proxy(requestFor('/ar/drivers?x=1', 'Googlebot/2.1'));
+        expect(botResponse.status).toBe(308);
+        expect(botResponse.headers.get('location')).toBe('https://pitlane.test/drivers?x=1');
+    });
+
+    it('keeps the existing behavior for unknown two-letter prefixes', () => {
+        expect(resolveLocaleRoute({ pathname: '/fr/teams' })).toEqual({
+            action: 'rewrite', url: '/en/fr/teams', locale: 'en',
+        });
     });
 });
 
-describe('metadata image routes', async () => {
-    const { resolveLocaleRoute } = await import('@/lib/i18n/routing');
-
-    it('serves generated og/twitter images under the internal /en segment without redirecting', () => {
+describe('metadata image routes', () => {
+    it('serves generated images under the internal segment without redirecting', () => {
         expect(resolveLocaleRoute({ pathname: '/en/opengraph-image' }).action).toBe('next');
         expect(resolveLocaleRoute({ pathname: '/en/driver/1/opengraph-image-1a2b3c' }).action).toBe('next');
         expect(resolveLocaleRoute({ pathname: '/en/driver/1' }).action).toBe('redirect');
-    });
-});
-
-describe('sitemap languages', async () => {
-    const { withLanguages } = await import('@/app/sitemap');
-    const { SITE_URL } = await import('@/lib/site');
-
-    it('lists English and Arabic URLs with hreflang alternates', () => {
-        const entries = withLanguages([{ url: `${SITE_URL}/teams` }, { url: SITE_URL }]);
-        expect(entries.map((entry) => entry.url.slice(SITE_URL.length))).toEqual(['/teams', '/ar/teams', '', '/ar']);
-        expect(entries[1].alternates.languages).toEqual({
-            en: `${SITE_URL}/teams`,
-            ar: `${SITE_URL}/ar/teams`,
-            'x-default': `${SITE_URL}/teams`,
-        });
     });
 });

@@ -23,9 +23,9 @@ import * as verifyRoute from '@/app/api/auth/verify/route';
 const sha256 = (value) => createHash('sha256').update(value).digest('hex');
 const token = 'a'.repeat(64);
 
-function postToken(value, headers = {}, lang = 'en') {
-    const body = new URLSearchParams({ token: value, password: 'racecar123', lang });
-    return new Request(`https://pitlane.test/api/auth/verify?lang=${lang}`, {
+function postToken(value, headers = {}) {
+    const body = new URLSearchParams({ token: value, password: 'racecar123' });
+    return new Request('https://pitlane.test/api/auth/verify', {
         method: 'POST',
         headers: { 'content-type': 'application/x-www-form-urlencoded', origin: 'https://pitlane.test', ...headers },
         body,
@@ -50,15 +50,6 @@ describe('email verification route', () => {
         expect(response.headers.get('location')).toBe(`https://pitlane.test/verify-email?token=${token}`);
         expect(mocks.findFirst).not.toHaveBeenCalled();
         expect(mocks.update).not.toHaveBeenCalled();
-        expect(mocks.updateMany).not.toHaveBeenCalled();
-    });
-
-    it('keeps an Arabic verification link on the Arabic confirmation route without changing state', async () => {
-        const response = await verifyRoute.GET(new Request(`https://pitlane.test/api/auth/verify?token=${token}&lang=ar`));
-
-        expect(response.status).toBe(307);
-        expect(response.headers.get('location')).toBe(`https://pitlane.test/ar/verify-email?token=${token}`);
-        expect(mocks.findFirst).not.toHaveBeenCalled();
         expect(mocks.updateMany).not.toHaveBeenCalled();
     });
 
@@ -117,15 +108,6 @@ describe('email verification route', () => {
         });
     });
 
-    it('POST returns to the matching Arabic login route after verification', async () => {
-        mocks.findFirst.mockResolvedValue({ id: 'user_123', email: 'racer@example.com', passwordHash: 'hash', emailVerificationPasswordDigest: sha256('hash') });
-
-        const response = await verifyRoute.POST(postToken(token, {}, 'ar'));
-
-        expect(response.status).toBe(303);
-        expect(response.headers.get('location')).toBe('https://pitlane.test/ar/login?verified=true');
-    });
-
     it('POST refuses a token issued for a different password', async () => {
         mocks.findFirst.mockResolvedValue({
             id: 'user_123', email: 'racer@example.com', passwordHash: 'attacker-hash', emailVerificationPasswordDigest: sha256('owner-hash'),
@@ -148,20 +130,20 @@ describe('email verification route', () => {
     });
 
     it('POST rejects a cross-site form submission', async () => {
-        const response = await verifyRoute.POST(postToken(token, { origin: 'https://evil.example' }, 'ar'));
+        const response = await verifyRoute.POST(postToken(token, { origin: 'https://evil.example' }));
 
         expect(response.status).toBe(403);
-        await expect(response.json()).resolves.toEqual({ error: 'مصدر الطلب غير صالح.' });
+        await expect(response.json()).resolves.toEqual({ error: 'Invalid request origin.' });
         expect(mocks.findFirst).not.toHaveBeenCalled();
     });
 
-    it('localizes Arabic verification rate-limit responses', async () => {
+    it('returns English verification rate-limit responses', async () => {
         mocks.rateLimit.mockResolvedValue({ success: false });
 
-        const response = await verifyRoute.POST(postToken(token, {}, 'ar'));
+        const response = await verifyRoute.POST(postToken(token));
 
         expect(response.status).toBe(429);
-        await expect(response.json()).resolves.toEqual({ error: 'تجاوزت عدد محاولات التحقق. حاول لاحقًا.' });
+        await expect(response.json()).resolves.toEqual({ error: 'Too many verification attempts.' });
         expect(mocks.findFirst).not.toHaveBeenCalled();
     });
 

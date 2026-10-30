@@ -31,7 +31,7 @@ export async function generateMetadata({ params }) {
             description: fill(t.openGraphDescription, { year: yearText }),
             url: canonical,
             images: [{ url: image, width: 1200, height: 630 }],
-            locale: lang === 'ar' ? 'ar_SA' : 'en_US',
+            locale: 'en_US',
         },
         twitter: { card: 'summary_large_image', images: [image] },
     };

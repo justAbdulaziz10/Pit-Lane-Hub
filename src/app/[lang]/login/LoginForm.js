@@ -2,7 +2,6 @@
 
 import { signIn } from 'next-auth/react';
 import { Link, useLocale } from '@/lib/i18n/LocaleProvider';
-import { localePath } from '@/lib/i18n/config';
 import { pick } from '@/lib/i18n/messages';
 import authMessages from '@/lib/i18n/messages/auth';
 import { useRouter } from 'next/navigation';
@@ -15,15 +14,8 @@ function normalizeEmail(value) {
     return String(value || '').trim().toLowerCase();
 }
 
-function localizeRedirect(locale, path) {
-    if (locale === 'ar' && (path === '/ar' || path.startsWith('/ar/'))) return path;
-    return localePath(locale, path);
-}
-
-function LoginFormContent({ lang, searchParams }) {
-    const contextLocale = useLocale();
-    const locale = contextLocale === lang ? lang : contextLocale;
-    const t = pick(authMessages, locale);
+function LoginFormContent({ searchParams }) {
+    const t = pick(authMessages, useLocale());
     const router = useRouter();
     const [error, setError] = useState('');
     const [actionNotice, setActionNotice] = useState('');
@@ -34,7 +26,7 @@ function LoginFormContent({ lang, searchParams }) {
         const value = searchParams[name];
         return Array.isArray(value) ? value[0] || '' : value || '';
     };
-    const redirectTo = localizeRedirect(locale, safeRedirectPath(getParam('redirect') || getParam('callbackUrl'), origin));
+    const redirectTo = safeRedirectPath(getParam('redirect') || getParam('callbackUrl'), origin);
     const authErrors = {
         TooManyRequests: t.tooManySignInLinks,
         Verification: t.invalidSignInLink,
@@ -162,7 +154,6 @@ function LoginFormContent({ lang, searchParams }) {
 
                 {canResendVerification && (
                     <form onSubmit={handleResendVerification} className={`${styles.form} ${styles.resend}`}>
-                        <input type="hidden" name="lang" value={locale} />
                         <div className={styles.field}>
                             <label htmlFor="resend-email" className={styles.label}>{t.resendVerification}</label>
                             <input
@@ -189,6 +180,6 @@ function LoginFormContent({ lang, searchParams }) {
     );
 }
 
-export default function LoginForm({ lang, searchParams }) {
-    return <LoginFormContent lang={lang} searchParams={searchParams} />;
+export default function LoginForm({ searchParams }) {
+    return <LoginFormContent searchParams={searchParams} />;
 }

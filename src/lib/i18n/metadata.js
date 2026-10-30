@@ -3,7 +3,7 @@ import { pick } from './messages';
 import errorMessages from './messages/errors';
 import { SITE_NAME } from '../site';
 
-/** Shared localized SEO metadata shape for pages inside the [lang] route segment. */
+/** Shared English SEO metadata shape for pages inside the [lang] route segment. */
 export function localizedPageMetadata(lang, path, { title, description, ...extra } = {}) {
     return {
         title,
@@ -13,7 +13,7 @@ export function localizedPageMetadata(lang, path, { title, description, ...extra
             title,
             description,
             url: localePath(lang, path),
-            locale: lang === 'ar' ? 'ar_SA' : 'en_US',
+            locale: 'en_US',
         },
         ...extra,
     };

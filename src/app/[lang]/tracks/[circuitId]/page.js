@@ -46,7 +46,7 @@ export async function generateMetadata({ params }) {
                 description,
                 url: canonical,
                 images: [{ url: image, width: 1200, height: 630, alt: title }],
-                locale: lang === 'ar' ? 'ar_SA' : 'en_US',
+                locale: 'en_US',
             },
             twitter: { card: 'summary_large_image', images: [image] },
         };
@@ -92,7 +92,7 @@ export default async function CircuitPage({ params }) {
                                 <dt>{t.location}</dt>
                                 <dd>
                                     {place.locality && <bdi dir="ltr">{place.locality}</bdi>}
-                                    {place.locality && place.country ? (lang === 'ar' ? '، ' : ', ') : ''}
+                                    {place.locality && place.country ? (', ') : ''}
                                     {countryName(place.country, lang)}
                                 </dd>
                             </div>

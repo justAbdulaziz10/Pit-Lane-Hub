@@ -22,7 +22,7 @@ Commands:
   stop [--dry-run]       Stop only the server this tool launched (by process group)
   features               List drivable features
 
-Features: ${'home, drivers-favorites, standings, live, not-found'}
+Features: ${'home, drivers-favorites, standings, live, arabic-redirect, not-found'}
 Evidence: artifacts/verify/<feature>/<timestamp>/ (screenshot + result.json)`;
 
 function out(obj, code = obj.ok ? 0 : 1) {
@@ -347,16 +347,12 @@ const DRIVES = {
         expectEq(steps, '/junior redirects to /standings', new URL(page.url()).pathname, '/standings');
     },
 
-    async arabic(page, steps, base) {
-        await page.goto(base + '/');
-        await page.locator('header').getByRole('link', { name: 'العربية' }).first().click();
-        await page.waitForURL(/\/ar$/);
-        expectEq(steps, 'language switch lands on /ar', new URL(page.url()).pathname, '/ar');
-        expectEq(steps, 'document is rtl', await page.locator('html').getAttribute('dir'), 'rtl');
-        expectEq(steps, 'document lang is ar', await page.locator('html').getAttribute('lang'), 'ar');
-        expectEq(steps, 'Arabic "Next race" card visible',
-            await page.getByRole('heading', { level: 2, name: /^السباق القادم/ }).isVisible(), true);
-        expectEq(steps, 'internal links stay in Arabic', await page.locator('main a[href^="/driver/"]').count(), 0);
+    async 'arabic-redirect'(page, steps, base) {
+        const res = await page.goto(base + '/ar/drivers');
+        expectEq(steps, 'HTTP 200 after redirect', res.status(), 200);
+        expectEq(steps, 'legacy URL lands on /drivers', new URL(page.url()).pathname, '/drivers');
+        expectEq(steps, 'document lang is English', await page.locator('html').getAttribute('lang'), 'en');
+        expectEq(steps, 'no right-to-left elements remain', await page.locator('[dir="rtl"]').count(), 0);
     },
 
     // Render-only: submitting needs Postgres, Resend, and Polar (see SKILL.md Unproven).

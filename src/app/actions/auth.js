@@ -5,17 +5,11 @@ import { headers } from "next/headers";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { getClientIp, rateLimit } from "@/lib/rate-limit";
-import { isLocale, localePath } from "@/lib/i18n/config";
 import { fill, pick } from "@/lib/i18n/messages";
 import authMessages from "@/lib/i18n/messages/auth";
 import { isValidEmail, normalizeEmail, validatePassword } from "@/lib/validation";
 
 const TOKEN_LIFETIME_MS = 24 * 60 * 60 * 1000;
-
-function formLocale(formData) {
-    const value = formData.get("lang");
-    return isLocale(value) ? value : "en";
-}
 
 async function checkRequestLimit(scope, limit) {
     const requestHeaders = await headers();
@@ -73,9 +67,9 @@ function sha256Hex(value) {
  * Emails a verification link for a password account. The stored token is bound to the account's
  * current passwordHash (via its SHA-256 digest), so the link stops working if the password changes.
  */
-async function sendVerificationEmail(user, lang) {
+async function sendVerificationEmail(user) {
     if (!user.passwordHash) throw new Error("Verification links are only issued for password accounts");
-    const t = pick(authMessages, lang);
+    const t = pick(authMessages);
 
     const token = randomBytes(32).toString("hex");
     const expires = new Date(Date.now() + TOKEN_LIFETIME_MS);
@@ -91,7 +85,7 @@ async function sendVerificationEmail(user, lang) {
 
     // The link opens a confirmation page; only its POST verifies, so mail scanners that prefetch
     // links cannot verify an address on their own.
-    const verificationUrl = new URL(localePath(lang, "/verify-email"), getPublicOrigin());
+    const verificationUrl = new URL("/verify-email", getPublicOrigin());
     verificationUrl.searchParams.set("token", token);
 
     await sendResendEmail({
@@ -101,9 +95,9 @@ async function sendVerificationEmail(user, lang) {
     });
 }
 
-async function sendExistingAccountEmail(email, lang) {
-    const t = pick(authMessages, lang);
-    const loginUrl = new URL(localePath(lang, "/login"), getPublicOrigin());
+async function sendExistingAccountEmail(email) {
+    const t = pick(authMessages);
+    const loginUrl = new URL("/login", getPublicOrigin());
     await sendResendEmail({
         to: email,
         subject: t.existingAccountEmailSubject,
@@ -112,8 +106,7 @@ async function sendExistingAccountEmail(email, lang) {
 }
 
 export async function registerUser(formData) {
-    const lang = formLocale(formData);
-    const t = pick(authMessages, lang);
+    const t = pick(authMessages);
     const name = String(formData.get("name") || "").trim();
     const email = normalizeEmail(formData.get("email"));
     const password = formData.get("password");
@@ -147,7 +140,7 @@ export async function registerUser(formData) {
 
         if (existingUser?.emailVerified || (existingUser && !existingUser.passwordHash)) {
             try {
-                await sendExistingAccountEmail(email, lang);
+                await sendExistingAccountEmail(email);
             } catch {
                 // The public response must not reveal whether the address is registered.
             }
@@ -159,7 +152,7 @@ export async function registerUser(formData) {
             // re-register a pending address with their own password and wait for the owner to
             // click the link. Resend a link for the existing password instead (rate-limited).
             try {
-                if (await allowVerificationResend(email)) await sendVerificationEmail(existingUser, lang);
+                if (await allowVerificationResend(email)) await sendVerificationEmail(existingUser);
             } catch {
                 // Keep the same response for every case.
             }
@@ -176,7 +169,7 @@ export async function registerUser(formData) {
         })
 
         try {
-            await sendVerificationEmail(user, lang);
+            await sendVerificationEmail(user);
         } catch {
             // Keep the same response for new and existing addresses.
         }
@@ -187,8 +180,7 @@ export async function registerUser(formData) {
 }
 
 export async function resendVerificationEmail(formData) {
-    const lang = formLocale(formData);
-    const t = pick(authMessages, lang);
+    const t = pick(authMessages);
     const email = normalizeEmail(formData.get("email"));
     if (!isValidEmail(email)) return { success: true, message: t.genericResendMessage };
 
@@ -201,7 +193,7 @@ export async function resendVerificationEmail(formData) {
         const user = await prisma.user.findUnique({ where: { email } });
         if (user && !user.emailVerified && user.passwordHash) {
             try {
-                await sendVerificationEmail(user, lang);
+                await sendVerificationEmail(user);
             } catch {
                 // Keep address existence and delivery failures out of the response.
             }

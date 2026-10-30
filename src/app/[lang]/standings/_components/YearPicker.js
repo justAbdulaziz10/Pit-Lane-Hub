@@ -20,8 +20,8 @@ export default function YearPicker({ action, year, min, max, extraParams = {}, l
     const labelId = useId();
     const years = [];
     for (let value = max; value >= min; value -= 1) years.push(value);
-    const previousArrow = lang === 'ar' ? '→' : '←';
-    const nextArrow = lang === 'ar' ? '←' : '→';
+    const previousArrow = '←';
+    const nextArrow = '→';
 
     return (
         <form className={styles.picker} action={localePath(lang, action)} method="get">

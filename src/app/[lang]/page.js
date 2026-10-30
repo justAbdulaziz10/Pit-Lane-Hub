@@ -36,7 +36,7 @@ export async function generateMetadata({ params }) {
             title: t.title,
             description,
             url: localePath(lang, '/'),
-            locale: lang === 'ar' ? 'ar_SA' : 'en_US',
+            locale: 'en_US',
         },
     };
 }
@@ -89,7 +89,7 @@ function NextRace({ race, serverNow, now, t, lang }) {
             </p>
             <p className={styles.meta}>
                 <bdi dir="ltr">{race.circuit.name}</bdi>
-                {race.circuit.country ? <>{lang === 'ar' ? '، ' : ', '}{countryName(race.circuit.country, lang)}</> : null}
+                {race.circuit.country ? <>{', '}{countryName(race.circuit.country, lang)}</> : null}
             </p>
             {sessions.length > 0 && (
                 <ol className={styles.sessions} aria-label={t.weekendSessions}>

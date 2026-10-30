@@ -41,7 +41,7 @@ function RoundCard({ event, status, t, lang, now }) {
                 <p className={styles.circuit}><bdi dir="ltr">{event.circuit.name}</bdi></p>
                 <p className={styles.country}>
                     {event.circuit.locality && <bdi dir="ltr">{event.circuit.locality}</bdi>}
-                    {event.circuit.locality && event.circuit.country ? (lang === 'ar' ? '، ' : ', ') : ''}
+                    {event.circuit.locality && event.circuit.country ? (', ') : ''}
                     {countryName(event.circuit.country, lang)}
                 </p>
                 <div className={styles.cardTimes}>
@@ -103,7 +103,7 @@ function MeetingRow({ meeting, status, index, t, lang }) {
                 <span className={styles.meetingName}>{name}</span>
                 <p className={styles.circuit}>
                     {meeting.circuitShortName && <bdi dir="ltr">{meeting.circuitShortName}</bdi>}
-                    {meeting.circuitShortName && meeting.country ? (lang === 'ar' ? '، ' : ', ') : ''}
+                    {meeting.circuitShortName && meeting.country ? (', ') : ''}
                     {countryName(meeting.country, lang)}
                 </p>
             </div>

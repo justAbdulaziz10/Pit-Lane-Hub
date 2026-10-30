@@ -30,7 +30,7 @@ export async function generateMetadata({ params }) {
     return metadataOrNotFound(lang, async () => {
         const t = pick(raceMessages, lang);
         const resolved = await loadEvent(key);
-        const title = eventTitle(resolved, lang);
+        const title = eventTitle(resolved);
         const path = resolved.kind === 'race' ? `/race/${resolved.event.routeKey}` : `/race/${key}`;
         const canonical = `${SITE_URL}${localePath(lang, path)}`;
         const imagePath = resolved.kind === 'race'
@@ -63,7 +63,7 @@ export async function generateMetadata({ params }) {
                 url: canonical,
                 images: [{ url: `${SITE_URL}${localePath(lang, imagePath)}`, width: 1200, height: 630, alt: displayTitle }],
                 type: 'website',
-                locale: lang === 'ar' ? 'ar_SA' : 'en_US',
+                locale: 'en_US',
             },
             twitter: { card: 'summary_large_image', images: [`${SITE_URL}${localePath(lang, imagePath)}`] },
         };
@@ -143,7 +143,7 @@ function MeetingPage({ resolved, title, now, lang }) {
                     <h1 className="page-hero__title">{title}</h1>
                     <p className={styles.circuit}>
                         {meeting.circuitShortName && <bdi dir="ltr">{meeting.circuitShortName}</bdi>}
-                        {meeting.circuitShortName && meeting.country ? (lang === 'ar' ? '، ' : ', ') : ''}
+                        {meeting.circuitShortName && meeting.country ? (', ') : ''}
                         {countryName(meeting.country, lang)}
                     </p>
                     <p className={styles.date}>
@@ -219,7 +219,7 @@ async function RaceWeekend({ resolved, title, now, lang }) {
                     <p className={styles.circuit}><bdi dir="ltr">{event.circuit.name}</bdi></p>
                     <p className={styles.location}>
                         {event.circuit.locality && <bdi dir="ltr">{event.circuit.locality}</bdi>}
-                        {event.circuit.locality && event.circuit.country ? (lang === 'ar' ? '، ' : ', ') : ''}
+                        {event.circuit.locality && event.circuit.country ? (', ') : ''}
                         {countryName(event.circuit.country, lang)}
                     </p>
                     <p className={styles.date}>
@@ -318,7 +318,7 @@ export default async function RaceDetailPage({ params }) {
     const { key, lang } = await params;
     const resolved = await loadEvent(key);
     const now = requestTime();
-    const title = eventTitle(resolved, lang);
+    const title = eventTitle(resolved);
     const path = resolved.kind === 'race' ? `/race/${resolved.event.routeKey}` : `/race/${key}`;
 
     return (

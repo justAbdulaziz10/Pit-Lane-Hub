@@ -14,21 +14,6 @@ const account = {
         aboutPro: 'About Pit Lane Pro',
         signOut: 'Sign out',
     },
-    ar: {
-        accountBadge: 'حسابك في Pit Lane',
-        metadataTitle: 'حسابك',
-        metadataDescription: 'اطّلع على عضويتك في Pit Lane Hub وأدِر اشتراك Pit Lane Pro.',
-        title: 'الحساب',
-        loading: 'جارٍ تحميل حسابك…',
-        signedInAs: 'تم تسجيل الدخول باسم',
-        membership: 'العضوية',
-        plan: 'الخطة',
-        free: 'مجانية',
-        pitLanePro: 'Pit Lane Pro',
-        manageSubscription: 'إدارة الاشتراك',
-        aboutPro: 'نبذة عن Pit Lane Pro',
-        signOut: 'تسجيل الخروج',
-    },
 };
 
 export default account;

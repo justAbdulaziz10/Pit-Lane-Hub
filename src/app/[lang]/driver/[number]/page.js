@@ -33,19 +33,13 @@ import styles from './page.module.css';
 
 const RECENT_RESULTS = 10;
 
-function describe(driver, lang) {
+function describe(driver) {
     if (driver.current) {
-        if (lang !== 'ar') {
-            const number = driver.racingNumber ? `#${driver.racingNumber} ` : '';
-            return `${driver.fullName}, ${number}for ${driver.team}: Formula 1 career wins, podiums, poles, championships and ${getSeasonYear()} results.`;
-        }
-        return fill(pick(driverMessages, lang).metadataCurrentDescription, { name: driver.fullName });
+        const number = driver.racingNumber ? `#${driver.racingNumber} ` : '';
+        return `${driver.fullName}, ${number}for ${driver.team}: Formula 1 career wins, podiums, poles, championships and ${getSeasonYear()} results.`;
     }
-    if (lang !== 'ar') {
-        const nationality = driver.nationality ? `${driver.nationality} ` : '';
-        return `${driver.fullName}, ${nationality}Formula 1 driver: career entries, wins, podiums, poles, fastest laps and championships.`;
-    }
-    return fill(pick(driverMessages, lang).metadataPastDescriptionEntries, { name: driver.fullName });
+    const nationality = driver.nationality ? `${driver.nationality} ` : '';
+    return `${driver.fullName}, ${nationality}Formula 1 driver: career entries, wins, podiums, poles, fastest laps and championships.`;
 }
 
 export async function generateMetadata({ params }) {
@@ -55,7 +49,7 @@ export async function generateMetadata({ params }) {
         if (!route) notFound();
         const { driver } = route;
         const path = route.path || `/driver/${encodeURIComponent(String(number))}`;
-        const description = describe(driver, lang);
+        const description = describe(driver);
         return {
             title: driver.fullName,
             description,
@@ -65,7 +59,7 @@ export async function generateMetadata({ params }) {
                 description,
                 url: localePath(lang, path),
                 images: [localePath(lang, `${path}/opengraph-image`)],
-                locale: lang === 'ar' ? 'ar_SA' : 'en_US',
+                locale: 'en_US',
                 type: 'profile',
             },
         };

@@ -152,9 +152,7 @@ export function QualifyingTable({ results, links, caption, lang }) {
                                 {cut && (
                                     <tr className={styles.cutLine}>
                                         <td colSpan={7}>
-                                            {lang === 'ar'
-                                                ? <>{t.cutlineAfter} <bdi dir="ltr">{cut.toUpperCase()}</bdi></>
-                                                : <><bdi dir="ltr">{cut.toUpperCase()}</bdi> {t.cutline}</>}
+                                            <><bdi dir="ltr">{cut.toUpperCase()}</bdi> {t.cutline}</>
                                         </td>
                                     </tr>
                                 )}

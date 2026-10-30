@@ -53,7 +53,7 @@ export async function generateMetadata({ params, searchParams }) {
             description,
             url: localePath(lang, path),
             images: [localePath(lang, '/opengraph-image')],
-            locale: lang === 'ar' ? 'ar_SA' : 'en_US',
+            locale: 'en_US',
         },
     };
 }

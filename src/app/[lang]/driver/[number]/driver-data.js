@@ -3,8 +3,6 @@ import { getSeasonDriverList, nationalityInfo, resolveDriver } from '@/lib/f1/dr
 import { cacheF1Data, F1_CACHE_TAGS, fetchJolpicaPages } from '@/lib/f1/http';
 import { canonicalTeamName, ensureTeamColorContrast } from '@/lib/f1/team-utils';
 import { getSeasonYear } from '@/lib/f1/year';
-import { pick } from '@/lib/i18n/messages';
-import driverMessages from '@/lib/i18n/messages/drivers';
 import { driverPath } from './driver-path';
 
 const FALLBACK_COLOUR = '#E10600';
@@ -104,19 +102,9 @@ export function getDriverSeasonResults(driverId, year) {
 }
 
 /** Classified position as fans read it: "P1", or the Jolpica status code for non-finishers. */
-export function finishLabel(result, locale = 'en') {
-    const t = pick(driverMessages, locale);
+export function finishLabel(result) {
     const text = String(result?.positionText || '');
     if (/^\d+$/.test(text)) return `P${text}`;
-    const labels = locale === 'ar'
-        ? {
-            R: t.statDnf,
-            D: t.disqualified,
-            E: t.excluded,
-            W: t.withdrawn,
-            F: t.didNotQualify,
-            N: t.notClassified,
-        }
-        : { R: 'DNF', D: 'DSQ', E: 'EX', W: 'WD', F: 'DNQ', N: 'NC' };
+    const labels = { R: 'DNF', D: 'DSQ', E: 'EX', W: 'WD', F: 'DNQ', N: 'NC' };
     return labels[text] || result?.status || '—';
 }

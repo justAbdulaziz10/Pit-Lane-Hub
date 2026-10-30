@@ -1,15 +1,13 @@
-// Arabic UI keeps the Gregorian calendar and Western digits, as Arabic F1
-// coverage does for dates, lap times and points.
-const INTL_LOCALES = Object.freeze({ en: 'en-GB', ar: 'ar-u-ca-gregory-nu-latn' });
+const INTL_LOCALE = 'en-GB';
 
-export function intlLocale(locale) {
-    return INTL_LOCALES[locale] || INTL_LOCALES.en;
+export function intlLocale() {
+    return INTL_LOCALE;
 }
 
-export function formatNumber(locale, value, options) {
-    return new Intl.NumberFormat(intlLocale(locale), options).format(value);
+export function formatNumber(_locale, value, options) {
+    return new Intl.NumberFormat(INTL_LOCALE, options).format(value);
 }
 
-export function formatDate(locale, value, options = { day: 'numeric', month: 'long', year: 'numeric' }) {
-    return new Intl.DateTimeFormat(intlLocale(locale), options).format(new Date(value));
+export function formatDate(_locale, value, options = { day: 'numeric', month: 'long', year: 'numeric' }) {
+    return new Intl.DateTimeFormat(INTL_LOCALE, options).format(new Date(value));
 }

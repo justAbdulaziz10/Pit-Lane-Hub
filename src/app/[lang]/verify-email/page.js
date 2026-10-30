@@ -40,8 +40,7 @@ export default async function VerifyEmailPage({ params, searchParams }) {
                             <NextLink href={localePath(lang, '/login')}>{t.verificationUseSignInLink}</NextLink>
                         </p>
                     )}
-                    <form method="post" action={`/api/auth/verify?lang=${lang}`} className={formStyles.form}>
-                        <input type="hidden" name="lang" value={lang} />
+                    <form method="post" action="/api/auth/verify" className={formStyles.form}>
                         <input type="hidden" name="token" value={token} />
                         <div className={formStyles.field}>
                             <label htmlFor="verify-password" className={formStyles.label}>{t.password}</label>

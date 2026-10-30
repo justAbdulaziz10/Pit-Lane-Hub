@@ -13,7 +13,7 @@ export async function generateMetadata({ params }) {
       title: t.pageTitle,
       description: t.description,
       url: localePath(lang, '/live'),
-      locale: lang === 'ar' ? 'ar_SA' : 'en_US',
+      locale: 'en_US',
     },
   };
 }
