@@ -1,0 +1,96 @@
+.wrapper {
+    position: relative;
+    isolation: isolate;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    width: min(calc(100% - 2rem), 760px);
+    min-height: 58vh;
+    margin: var(--space-2xl) auto;
+    padding: clamp(var(--space-xl), 5vw, var(--space-3xl));
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
+    background: linear-gradient(145deg, rgba(28, 28, 28, 0.97), rgba(17, 17, 17, 0.99));
+    box-shadow: var(--shadow-card), 0 18px 44px rgba(225, 6, 0, 0.09);
+}
+
+.wrapper::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: radial-gradient(ellipse at 0% 0%, rgba(225, 6, 0, 0.2), transparent 62%);
+    pointer-events: none;
+}
+
+.code {
+    color: var(--accent-text);
+    font-family: var(--font-display);
+    font-size: clamp(4rem, 12vw, 8rem);
+    font-weight: 900;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.035em;
+    line-height: 0.85;
+    text-shadow: 0 12px 32px rgba(225, 6, 0, 0.28);
+}
+
+.badge {
+    display: inline-flex;
+    align-items: center;
+    margin-block-end: var(--space-sm);
+    padding: 0.35rem 0.75rem;
+    border: 1px solid rgba(255, 90, 80, 0.45);
+    border-radius: var(--radius-full);
+    background: rgba(225, 6, 0, 0.15);
+    color: #ff8078;
+    font-size: var(--text-xs);
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.title {
+    max-width: 18ch;
+    margin-block-start: var(--space-lg);
+    font-size: clamp(2rem, 5vw, 3.25rem);
+    font-weight: 900;
+    overflow-wrap: anywhere;
+}
+
+.title:first-child {
+    margin-block-start: 0;
+}
+
+.message {
+    max-width: 52ch;
+    margin-block-start: var(--space-md);
+    color: var(--text-2);
+    font-size: var(--text-md);
+    line-height: 1.65;
+    overflow-wrap: anywhere;
+}
+
+.message a {
+    color: var(--text-1);
+    text-decoration-color: var(--accent-text);
+    text-underline-offset: 3px;
+}
+
+.actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-sm);
+    margin-block-start: var(--space-xl);
+}
+
+@media (max-width: 520px) {
+    .wrapper {
+        width: calc(100% - 1.5rem);
+        min-height: 0;
+        margin-block: var(--space-xl);
+        padding: var(--space-xl) var(--space-lg);
+        border-radius: var(--radius-lg);
+    }
+}

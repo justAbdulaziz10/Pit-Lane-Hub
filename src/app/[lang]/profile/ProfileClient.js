@@ -25,6 +25,7 @@ export default function ProfileClient() {
     if (status !== 'authenticated') {
         return (
             <div className={styles.page} aria-busy="true">
+                <span className={styles.badge}>{t.accountBadge}</span>
                 <h1>{t.title}</h1>
                 <p className={styles.muted}>{t.loading}</p>
             </div>
@@ -37,6 +38,7 @@ export default function ProfileClient() {
 
     return (
         <div className={styles.page}>
+            <span className={styles.badge}>{t.accountBadge}</span>
             <h1>{t.title}</h1>
 
             <section className={styles.identity} aria-label={t.signedInAs}>

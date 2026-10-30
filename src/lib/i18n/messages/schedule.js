@@ -5,6 +5,7 @@ const schedule = {
         openGraphTitle: '{year} F1 Calendar',
         openGraphDescription: 'Every round of the {year} Formula 1 season with session times in your timezone.',
         summary: '{rounds} rounds, {completed} completed',
+        heroBadge: 'Race calendar',
         subscribe: 'Subscribe to calendar',
         downloadIcs: 'Download .ics',
         grandsPrix: 'Grands Prix',
@@ -24,7 +25,7 @@ const schedule = {
         winnerUnavailable: 'Winner unavailable',
         testNumber: 'Test {number}',
         dateRangeTo: 'to',
-        loadingTitle: 'F1 Calendar',
+        loadingTitle: '{year} F1 Calendar',
         loadingMessage: 'Loading the calendar…',
         circuits: 'F1 Circuits: Grand Prix Tracks and Layouts',
         status: {
@@ -42,6 +43,7 @@ const schedule = {
         openGraphTitle: 'جدول الفورمولا 1 لعام {year}',
         openGraphDescription: 'جميع جولات موسم الفورمولا 1 لعام {year} ومواعيد الجلسات حسب توقيتك المحلي.',
         summary: '{rounds} جولة، اكتمل منها {completed}',
+        heroBadge: 'جدول السباقات',
         subscribe: 'الاشتراك في الجدول',
         downloadIcs: 'تنزيل ملف .ics',
         grandsPrix: 'جولات الجائزة الكبرى',
@@ -61,7 +63,7 @@ const schedule = {
         winnerUnavailable: 'النتيجة غير متاحة',
         testNumber: 'التجربة {number}',
         dateRangeTo: 'إلى',
-        loadingTitle: 'جدول الفورمولا 1',
+        loadingTitle: 'جدول سباقات الفورمولا 1 لعام {year}',
         loadingMessage: 'جارٍ تحميل الجدول…',
         circuits: 'حلبات الفورمولا 1: مسارات الجائزة الكبرى',
         status: {

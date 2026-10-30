@@ -1,6 +1,8 @@
 const tracks = {
     en: {
         title: '{year} circuits',
+        heroBadge: 'Circuit guide',
+        heroSubline: 'Track layouts, race locations and season details.',
         round: 'Round {round}',
         detailTitle: 'F1 Circuits: Grand Prix Tracks and Layouts',
         circuitPageTitle: '{name} | Pit Lane Hub',
@@ -26,6 +28,8 @@ const tracks = {
     },
     ar: {
         title: 'حلبات موسم {year}',
+        heroBadge: 'دليل الحلبات',
+        heroSubline: 'مخططات الحلبات ومواقع السباقات وتفاصيل الموسم.',
         round: 'الجولة {round}',
         detailTitle: 'حلبات الفورمولا 1: مسارات الجائزة الكبرى',
         circuitPageTitle: 'حلبة {name} | Pit Lane Hub',

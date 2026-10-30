@@ -41,6 +41,7 @@ export default function SignupForm() {
     return (
         <div className={styles.page}>
             <div className={styles.panel}>
+                <span className={styles.badge}>{t.accountBadge}</span>
                 <h1 className={styles.title}>{t.signupTitle}</h1>
                 <p className={styles.intro}>{t.signupIntro}</p>
 

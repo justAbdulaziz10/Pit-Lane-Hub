@@ -521,3 +521,205 @@
         font-size: 0.8rem;
     }
 }
+
+/* Wave 7 race-weekend treatment */
+.hero:global(.page-hero) {
+    padding-block: clamp(2.75rem, 6vw, 5rem);
+    border-block-end: 1px solid rgba(255, 90, 80, 0.28);
+    background:
+        radial-gradient(ellipse at 50% 0%, rgba(225, 6, 0, 0.27), transparent 64%),
+        linear-gradient(150deg, #171211 0%, var(--bg) 76%);
+}
+
+.heroContent:global(.page-hero__content) {
+    width: min(100%, 980px);
+}
+
+.heroMeta:global(.page-hero__badge) {
+    display: inline-flex;
+    justify-content: center;
+    margin-block-end: var(--space-md);
+    letter-spacing: 0;
+    text-transform: none;
+}
+
+.hero h1 {
+    margin-block-end: var(--space-md);
+    font-size: clamp(2.5rem, 6vw, 4.75rem);
+    line-height: 1;
+    overflow-wrap: anywhere;
+}
+
+.circuit {
+    color: var(--text-1);
+    font-family: var(--font-display);
+    font-size: clamp(1.1rem, 2vw, 1.45rem);
+    font-weight: 700;
+}
+
+.date {
+    display: inline-flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--space-xs) var(--space-sm);
+    margin-block-start: var(--space-lg);
+    padding: 0.65rem 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: var(--radius-md);
+    background: rgba(0, 0, 0, 0.22);
+    font-variant-numeric: tabular-nums;
+}
+
+.block {
+    margin-block-start: var(--space-xl);
+    padding: clamp(var(--space-md), 2.2vw, var(--space-xl));
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
+    background: linear-gradient(145deg, rgba(28, 28, 28, 0.96), rgba(17, 17, 17, 0.98));
+    box-shadow: var(--shadow-card);
+}
+
+.block h2 {
+    margin-block-end: var(--space-lg);
+    font-size: clamp(1.25rem, 2vw, 1.6rem);
+}
+
+.sessions {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(175px, 1fr));
+    gap: var(--space-sm);
+    border: 0;
+    border-radius: 0;
+    overflow: visible;
+}
+
+.session {
+    display: flex;
+    min-height: 8rem;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-sm);
+    padding: var(--space-md);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: linear-gradient(150deg, var(--surface-2), var(--surface-1));
+}
+
+.session + .session {
+    border-block-start: 1px solid var(--border);
+}
+
+.sessionLive {
+    border-color: var(--accent);
+    box-shadow: var(--shadow-glow);
+}
+
+.sessionName {
+    color: var(--text-1);
+    font-family: var(--font-display);
+    font-size: 1rem;
+    font-weight: 800;
+}
+
+.sessionTime {
+    margin-block-start: auto;
+    color: var(--text-1);
+    font-size: 0.88rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.status_live {
+    border: 1px solid rgba(255, 90, 80, 0.55);
+    box-shadow: 0 5px 16px rgba(225, 6, 0, 0.25);
+}
+
+.podiumStep {
+    min-width: 0;
+    padding: var(--space-lg);
+    border-block-start-width: 4px;
+    background: linear-gradient(160deg, rgba(36, 36, 36, 0.94), var(--surface-1));
+    box-shadow: var(--shadow-card);
+}
+
+.podiumDriver {
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    font-weight: 800;
+    overflow-wrap: anywhere;
+}
+
+.podiumTeam {
+    color: var(--text-2);
+}
+
+.tableScroll {
+    border-color: var(--border-strong);
+    border-radius: var(--radius-md);
+    background: var(--surface-1);
+    scrollbar-color: var(--border-strong) var(--surface-1);
+}
+
+.table {
+    min-width: 650px;
+    font-variant-numeric: tabular-nums;
+}
+
+.table thead th {
+    color: #d0d0d0;
+    background: #202020;
+}
+
+.table tbody tr:nth-child(odd) {
+    background: rgba(255, 255, 255, 0.035);
+}
+
+.table tbody tr:hover {
+    background: rgba(255, 255, 255, 0.07);
+}
+
+.pos {
+    color: var(--accent-text);
+    font-size: 1rem;
+}
+
+.points {
+    color: var(--gold);
+}
+
+.tyreRow {
+    grid-template-columns: minmax(3.5rem, 5.5rem) minmax(0, 1fr);
+    gap: var(--space-sm);
+}
+
+.tyreDriver {
+    color: var(--text-1);
+}
+
+.tyreBar {
+    height: 1.7rem;
+    border: 1px solid var(--border-strong);
+    background: #101010;
+}
+
+@media (max-width: 640px) {
+    .hero:global(.page-hero) {
+        padding-inline: var(--space-md);
+    }
+
+    .heroContent:global(.page-hero__content) {
+        padding-inline: 0;
+    }
+
+    .block {
+        padding: var(--space-md);
+        border-radius: var(--radius-lg);
+    }
+
+    .podium {
+        grid-template-columns: 1fr;
+    }
+
+    .session {
+        min-height: 7rem;
+    }
+}

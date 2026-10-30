@@ -1,5 +1,6 @@
 const auth = {
     en: {
+        accountBadge: 'Account access',
         loginTitle: 'Sign in',
         loginDescription: 'Sign in to your Pit Lane Hub account and manage Pit Lane Pro.',
         loginIntro: 'An account is only needed for Pit Lane Pro. Everything else, including favourite drivers, works without one.',
@@ -52,6 +53,7 @@ const auth = {
         invalidVerificationLink: 'This verification link is invalid or has expired.',
     },
     ar: {
+        accountBadge: 'دخول الحساب',
         loginTitle: 'تسجيل الدخول',
         loginDescription: 'سجّل الدخول إلى حسابك في Pit Lane Hub وأدِر اشتراك Pit Lane Pro.',
         loginIntro: 'لا تحتاج إلى حساب إلا لاستخدام Pit Lane Pro. بقية الميزات، بما فيها السائقون المفضّلون، متاحة دون حساب.',

@@ -73,9 +73,12 @@ export default function SupportPage() {
     return (
         <div className={styles.support}>
             <div className="container">
-                <header className={styles.header}>
-                    <h1>{t.title}</h1>
-                    <p className={styles.lead}>{t.intro}</p>
+                <header className={`page-hero ${styles.header}`}>
+                    <div className="page-hero__content">
+                        <span className="page-hero__badge"><span aria-hidden="true">☕</span>{t.supportBadge}</span>
+                        <h1 className="page-hero__title">{t.title}</h1>
+                        <p className={`${styles.lead} page-hero__subline`}>{t.intro}</p>
+                    </div>
                 </header>
 
                 <div className={styles.options}>
@@ -83,7 +86,7 @@ export default function SupportPage() {
                         <h2 id="tip-heading">{t.oneTimeTip}</h2>
                         <p>{t.tipDescription}</p>
                         <a
-                            className="btn btn-secondary"
+                            className="btn btn-support"
                             href="https://buymeacoffee.com/justAbdulaziz10"
                             target="_blank"
                             rel="noreferrer"

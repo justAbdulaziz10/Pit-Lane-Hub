@@ -23,8 +23,12 @@ export default async function TracksPage({ params }) {
 
     return (
         <div className={styles.tracksPage}>
-            <header className="container">
-                <h1 className={styles.title}>{fill(t.title, { year: String(calendar.year) })}</h1>
+            <header className={`page-hero ${styles.header}`}>
+                <div className="page-hero__content">
+                    <span className="page-hero__badge"><span aria-hidden="true">🏁</span>{t.heroBadge}</span>
+                    <h1 className="page-hero__title">{fill(t.title, { year: String(calendar.year) })}</h1>
+                    <p className="page-hero__subline">{t.heroSubline}</p>
+                </div>
             </header>
             <ol className={`container ${styles.grid}`}>
                 {circuits.map(({ event, view }) => (
@@ -43,8 +47,13 @@ export default async function TracksPage({ params }) {
                                 {event.circuit.locality && <bdi dir="ltr">{event.circuit.locality}</bdi>}
                                 {event.circuit.locality && event.circuit.country ? (lang === 'ar' ? '، ' : ', ') : ''}
                                 {countryName(event.circuit.country, lang)}
-                                {view?.length && <> · <bdi>{circuitLength(view.length, lang)}</bdi></>}
                             </span>
+                            {view?.length && (
+                                <span className={styles.length}>
+                                    <bdi>{circuitLength(view.length, lang)}</bdi>
+                                    <small>{t.lapLength}</small>
+                                </span>
+                            )}
                         </Link>
                     </li>
                 ))}
