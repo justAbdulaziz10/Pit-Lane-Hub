@@ -163,3 +163,126 @@
         box-shadow: none;
     }
 }
+
+.championsGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
+    gap: var(--space-md);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.championCard {
+    position: relative;
+    overflow: hidden;
+    padding: var(--space-md) var(--space-lg);
+    border-block-start: 3px solid var(--team-color, var(--border));
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.championCard:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+}
+
+.championYear {
+    display: inline-block;
+    margin-block-end: var(--space-sm);
+    color: #ff3b30;
+    font-family: var(--font-display);
+    font-size: 2rem;
+    font-weight: 900;
+    line-height: 1;
+    text-decoration: none;
+}
+
+.championYear:hover {
+    color: #ff6a61;
+}
+
+.championFacts {
+    display: grid;
+    gap: var(--space-sm);
+    margin: 0;
+}
+
+.championFacts dt {
+    color: var(--text-3, var(--text-2));
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.championFacts dd {
+    margin: 0;
+}
+
+.championDriver {
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    font-weight: 800;
+}
+
+.championTeam {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    color: var(--text-2);
+    font-weight: 700;
+}
+
+.championTeam::before {
+    content: '';
+    flex: none;
+    width: 0.6rem;
+    height: 0.6rem;
+    border-radius: 50%;
+    background: var(--team-color, var(--border));
+}
+
+.championDriver a,
+.championTeam a {
+    color: inherit;
+    text-decoration: none;
+}
+
+.championDriver a:hover,
+.championTeam a:hover {
+    text-decoration: underline;
+}
+
+@media (max-width: 640px) {
+    .championsGrid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: var(--space-sm);
+    }
+
+    .championCard {
+        padding: var(--space-sm) var(--space-md);
+    }
+
+    .championYear {
+        font-size: 1.5rem;
+    }
+
+    .championDriver {
+        font-size: 0.95rem;
+        overflow-wrap: anywhere;
+    }
+
+    .championFacts dt {
+        font-size: 0.62rem;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .championCard {
+        transition: none;
+    }
+
+    .championCard:hover {
+        transform: none;
+    }
+}

@@ -178,45 +178,41 @@ async function ConstructorsView({ year, lookups, lang, t }) {
     );
 }
 
-function ChampionsTable({ champions, colorById, lang, t }) {
+function ChampionsGrid({ champions, colorById, lang, t }) {
     const constructorsByYear = new Map(champions.constructors.map((item) => [Number(item.year), item]));
     const rows = [...champions.drivers].sort((a, b) => b.year - a.year);
     return (
-        <div className={`${standingsStyles.tableWrap} rich-card`}>
-            <table className={standingsStyles.table}>
-                <caption>{t.worldChampions}</caption>
-                <thead>
-                    <tr>
-                        <th scope="col">{t.season}</th>
-                        <th scope="col">{t.driversChampion}</th>
-                        <th scope="col">{t.constructorsChampion}</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {rows.map((driver) => {
-                        const constructor = constructorsByYear.get(Number(driver.year));
-                        const teamColor = constructor ? colorById.get(constructor.constructorId) : null;
-                        return (
-                            <tr key={driver.year} style={teamColor ? { '--team-color': teamColor } : undefined}>
-                                <th scope="row" className={standingsStyles.pos}>
-                                    <Link href={viewHref(driver.year, DEFAULT_VIEW, lang)}><bdi dir="ltr">{formatNumber(lang, driver.year, { useGrouping: false })}</bdi></Link>
-                                </th>
-                                <td className={standingsStyles.driverName}>
+        <ol className={styles.championsGrid}>
+            {rows.map((driver) => {
+                const constructor = constructorsByYear.get(Number(driver.year));
+                const teamColor = constructor ? colorById.get(constructor.constructorId) : null;
+                return (
+                    <li key={driver.year} className={`${styles.championCard} rich-card`} style={teamColor ? { '--team-color': teamColor } : undefined}>
+                        <Link href={viewHref(driver.year, DEFAULT_VIEW, lang)} className={styles.championYear}>
+                            <bdi dir="ltr">{formatNumber(lang, driver.year, { useGrouping: false })}</bdi>
+                        </Link>
+                        <dl className={styles.championFacts}>
+                            <div>
+                                <dt>{t.driversChampion}</dt>
+                                <dd className={styles.championDriver}>
                                     <MaybeLink href={driverPath({ driverId: driver.driverId })} lang={lang}>{personName(driver)}</MaybeLink>
-                                </td>
-                                <td>
+                                </dd>
+                            </div>
+                            <div>
+                                <dt>{t.constructorsChampion}</dt>
+                                <dd className={styles.championTeam}>
                                     {constructor ? (
                                         <Link href={localePath(lang, `/team/${encodeURIComponent(constructor.constructorId)}`)}><bdi dir="auto">{constructor.name}</bdi></Link>
                                     ) : (
                                         <span className={standingsStyles.muted}>{t.notAwarded}</span>
                                     )}
-                                </td>
-                            </tr>
-                        );
-                    })}
-                </tbody>
-            </table>
-        </div>
+                                </dd>
+                            </div>
+                        </dl>
+                    </li>
+                );
+            })}
+        </ol>
     );
 }
 
@@ -306,9 +302,10 @@ export default async function HistoryPage({ params, searchParams }) {
                 </section>
             )}
 
-            <section className={styles.content} aria-label={t.worldChampions}>
+            <section className={styles.content} aria-labelledby="champions-heading">
                 <div className="container">
-                    <ChampionsTable champions={champions} colorById={allLookups.colorById} lang={lang} t={t} />
+                    <h2 id="champions-heading" className={styles.sectionTitle}>{t.worldChampions}</h2>
+                    <ChampionsGrid champions={champions} colorById={allLookups.colorById} lang={lang} t={t} />
                 </div>
             </section>
         </div>
