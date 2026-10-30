@@ -180,6 +180,9 @@ export default function LiveTiming({ initial, lang, labels, nextSession, grandPr
                 <div className={`container page-hero__content ${styles.headerContent}`}>
                     <div className={styles.headerRow}>
                         <div>
+                            {phase === 'none' && (
+                                <p className={`page-hero__badge ${styles.heroBadge}`}>{t.liveData}</p>
+                            )}
                             {phase !== 'none' && (
                                 <p className={styles.eyebrow}>
                                     {phase === 'live' && <span className={styles.liveBadge}>{t.live}</span>}
@@ -195,6 +198,7 @@ export default function LiveTiming({ initial, lang, labels, nextSession, grandPr
                                     </>
                                 ) : t.liveTiming}
                             </h1>
+                            {!session && <p className={`page-hero__subline ${styles.subline}`}>{t.subline}</p>}
                             {session?.meetingKey && (
                                 <Link href={`/race/${session.meetingKey}`} className={styles.weekendLink}>
                                     {t.raceWeekend}

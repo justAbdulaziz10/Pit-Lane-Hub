@@ -38,7 +38,8 @@ const schedule = {
         },
     },
     ar: {
-        title: 'جدول سباقات الفورمولا 1 لعام {year}',
+        // No-break spaces keep "الفورمولا 1" and "لعام {year}" together when the hero title wraps.
+        title: 'جدول سباقات الفورمولا\u00a01 لعام\u00a0{year}',
         description: 'جميع جولات موسم الفورمولا 1 لعام {year} مع الحلبات ومواعيد الجلسات حسب توقيتك المحلي. اشترك في الجدول.',
         openGraphTitle: 'جدول الفورمولا 1 لعام {year}',
         openGraphDescription: 'جميع جولات موسم الفورمولا 1 لعام {year} ومواعيد الجلسات حسب توقيتك المحلي.',

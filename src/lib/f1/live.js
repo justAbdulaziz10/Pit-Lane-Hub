@@ -283,8 +283,8 @@ async function loadLiveSnapshot(token, now) {
 export async function getLiveSnapshot() {
     const now = Date.now();
     try {
+        // Finished sessions are public on OpenF1; only a running session needs credentials (401 below).
         const token = await getOpenF1Token();
-        if (!token) return unavailableSnapshot('auth', now);
         return await loadLiveSnapshot(token, now);
     } catch (error) {
         if (error?.status === 401 || error?.status === 403) return unavailableSnapshot('auth', now);

@@ -33,6 +33,20 @@
     letter-spacing: 0.06em;
 }
 
+.heroBadge::before {
+    content: '';
+    width: 0.45rem;
+    height: 0.45rem;
+    border-radius: 50%;
+    background: #ff3b30;
+    box-shadow: 0 0 10px rgba(255, 59, 48, 0.8);
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+.subline {
+    margin-inline: 0;
+}
+
 .liveBadge {
     display: inline-flex;
     align-items: center;
@@ -449,7 +463,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .liveBadge::before {
+    .liveBadge::before,
+    .heroBadge::before {
         animation: none;
     }
 }

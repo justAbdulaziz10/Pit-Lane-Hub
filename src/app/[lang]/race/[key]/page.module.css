@@ -18,7 +18,9 @@
 }
 
 .backLink {
-    display: inline-block;
+    display: block;
+    width: fit-content;
+    margin-inline: auto;
     color: var(--text-2);
     margin-bottom: var(--space-md);
     font-size: 0.9rem;

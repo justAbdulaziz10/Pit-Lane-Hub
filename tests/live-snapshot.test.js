@@ -63,6 +63,18 @@ describe('live snapshot resilience and session windows', () => {
         expect(await response.json()).toMatchObject({ unavailable: 'auth' });
     });
 
+    it('loads a finished session anonymously when credentials are absent', async () => {
+        vi.setSystemTime(new Date('2026-11-02T12:00:00Z'));
+        getOpenF1Token.mockResolvedValue(null);
+        liveFixture({ positionDate: '2026-11-01T19:55:00Z' });
+
+        const snapshot = await getLiveSnapshot();
+
+        expect(snapshot.unavailable).toBeUndefined();
+        expect(snapshot.positions).toHaveLength(1);
+        expect(fetchOpenF1Json.mock.calls.every(([, options]) => options.token == null)).toBe(true);
+    });
+
     it.each([401, 403])('returns a typed auth state when OpenF1 rejects credentials with %s', async (status) => {
         fetchOpenF1Json.mockRejectedValue(Object.assign(new Error(`HTTP ${status}`), { status, source: 'OpenF1' }));
 
