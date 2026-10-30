@@ -221,10 +221,17 @@ const DRIVES = {
     async live(page, steps, base) {
         const res = await page.goto(base + '/live');
         expectEq(steps, 'HTTP 200', res.status(), 200);
-        expectEq(steps, 'h1 "Live timing" visible', await page.getByRole('heading', { level: 1, name: 'Live timing' }).isVisible(), true);
-        // Without OpenF1 credentials or a session the page states why instead of showing empty panels.
-        expectEq(steps, 'positions or an honest status shown',
-            await visibleSoon(page.locator('main').getByRole('heading', { level: 2 }).or(page.locator('main table')).first(), 20_000), true);
+        // The h1 names the latest session ("United States Grand Prix · Race") or reads "Live timing" when there is none.
+        const h1 = page.getByRole('heading', { level: 1 });
+        expectEq(steps, 'one page h1', await h1.count(), 1);
+        const sessionShown = (await h1.innerText()).trim() !== 'Live timing';
+        if (sessionShown) {
+            // Finished sessions load without OpenF1 credentials, so a named session must come with timing rows.
+            expectEq(steps, 'session timing rows shown', await visibleSoon(page.locator('main table tbody tr').first(), 20_000), true);
+        } else {
+            expectEq(steps, 'no-session status shown',
+                await visibleSoon(page.getByRole('heading', { level: 2, name: /No session running|Live timing unavailable/ }), 20_000), true);
+        }
     },
 
     async 'driver-detail'(page, steps, base) {
