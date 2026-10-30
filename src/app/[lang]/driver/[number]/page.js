@@ -100,14 +100,16 @@ async function recentResults(driver, careerResults, lang, t) {
 }
 
 async function teammateHeadToHead(driver, year, raceResults, qualifyingResults) {
-    if (!driver.current || !driver.driverId) return null;
+    if (!driver.current || !driver.driverId) return { teammate: null, headshot: null };
     try {
         const [teams, grid] = await Promise.all([getTeams(year), getGrid(year)]);
+        const gridDriver = grid.find((member) => member.driverId === driver.driverId);
+        const headshot = gridDriver?.headshot || null;
         const team = teams.find((item) => item.drivers.some((member) => member.driverId === driver.driverId))
             || teams.find((item) => item.name === driver.team);
-        if (!team) return null;
+        if (!team) return { teammate: null, headshot };
         const teammate = currentGridDrivers(team, grid).find((member) => member.driverId !== driver.driverId);
-        if (!teammate?.driverId) return null;
+        if (!teammate?.driverId) return { teammate: null, headshot };
         const [teammateRaceResults, teammateQualifying] = await Promise.all([
             getDriverResults(teammate.driverId),
             getDriverQualifyingResults(teammate.driverId),
@@ -116,14 +118,17 @@ async function teammateHeadToHead(driver, year, raceResults, qualifyingResults) 
         const races = headToHead(inSeason(raceResults), inSeason(teammateRaceResults.results));
         const qualifying = qualifyingHeadToHead(inSeason(qualifyingResults), inSeason(teammateQualifying));
         const hasScore = (record) => Number(record.aheadA) > 0 || Number(record.aheadB) > 0;
-        if (!hasScore(races) && !hasScore(qualifying)) return null;
+        if (!hasScore(races) && !hasScore(qualifying)) return { teammate: null, headshot };
         return {
-            name: teammate.fullName || `${teammate.firstName} ${teammate.lastName}`.trim(),
-            races,
-            qualifying,
+            teammate: {
+                name: teammate.fullName || `${teammate.firstName} ${teammate.lastName}`.trim(),
+                races,
+                qualifying,
+            },
+            headshot,
         };
     } catch {
-        return null;
+        return { teammate: null, headshot: null };
     }
 }
 
@@ -170,8 +175,9 @@ export default async function DriverPage({ params }) {
     const recent = driverId
         ? await settle(recentResults(driver, results.results, lang, t), { rows: [] })
         : { rows: [] };
-    const teammate = await teammateHeadToHead(driver, year, results.results, qualifying);
-    const photoUrl = getHighQualityPhoto(driver.headshot);
+    const teammateData = await teammateHeadToHead(driver, year, results.results, qualifying);
+    const teammate = teammateData.teammate;
+    const photoUrl = getHighQualityPhoto(teammateData.headshot || driver.headshot);
 
     const personJsonLd = {
         '@context': 'https://schema.org',
@@ -223,7 +229,7 @@ export default async function DriverPage({ params }) {
                         <div className={styles.driverPhoto}>
                             <DriverPortrait
                                 src={photoUrl}
-                                alt={driver.fullName}
+                                alt=""
                                 width={250}
                                 height={250}
                                 className={styles.portraitFrame}
@@ -232,7 +238,9 @@ export default async function DriverPage({ params }) {
                                 loading="eager"
                                 fetchPriority="high"
                             >
-                                {driver.code || `${driver.firstName?.[0] || ''}${driver.lastName?.slice(0, 2) || ''}`.toUpperCase()}
+                                <span aria-hidden="true">
+                                    {driver.code || `${driver.firstName?.[0] || ''}${driver.lastName?.slice(0, 2) || ''}`.toUpperCase()}
+                                </span>
                             </DriverPortrait>
                         </div>
                         <div className={styles.driverInfo}>
@@ -257,7 +265,7 @@ export default async function DriverPage({ params }) {
                                         <dt>{t.nationality}</dt>
                                         <dd>
                                             {driver.flag ? <span aria-hidden="true">{driver.flag} </span> : null}
-                                            {nationalityName(driver.nationality, lang)}
+                                            <bdi dir="ltr">{driver.nationalityCode || nationalityName(driver.nationality, lang)}</bdi>
                                         </dd>
                                     </div>
                                 ) : null}
@@ -306,10 +314,13 @@ export default async function DriverPage({ params }) {
                     <div className="container">
                         <h2 id="career-heading" className={styles.sectionTitle}>{t.career}</h2>
                         <dl className={styles.statsGrid}>
-                            {careerStats.map(([label, value]) => (
-                                <div key={label} className={styles.statCard}>
-                                    <dt className={styles.statLabel}>{label}</dt>
-                                <dd className={styles.statValue}><bdi dir="ltr">{typeof value === 'number' ? formatNumber(lang, value) : value}</bdi></dd>
+                            {careerStats.map(([label, value], index) => (
+                                <div key={label} className={`${styles.statCard} rich-card`}>
+                                    <dt className={`${styles.statLabel} stat-label`}>
+                                        <span aria-hidden="true">{['🏆', '📊', '🏁', '🥇', '⏱️', '⚡', '📅'][index]}</span>
+                                        {label}
+                                    </dt>
+                                    <dd className={`${styles.statValue} stat-number`}><bdi dir="ltr">{typeof value === 'number' ? formatNumber(lang, value) : value}</bdi></dd>
                                 </div>
                             ))}
                         </dl>
@@ -382,11 +393,15 @@ export default async function DriverPage({ params }) {
             ) : null}
 
             {driverId ? (
-                <section className={styles.actionsSection}>
+                <section className={styles.actionsSection} aria-labelledby="compare-heading">
                     <div className="container">
-                        <Link href={localePath(lang, `/compare?a=${driverId}`)} className={styles.compareBtn}>
-                            {fill(t.compareDriver, { name: driver.lastName })}
-                        </Link>
+                        <div className={styles.compareCard}>
+                            <h2 id="compare-heading">{t.compareHeading}</h2>
+                            <p>{fill(t.compareDescription, { name: driver.firstName || driver.lastName })}</p>
+                            <Link href={localePath(lang, `/compare?a=${driverId}`)} className={`${styles.compareBtn} btn btn-primary`}>
+                                {fill(t.compareDriver, { name: driver.lastName })}
+                            </Link>
+                        </div>
                     </div>
                 </section>
             ) : null}

@@ -22,8 +22,8 @@ function DriverRow({ driver, lang }) {
     const content = (
         <>
             <DriverPortrait
-                src={photo}
-                alt={driver.fullName || driver.lastName}
+                src={photo || driver.headshot}
+                alt=""
                 width={80}
                 height={80}
                 className={styles.driverPhoto}
@@ -31,7 +31,9 @@ function DriverRow({ driver, lang }) {
                 fallbackClassName={styles.driverPhotoPlaceholder}
                 loading="lazy"
             >
-                <bdi dir="ltr">{(driver.code || `${driver.firstName?.[0] || ''}${driver.lastName?.[0] || ''}`).toUpperCase()}</bdi>
+                <bdi dir="ltr" aria-hidden="true">
+                    {(driver.code || `${driver.firstName?.[0] || ''}${driver.lastName?.[0] || ''}`).toUpperCase()}
+                </bdi>
             </DriverPortrait>
             <span className={styles.driverDetails}>
                 <bdi dir="ltr" className={styles.driverName}>
@@ -55,6 +57,7 @@ export default async function TeamsPage({ params }) {
     const { lang } = await params;
     const t = pick(teamsMessages, lang);
     const year = getSeasonYear();
+    const [titleBefore = '', titleAfter = ''] = t.pageTitle.split('{year}');
     const [teams, constructorStandings, grid] = await Promise.all([
         getTeams(year),
         getConstructorStandings(year).catch(() => ({ standings: [], round: null })),
@@ -69,10 +72,14 @@ export default async function TeamsPage({ params }) {
 
     return (
         <div className={styles.teams}>
-            <header className={styles.header}>
-                <div className="container">
-                    <h1>{fill(t.pageTitle, { year: formatNumber(lang, year, { useGrouping: false }) })}</h1>
-                    {constructorStandings.round && <p>{fill(t.afterRound, { round: formatNumber(lang, constructorStandings.round) })}</p>}
+            <header className={`page-hero ${styles.header}`}>
+                <div className="page-hero__content container">
+                    <h1 className="page-hero__title">
+                        {titleBefore ? <span className="page-hero__accent">{titleBefore}</span> : null}
+                        <bdi dir="ltr">{formatNumber(lang, year, { useGrouping: false })}</bdi>
+                        {titleAfter ? <span className="page-hero__accent">{titleAfter}</span> : null}
+                    </h1>
+                    {constructorStandings.round && <p className="page-hero__subline">{fill(t.afterRound, { round: formatNumber(lang, constructorStandings.round) })}</p>}
                 </div>
             </header>
 
@@ -88,14 +95,14 @@ export default async function TeamsPage({ params }) {
                                     ? (standing.position == null ? standing.positionText : formatNumber(lang, standing.position))
                                     : null;
                                 return (
-                                    <li key={team.constructorId} className={styles.teamCard} style={{ '--team-color': team.color }}>
+                                    <li key={team.constructorId} className={`${styles.teamCard} rich-card team-accent`} style={{ '--team-color': team.color }}>
                                         <div className={styles.teamColorBar} aria-hidden="true"></div>
                                         {standing && (
                                             <div className={styles.teamHeader}>
                                                 <span className={styles.teamPosition}><bdi dir="ltr">P{position}</bdi></span>
                                                 <span className={styles.teamPoints}>
-                                                    <span className={styles.pointsValue}><bdi dir="ltr">{formatNumber(lang, standing.points)}</bdi></span>
-                                                    <span className={styles.pointsLabel}>{t.statPoints}</span>
+                                                    <span className={`${styles.pointsValue} stat-number`}><bdi dir="ltr">{formatNumber(lang, standing.points)}</bdi></span>
+                                                    <span className={`${styles.pointsLabel} stat-label`}><span aria-hidden="true">🏆</span>{t.statPoints}</span>
                                                 </span>
                                             </div>
                                         )}

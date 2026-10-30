@@ -3,32 +3,209 @@
 }
 
 .header {
-    padding: var(--space-2xl) 0 var(--space-lg);
-    background: none;
+    border-block-end: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .header h1 {
-    margin-bottom: var(--space-sm);
+    max-width: 14ch;
+    margin-inline: auto;
 }
 
-.header p {
-    color: var(--text-2);
-    font-size: 1.1rem;
+.header p.page-hero__subline {
+    margin-block-start: var(--space-md);
 }
 
 .content {
-    padding: var(--space-xl) 0 var(--space-3xl);
+    padding-block: clamp(1.75rem, 3.5vw, 3rem) var(--space-3xl);
+}
+
+.podium {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: stretch;
+    gap: var(--space-md);
+    margin-block-end: clamp(2rem, 4vw, 3.5rem);
+}
+
+.podiumCard {
+    position: relative;
+    display: flex;
+    min-width: 0;
+    min-height: 245px;
+    flex-direction: column;
+    align-items: center;
+    padding: clamp(1rem, 2.2vw, 1.75rem);
+    overflow: hidden;
+    border: 2px solid var(--border-strong);
+    text-align: center;
+    transition: transform var(--transition-base), border-color var(--transition-base), box-shadow var(--transition-base);
+}
+
+.podiumCard::after {
+    position: absolute;
+    inset-block-end: 0;
+    inset-inline: 0;
+    height: 4px;
+    background: var(--team-color, var(--accent));
+    content: '';
+}
+
+.podiumCard:hover {
+    transform: translateY(-4px);
+    border-color: var(--team-color, var(--accent));
+    box-shadow: var(--shadow-glow);
+}
+
+.podium1 {
+    order: 2;
+    transform: scale(1.035);
+    border-color: var(--gold);
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.12), var(--surface-1) 70%);
+}
+
+.podium1:hover {
+    transform: scale(1.035) translateY(-4px);
+}
+
+.podium2 {
+    order: 1;
+    border-color: #b9b9b9;
+}
+
+.podium3 {
+    order: 3;
+    border-color: #d99a72;
+}
+
+.podiumRank {
+    margin-block-end: var(--space-sm);
+    font-size: 2rem;
+    line-height: 1;
+}
+
+.podiumCode {
+    display: inline-flex;
+    min-width: 2.7rem;
+    min-height: 1.7rem;
+    align-items: center;
+    justify-content: center;
+    margin-block-end: var(--space-sm);
+    padding-inline: 0.45rem;
+    border: 1px solid var(--team-color, var(--accent));
+    border-radius: var(--radius-sm);
+    background: color-mix(in srgb, var(--team-color, var(--accent)) 24%, var(--surface-3));
+    color: #fff;
+    font-family: var(--font-display);
+    font-weight: 900;
+}
+
+.podiumCard h2 {
+    max-width: 100%;
+    font-family: var(--font-display);
+    font-size: clamp(1rem, 1.65vw, 1.3rem);
+    font-weight: 900;
+    overflow-wrap: anywhere;
+    text-wrap: balance;
+}
+
+.podiumCard h2 a {
+    color: var(--text-1);
+    text-decoration: none;
+}
+
+.podiumCard h2 a:hover,
+.podiumCard h2 a:focus-visible {
+    color: var(--accent-text);
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+}
+
+.podiumTeam {
+    min-height: 1.5rem;
+    margin-block-start: var(--space-xs);
+    color: var(--text-2);
+    font-size: var(--text-sm);
+}
+
+.podiumStats {
+    display: flex;
+    width: min(100%, 310px);
+    justify-content: center;
+    gap: clamp(1.5rem, 4vw, 3rem);
+    margin: auto 0 0;
+    padding-block-start: var(--space-lg);
+}
+
+.podiumStats > div {
+    display: flex;
+    min-width: 70px;
+    flex-direction: column-reverse;
+    align-items: center;
+    gap: 0.2rem;
+}
+
+
+.podiumStats dt {
+    justify-content: center;
+    font-size: 0.68rem;
+}
+
+.podiumStats dd {
+    margin: 0;
+    color: var(--text-1);
+    font-family: var(--font-display);
+    font-size: clamp(1.55rem, 3vw, 2.1rem);
+    font-weight: 900;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+}
+
+.podiumStats .podiumWins {
+    color: var(--accent-text);
 }
 
 .grid {
     display: grid;
-    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
-    gap: var(--space-xl);
+    grid-template-columns: minmax(0, 1fr);
     align-items: start;
+    gap: clamp(1.5rem, 3vw, 2.5rem);
 }
 
-@media (max-width: 1024px) {
-    .grid {
+.grid > section {
+    min-width: 0;
+}
+
+@media (max-width: 760px) {
+    .podium {
         grid-template-columns: minmax(0, 1fr);
+        gap: var(--space-md);
+    }
+
+    .podium1,
+    .podium2,
+    .podium3 {
+        order: initial;
+        transform: none;
+    }
+
+    .podium1:hover {
+        transform: translateY(-3px);
+    }
+
+    .podiumCard {
+        min-height: 220px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .podiumCard {
+        transition: none;
+    }
+
+    .podiumCard:hover,
+    .podium1,
+    .podium1:hover {
+        transform: none;
+        box-shadow: none;
     }
 }

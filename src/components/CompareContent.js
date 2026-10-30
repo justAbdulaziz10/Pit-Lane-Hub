@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useId, useRef, useState } from 'react';
+import { Fragment, useCallback, useEffect, useId, useRef, useState } from 'react';
 import { compareDriversAction, searchDriversAction } from '@/app/actions/compare-actions';
 import { Link, useLocale } from '@/lib/i18n/LocaleProvider';
 import { fill, pick } from '@/lib/i18n/messages';
@@ -9,6 +9,7 @@ import { formatNumber } from '@/lib/i18n/format';
 import { nationalityName } from '@/lib/i18n/f1-names';
 import { localePath } from '@/lib/i18n/config';
 import { driverPath } from '@/app/[lang]/driver/[number]/driver-path';
+import { DriverPortrait } from '@/components/DriverCard';
 import { FULL_POLE_DATA_FROM, POLE_DATA_FROM } from '@/lib/f1/career';
 import styles from '@/app/[lang]/compare/page.module.css';
 
@@ -193,41 +194,64 @@ export function span(driver, locale) {
     return driver.firstSeason === driver.lastSeason ? first : `${first}–${last}`;
 }
 
-function Comparison({ comparison, t, locale, selected, onChoose }) {
+function Comparison({ comparison, t, locale, selected, onChoose, driverProfiles }) {
     const [a, b] = comparison.drivers;
     const h2h = comparison.headToHead;
+    const colorA = driverProfiles[a.driverId]?.color || COLOURS[0];
+    const colorB = driverProfiles[b.driverId]?.color || COLOURS[1];
     return (
-        <div className={styles.comparison}>
+        <div className={styles.comparison} style={{ '--driver-a-color': colorA, '--driver-b-color': colorB }}>
             <div className={styles.driversRow}>
                 {comparison.drivers.map((driver, index) => (
-                    <div key={driver.driverId} className={styles.driverProfile} style={{ '--driver-color': COLOURS[index] }}>
-                        <h2><Link href={driverPath(driver)}><bdi dir="ltr">{driver.fullName}</bdi></Link></h2>
-                        <p className={styles.profileMeta}>
-                            {nationalityName(driver.nationality, locale)}
-                            {driver.firstSeason ? <> · <bdi dir="ltr">{span(driver, locale)}</bdi></> : null}
-                        </p>
-                        {driver.teams.length > 0 ? <p className={styles.profileTeams}><bdi dir="auto">{driver.teams.join(', ')}</bdi></p> : null}
-                        <DriverPicker
-                            index={index}
-                            label={index === 0 ? t.driverA : t.driverB}
-                            selected={selected[index]}
-                            onSelect={(next) => onChoose(index, next)}
-                            t={t}
-                            locale={locale}
-                            embedded
-                        />
-                    </div>
+                    <Fragment key={driver.driverId}>
+                        {index === 1 ? <span className={styles.profileVersus} aria-hidden="true">{t.versus}</span> : null}
+                        <div className={`${styles.driverProfile} rich-card team-accent`} style={{ '--driver-color': index === 0 ? colorA : colorB }}>
+                            <DriverPortrait
+                                src={driverProfiles[driver.driverId]?.photo || driverProfiles[driver.driverId]?.headshot}
+                                alt=""
+                                width={168}
+                                height={168}
+                                className={styles.profilePortrait}
+                                imgClassName={styles.profileImage}
+                                fallbackClassName={styles.profileFallback}
+                                loading="lazy"
+                            >
+                                <span aria-hidden="true">{(driver.code || `${driver.firstName?.[0] || ''}${driver.lastName?.slice(0, 2) || ''}`).toUpperCase()}</span>
+                            </DriverPortrait>
+                            <h2><Link href={driverPath(driver)}><bdi dir="ltr">{driver.fullName}</bdi></Link></h2>
+                            <p className={styles.profileMeta}>
+                                {nationalityName(driver.nationality, locale)}
+                                {driver.firstSeason ? <> · <bdi dir="ltr">{span(driver, locale)}</bdi></> : null}
+                            </p>
+                            {driver.teams.length > 0 ? (
+                                <div className={styles.profileTeams}>
+                                    {driver.teams.map((team) => (
+                                        <span className={styles.teamPill} key={team}><bdi dir="auto">{team}</bdi></span>
+                                    ))}
+                                </div>
+                            ) : null}
+                            <DriverPicker
+                                index={index}
+                                label={index === 0 ? t.driverA : t.driverB}
+                                selected={selected[index]}
+                                onSelect={(next) => onChoose(index, next)}
+                                t={t}
+                                locale={locale}
+                                embedded
+                            />
+                        </div>
+                    </Fragment>
                 ))}
             </div>
 
-            <section className={styles.h2h} aria-labelledby="h2h-heading">
+            <section className={`${styles.h2h} rich-card`} aria-labelledby="h2h-heading">
                 <h3 id="h2h-heading">{t.headToHead}</h3>
                 {h2h.races > 0 ? (
                     <>
                         <p className={styles.h2hScore}>
-                            <bdi dir="ltr" style={{ color: COLOURS[0] }}>{formatNumber(locale, h2h.aheadA)}</bdi>
+                            <bdi dir="ltr" style={{ color: 'color-mix(in srgb, var(--driver-a-color) 62%, white)' }}>{formatNumber(locale, h2h.aheadA)}</bdi>
                             <span className={styles.h2hDash} aria-hidden="true">–</span>
-                            <bdi dir="ltr" style={{ color: COLOURS[1] }}>{formatNumber(locale, h2h.aheadB)}</bdi>
+                            <bdi dir="ltr" style={{ color: 'color-mix(in srgb, var(--driver-b-color) 62%, white)' }}>{formatNumber(locale, h2h.aheadB)}</bdi>
                         </p>
                         <p className={styles.h2hNote}>
                             {locale === 'ar'
@@ -255,35 +279,37 @@ function Comparison({ comparison, t, locale, selected, onChoose }) {
                 )}
             </section>
 
-            <section className={styles.statsSection} aria-labelledby="career-heading">
+            <section className={`${styles.statsSection} rich-card`} aria-labelledby="career-heading">
                 <h3 id="career-heading">{t.career}</h3>
-                <table className={styles.statsTable}>
-                    <thead>
-                        <tr>
-                            <th scope="col">{t.statistic}</th>
-                            <th scope="col" style={{ color: COLOURS[0] }}><bdi dir="ltr">{a.fullName}</bdi></th>
-                            <th scope="col" style={{ color: COLOURS[1] }}><bdi dir="ltr">{b.fullName}</bdi></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {statRows(comparison.drivers, t, locale).map(([label, valueA, valueB, format, display], index) => {
-                            const [textA, textB] = display ? display() : [format ? format(valueA) : formatNumber(locale, valueA), format ? format(valueB) : formatNumber(locale, valueB)];
-                            return (
-                                <tr key={typeof label === 'string' ? label : `pole-coverage-${index}`}>
-                                    <th scope="row">{label}</th>
-                                    <td className={valueA > valueB ? styles.leader : undefined}><bdi dir="ltr">{textA}</bdi></td>
-                                    <td className={valueB > valueA ? styles.leader : undefined}><bdi dir="ltr">{textB}</bdi></td>
-                                </tr>
-                            );
-                        })}
-                    </tbody>
-                </table>
+                <div className={styles.statsTableWrap}>
+                    <table className={styles.statsTable}>
+                        <thead>
+                            <tr>
+                                <th scope="col">{t.statistic}</th>
+                                <th scope="col"><bdi dir="ltr">{a.fullName}</bdi></th>
+                                <th scope="col"><bdi dir="ltr">{b.fullName}</bdi></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {statRows(comparison.drivers, t, locale).map(([label, valueA, valueB, format, display], index) => {
+                                const [textA, textB] = display ? display() : [format ? format(valueA) : formatNumber(locale, valueA), format ? format(valueB) : formatNumber(locale, valueB)];
+                                return (
+                                    <tr key={typeof label === 'string' ? label : `pole-coverage-${index}`}>
+                                        <th scope="row">{label}</th>
+                                        <td className={valueA > valueB ? styles.leader : undefined}><bdi dir="ltr">{textA}</bdi></td>
+                                        <td className={valueB > valueA ? styles.leader : undefined}><bdi dir="ltr">{textB}</bdi></td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
+                </div>
             </section>
         </div>
     );
 }
 
-export default function CompareContent({ initialIds, initialComparison = null, initialError = null }) {
+export default function CompareContent({ initialIds, initialComparison = null, initialError = null, driverProfiles = {} }) {
     const locale = useLocale();
     const t = pick(compareMessages, locale);
     const [selected, setSelected] = useState(() => initialIds.map((driverId, index) => {
@@ -360,7 +386,7 @@ export default function CompareContent({ initialIds, initialComparison = null, i
 
             {!error && comparison ? (
                 <div className={loading ? styles.stale : undefined}>
-                    <Comparison comparison={comparison} t={t} locale={locale} selected={selected} onChoose={choose} />
+                    <Comparison comparison={comparison} t={t} locale={locale} selected={selected} onChoose={choose} driverProfiles={driverProfiles} />
                 </div>
             ) : null}
         </div>
