@@ -1,18 +1,17 @@
 .drivers {
     min-height: 100vh;
+    padding-block-end: var(--space-2xl);
 }
 
 .header {
-    padding: var(--space-2xl) 0 var(--space-lg);
-    background: none;
+    padding-block: clamp(3rem, 6vw, 4.75rem) clamp(2.25rem, 4vw, 3rem);
+    border-block-end: 1px solid #262626;
 }
 
-.content {
-    padding: 0 0 var(--space-3xl);
-}
+.content { padding-block: var(--space-lg) 0; }
 
 .empty {
-    padding: var(--space-3xl) 0;
-    text-align: center;
+    padding: var(--space-3xl) var(--space-md);
     color: var(--text-2);
+    text-align: center;
 }

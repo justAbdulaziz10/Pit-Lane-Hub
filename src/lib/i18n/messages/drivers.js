@@ -31,6 +31,8 @@ const drivers = {
     en: {
         ...sharedStats.en,
         pageTitle: 'Drivers',
+        liveData: 'Live data',
+        currentSeasonOverview: 'Current season line-up and championship order.',
         seasonGridUnavailable: 'The grid for this season has not been announced yet.',
         search: 'Search',
         searchPlaceholder: 'Name, code, number or team',
@@ -94,6 +96,8 @@ const drivers = {
     ar: {
         ...sharedStats.ar,
         pageTitle: 'السائقون',
+        liveData: 'بيانات مباشرة',
+        currentSeasonOverview: 'قائمة سائقي الموسم الحالي وترتيب البطولة.',
         seasonGridUnavailable: 'لم يُعلَن بعد عن قائمة سائقي هذا الموسم.',
         search: 'بحث',
         searchPlaceholder: 'الاسم أو الرمز أو الرقم أو الفريق',

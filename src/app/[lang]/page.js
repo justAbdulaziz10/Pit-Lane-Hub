@@ -1,12 +1,15 @@
 import { requestTime } from '@/app/[lang]/schedule/status';
+import { DriverPortrait } from '@/components/DriverCard';
 import LocalTime, { Countdown } from '@/components/LocalTime';
+import { getGrid } from '@/lib/f1/drivers';
 import { getSeasonSummary } from '@/lib/f1/history';
 import { fastestLapOf, getDriverNumbers, getRaceResults } from '@/lib/f1/results';
 import { getCalendar, getLastRace, getNextRace } from '@/lib/f1/season';
 import { getDriverStandings } from '@/lib/f1/standings';
 import { getTeams } from '@/lib/f1/teams';
-import { canonicalTeamName } from '@/lib/f1/team-utils';
+import { canonicalTeamName, ensureTeamColorContrast } from '@/lib/f1/team-utils';
 import { getSeasonYear } from '@/lib/f1/year';
+import { getHighQualityPhoto } from '@/lib/photos';
 import { countryName, raceName } from '@/lib/i18n/f1-names';
 import { localeAlternates, localePath } from '@/lib/i18n/config';
 import { formatNumber } from '@/lib/i18n/format';
@@ -40,6 +43,15 @@ export async function generateMetadata({ params }) {
 
 const STANDINGS_ROWS = 5;
 
+const PADDOCK_FEATURES = [
+    { href: '/live', title: 'featureLiveTitle', description: 'featureLiveDescription', icon: '⏱️', live: true },
+    { href: '/standings', title: 'featureStandingsTitle', description: 'featureStandingsDescription', icon: '🏆' },
+    { href: '/schedule', title: 'featureCalendarTitle', description: 'featureCalendarDescription', icon: '📅' },
+    { href: '/compare', title: 'featureCompareTitle', description: 'featureCompareDescription', icon: '📊' },
+    { href: '/tracks', title: 'featureCircuitsTitle', description: 'featureCircuitsDescription', icon: '🗺️' },
+    { href: '/history', title: 'featureHistoryTitle', description: 'featureHistoryDescription', icon: '🏁' },
+];
+
 function DriverLink({ driver, numbers, lang }) {
     const number = numbers[driver.id ?? driver.driverId];
     const name = <bdi dir="ltr">{driver.firstName} <strong>{driver.lastName}</strong></bdi>;
@@ -54,7 +66,7 @@ function TeamBar({ team, teamsById }) {
 function NextRace({ race, serverNow, now, t, lang }) {
     if (!race) {
         return (
-            <section className={styles.card} aria-labelledby="next-heading">
+            <section className={`${styles.card} rich-card`} aria-labelledby="next-heading">
                 <h2 id="next-heading" className={styles.eyebrow}>{t.nextRace}</h2>
                 <p className={styles.cardTitle}>{t.calendarNotPublished}</p>
                 <Link href={localePath(lang, '/schedule')} className={styles.cardLink}>{t.calendar}</Link>
@@ -67,7 +79,7 @@ function NextRace({ race, serverNow, now, t, lang }) {
     const sessionText = nextSession ? sessionLabel(nextSession.label, lang) : null;
     const isLive = race.status === 'live';
     return (
-        <section className={`${styles.card} ${styles.nextCard}`} aria-labelledby="next-heading">
+        <section className={`${styles.card} ${styles.nextCard} rich-card`} aria-labelledby="next-heading">
             <h2 id="next-heading" className={styles.eyebrow}>
                 {isLive ? t.liveNow : race.status === 'weekend' ? t.raceWeekend : t.nextRace}
                 <span className={styles.round}><bdi dir="auto">{fill(t.round, { round: formatNumber(lang, race.round) })}</bdi></span>
@@ -160,7 +172,7 @@ function LastRace({ race, results, numbers, teamsById, t, lang }) {
     const href = localePath(lang, race.routeKey != null ? `/race/${race.routeKey}` : '/schedule');
     const podium = (results || []).filter((row) => row.position != null).slice(0, 3);
     return (
-        <section className={`${styles.card} ${styles.recapCard}`} aria-labelledby="last-heading">
+        <section className={`${styles.card} rich-card`} aria-labelledby="last-heading">
             <h2 id="last-heading" className={styles.eyebrow}>{t.lastRace}</h2>
             <p className={styles.sectionHeading}><Link href={href}>{raceName(race.raceName, lang)}</Link></p>
             {podium.length > 0 ? (
@@ -186,7 +198,7 @@ function LastRace({ race, results, numbers, teamsById, t, lang }) {
 function TitleFight({ math, numbers, t, lang }) {
     if (!math.leader) return null;
     return (
-        <section className={`${styles.card} ${styles.titleCard}`} aria-labelledby="title-fight-heading">
+        <section className={`${styles.card} ${styles.titleCard} rich-card`} aria-labelledby="title-fight-heading">
             <h2 id="title-fight-heading" className={styles.sectionHeading}>{t.titleFight}</h2>
             <p className={styles.titleLeader}>
                 <span className={styles.startLabel}>{t.leader}</span>
@@ -208,7 +220,7 @@ function TitleFight({ math, numbers, t, lang }) {
 
 function StandingsTable({ id, title, rows, renderName, teamsById, t, lang }) {
     return (
-        <section className={styles.card} aria-labelledby={id}>
+        <section className={`${styles.card} rich-card`} aria-labelledby={id}>
             <h2 id={id} className={styles.eyebrow}>{title}</h2>
             {rows.length > 0 ? (
                 <table className={styles.table}>
@@ -249,7 +261,7 @@ export default async function Home({ params }) {
     const now = requestTime();
     const year = getSeasonYear();
     // Each card degrades on its own: one throttled upstream must not take the home page down.
-    const [nextRace, currentLastRace, seasonSummary, numbers, calendar, driverStandings] = await Promise.all([
+    const [nextRace, currentLastRace, seasonSummary, numbers, calendar, driverStandings, grid] = await Promise.all([
         getNextRace(year, now).catch(() => null),
         getLastRace(year, now).catch(() => null),
         getSeasonSummary(year).catch(() => null),
@@ -257,6 +269,8 @@ export default async function Home({ params }) {
         getCalendar(year, now).catch(() => null),
         // Only the settled round is needed; without it every scheduled round counts as remaining.
         getDriverStandings(year).catch(() => null),
+        // Featured portraits and the hero count are optional; the race data above stands on its own.
+        getGrid(year).catch(() => []),
     ]);
     const summary = seasonSummary || { year, driverStandings: [], constructorStandings: [] };
     const lastRace = currentLastRace || (year > 1950 ? await getLastRace(year - 1, now).catch(() => null) : null);
@@ -277,10 +291,53 @@ export default async function Home({ params }) {
     });
     const serverNow = Math.floor(now / 1000) * 1000;
     const yearText = String(summary.year);
+    const settledDriverIds = new Set(summary.driverStandings.map((row) => row.driver.id));
+    const currentGrid = settledDriverIds.size > 0
+        ? grid.filter((driver) => settledDriverIds.has(driver.driverId))
+        : grid;
+    // Championship order first (two full rows of four), so the leaders are the faces on the page.
+    const standingRank = new Map(summary.driverStandings.map((row) => [row.driver.id, row.position]));
+    const featuredDrivers = currentGrid
+        .filter((driver) => driver.racingNumber != null && (driver.firstName || driver.lastName))
+        .sort((a, b) => (standingRank.get(a.driverId) ?? Infinity) - (standingRank.get(b.driverId) ?? Infinity))
+        .slice(0, 8);
+    const heroStats = [
+        { icon: '🏎️', label: t.statDrivers, value: currentGrid.length },
+        { icon: '🏆', label: t.statTeams, value: currentTeams.length },
+        { icon: '📅', label: t.statRaces, value: calendar?.rounds?.length },
+    ].filter((stat) => Number.isFinite(stat.value) && stat.value > 0);
 
     return (
         <div className={styles.home}>
-            <h1 className={styles.srOnly}>{t.title}</h1>
+            <section className={`page-hero ${styles.hero}`} aria-labelledby="home-hero-title">
+                <div className="page-hero__content">
+                    <p className="page-hero__badge"><span aria-hidden="true">🏎️</span>{t.heroBadge}</p>
+                    <h1 id="home-hero-title" className="page-hero__title">
+                        <span>{t.heroLead}</span>{' '}
+                        <span className="page-hero__accent">{t.heroAccent}</span>
+                    </h1>
+                    <p className="page-hero__subline">{t.heroDescription}</p>
+                    <div className={styles.heroActions}>
+                        <Link href={localePath(lang, '/live')} className="btn btn-primary">
+                            <span aria-hidden="true">⏱️</span>{t.liveTiming}
+                        </Link>
+                        <Link href={localePath(lang, '/drivers')} className="btn btn-outline">
+                            {t.heroDriversCta}
+                        </Link>
+                    </div>
+                    {heroStats.length > 0 && (
+                        <dl className={styles.heroStats}>
+                            {heroStats.map((stat) => (
+                                <div key={stat.label}>
+                                    <dt className="stat-label"><span aria-hidden="true">{stat.icon}</span>{stat.label}</dt>
+                                    <dd className="stat-number">{formatNumber(lang, stat.value)}</dd>
+                                </div>
+                            ))}
+                        </dl>
+                    )}
+                </div>
+            </section>
+
             <div className="container">
                 <div className={styles.top}>
                     <NextRace race={nextRace} serverNow={serverNow} now={now} t={t} lang={lang} />
@@ -289,7 +346,85 @@ export default async function Home({ params }) {
                         <TitleFight math={titleMath} numbers={numbers} t={t} lang={lang} />
                     </div>
                 </div>
+            </div>
 
+            <section className={styles.explore} aria-labelledby="explore-heading">
+                <div className="container">
+                    <div className={styles.sectionHeader}>
+                        <h2 id="explore-heading" className={styles.sectionTitle}>{t.explorePaddock}</h2>
+                    </div>
+                    <div className={styles.featureGrid}>
+                        {PADDOCK_FEATURES.map((feature) => (
+                            <Link
+                                key={feature.href}
+                                href={localePath(lang, feature.href)}
+                                className={`${styles.featureCard} ${feature.live ? styles.featureLive : ''}`}
+                            >
+                                {feature.live && <span className={styles.featureLiveTag}><span aria-hidden="true" />{t.liveMarker}</span>}
+                                <span className={styles.featureIcon} aria-hidden="true">{feature.icon}</span>
+                                <h3>{t[feature.title]}</h3>
+                                <p>{t[feature.description]}</p>
+                                <span className={styles.featureArrow} aria-hidden="true">↗</span>
+                            </Link>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
+            {featuredDrivers.length > 0 && (
+                <section className={styles.featuredDrivers} aria-labelledby="featured-heading">
+                    <div className="container">
+                        <div className={styles.sectionHeader}>
+                            <h2 id="featured-heading" className={styles.sectionTitle}>{t.featuredDrivers}</h2>
+                            <Link href={localePath(lang, '/drivers')} className={styles.viewAll}>
+                                {t.viewAllDrivers}<span aria-hidden="true">↗</span>
+                            </Link>
+                        </div>
+                        <div className={styles.featuredGrid}>
+                            {featuredDrivers.map((driver) => {
+                                const number = driver.racingNumber;
+                                return (
+                                    <Link
+                                        key={driver.driverId || `${number}-${driver.code}`}
+                                        href={localePath(lang, `/driver/${number}`)}
+                                        className={styles.featuredCard}
+                                        style={{ '--team-color': ensureTeamColorContrast(driver.teamColour || '#E10600') }}
+                                    >
+                                        <span className={styles.featuredNumber}><bdi dir="ltr">{formatNumber(lang, number)}</bdi></span>
+                                        <DriverPortrait
+                                            src={getHighQualityPhoto(driver.headshot)}
+                                            alt=""
+                                            width={360}
+                                            height={260}
+                                            className={styles.featuredPortrait}
+                                            imgClassName={styles.featuredPhoto}
+                                            fallbackClassName={styles.featuredPhotoFallback}
+                                            loading="lazy"
+                                        >
+                                            <span aria-hidden="true">{driver.code || driver.lastName?.slice(0, 3)?.toUpperCase()}</span>
+                                        </DriverPortrait>
+                                        <div className={styles.featuredInfo}>
+                                            <bdi dir="ltr" className={styles.featuredName}>
+                                                <span>{driver.firstName}</span>
+                                                <strong>{driver.lastName}</strong>
+                                            </bdi>
+                                            <span className={styles.featuredTeam}><bdi dir="auto">{driver.team}</bdi></span>
+                                            {(driver.flag || driver.nationalityCode) && (
+                                                <span className={styles.featuredNation}>
+                                                    {driver.flag && <span aria-hidden="true">{driver.flag}</span>}
+                                                    {driver.nationalityCode && <bdi dir="ltr">{driver.nationalityCode}</bdi>}
+                                                </span>
+                                            )}
+                                        </div>
+                                    </Link>
+                                );
+                            })}
+                        </div>
+                    </div>
+                </section>
+            )}
+
+            <div className="container">
                 <div className={styles.standings}>
                     <StandingsTable
                         id="drivers-heading"

@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const homeMocks = vi.hoisted(() => ({
+    getGrid: vi.fn(),
     getSeasonSummary: vi.fn(),
     getDriverNumbers: vi.fn(),
     getRaceResults: vi.fn(),
@@ -22,6 +23,7 @@ vi.mock('@/app/[lang]/schedule/status', () => ({
     webcalUrl: () => 'webcal://example.test/calendar.ics',
 }));
 vi.mock('@/lib/f1/history', () => ({ getSeasonSummary: (...args) => homeMocks.getSeasonSummary(...args) }));
+vi.mock('@/lib/f1/drivers', () => ({ getGrid: (...args) => homeMocks.getGrid(...args) }));
 vi.mock('@/lib/f1/results', () => ({
     fastestLapOf: (results) => results.find((row) => row.fastestLap?.time) || null,
     getDriverNumbers: (...args) => homeMocks.getDriverNumbers(...args),
@@ -64,6 +66,7 @@ async function renderHome() {
 }
 
 beforeEach(() => {
+    homeMocks.getGrid.mockResolvedValue([]);
     homeMocks.getSeasonSummary.mockResolvedValue({ year: 2026, races: [], driverStandings: [], constructorStandings: [] });
     homeMocks.getDriverNumbers.mockResolvedValue({});
     homeMocks.getRaceResults.mockResolvedValue([]);
@@ -77,6 +80,40 @@ beforeEach(() => {
 afterEach(() => vi.clearAllMocks());
 
 describe('home recap', () => {
+    it('renders the racing hero and restored paddock destinations without stale claims', async () => {
+        const markup = await renderHome();
+
+        expect(markup).toContain('Your F1');
+        expect(markup).toContain('Command Center');
+        expect(markup).toContain('Explore the Paddock');
+        expect(markup).toContain('Live Timing');
+        expect(markup).not.toContain('100% Free F1 Data');
+        expect(markup).not.toContain('F2/F3');
+    });
+
+    it('renders a featured photo card from the optional driver grid', async () => {
+        homeMocks.getGrid.mockResolvedValue([{
+            driverId: 'hamilton',
+            racingNumber: 44,
+            code: 'HAM',
+            firstName: 'Lewis',
+            lastName: 'Hamilton',
+            headshot: null,
+            team: 'Ferrari',
+            teamColour: '#E10600',
+            flag: '🇬🇧',
+            nationalityCode: 'GBR',
+        }]);
+
+        const markup = await renderHome();
+
+        expect(markup).toContain('href="/driver/44"');
+        expect(markup).toContain('Lewis');
+        expect(markup).toContain('Hamilton');
+        expect(markup).toContain('Ferrari');
+        expect(markup).toContain('HAM');
+    });
+
     it('counts retired and not-classified rows as DNFs, excluding DSQ, withdrawn, DNS, F and E', async () => {
         homeMocks.getRaceResults.mockResolvedValue([
             row({ id: 'retired', lastName: 'Retired', position: 17, positionText: 'R', status: 'Engine', grid: 25 }),
@@ -106,11 +143,12 @@ describe('home recap', () => {
         expect(facts).not.toContain('Retiree');
     });
 
-    it.each(['driver numbers', 'race results', 'teams'])('renders when optional %s data rejects', async (optionalData) => {
+    it.each(['driver numbers', 'race results', 'teams', 'featured drivers'])('renders when optional %s data rejects', async (optionalData) => {
         const failure = new Error(`${optionalData} unavailable`);
         if (optionalData === 'driver numbers') homeMocks.getDriverNumbers.mockRejectedValue(failure);
         if (optionalData === 'race results') homeMocks.getRaceResults.mockRejectedValue(failure);
         if (optionalData === 'teams') homeMocks.getTeams.mockRejectedValue(failure);
+        if (optionalData === 'featured drivers') homeMocks.getGrid.mockRejectedValue(failure);
 
         await expect(renderHome()).resolves.toContain('Regression Grand Prix');
     });

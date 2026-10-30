@@ -1,43 +1,48 @@
 /*
- * Pit Lane Hub design tokens: "pit wall monitor".
- * Asphalt surfaces, one family (Archivo, condensed widths for display and figures),
- * team colours carry the data, F1 red marks the brand, the current page and primary actions.
- * Team colours are lightened server-side against a dark background (ensureTeamColorContrast),
- * so surfaces stay dark.
+ * Wave 7 visual foundation — race-night carbon, F1 red and team colours.
+ * Reuse these tokens/classes across restored pages:
+ *   --bg / --surface-1 / --surface-2 / --surface-3 / --border: carbon layers
+ *   --accent / --accent-text / --gold / --gradient-racing / --shadow-glow: race accents
+ *   --font-display (Outfit) / --font-body (Inter); Arabic pages add IBM Plex Sans Arabic for glyph coverage
+ *   .page-hero + .page-hero__badge / __title / __accent / __subline: grid-and-glow hero
+ *   .rich-card: elevated content panel; .stat-number / .stat-label: icon-led data figures
+ *   .team-accent: set --team-color on the element for a logical team-colour edge
+ *   .btn-primary / .btn-outline / .btn-support: red action, outlined action, gold support pill
  */
 :root {
   color-scheme: dark;
 
   /* Surfaces */
-  --bg: #101218;
-  --surface-1: #171a21;
-  --surface-2: #1f232c;
-  --border: #2a2f3a;
-  --border-strong: #3a404d;
+  --bg: #0d0d0d;
+  --surface-1: #151515;
+  --surface-2: #1c1c1c;
+  --surface-3: #242424;
+  --border: #333333;
+  --border-strong: #4a4a4a;
 
-  /* Text (contrast on --bg: 16.1, 8.4, 5.9) */
-  --text-1: #edeef0;
-  --text-2: #a9aeb8;
-  --text-3: #8b919c;
+  /* Text */
+  --text-1: #f4f4f4;
+  --text-2: #b9b9b9;
+  --text-3: #969696;
 
-  /* Accent: F1 red for fills and marks; the lighter tint for red text (5.7:1 on --surface-1) */
+  /* Accent: F1 red for fills; lighter red for small text against carbon */
   --accent: #e10600;
-  --accent-hover: #c80500;
+  --accent-hover: #b80500;
   --accent-text: #ff5a50;
   --on-accent: #ffffff;
 
-  /* Data colours (position and status meaning only) */
-  --gold: #f2c94c;
-  --silver: #c9ced6;
-  --bronze: #d49a6a;
-  --positive: #3ecf8e;
-  --caution: #f2c94c;
+  /* Data colours */
+  --gold: #ffd700;
+  --silver: #d1d5db;
+  --bronze: #d99a72;
+  --positive: #51d995;
+  --caution: #ffd93d;
 
-  /* Type: one family, two widths */
-  --font-sans: var(--font-archivo), system-ui, sans-serif;
-  --font-display: var(--font-sans);
-  --font-body: var(--font-sans);
-  --stretch-display: 82%;
+  /* Type */
+  --font-sans: var(--font-inter), var(--font-arabic, system-ui), system-ui, sans-serif;
+  --font-display: var(--font-outfit), var(--font-arabic, system-ui), system-ui, sans-serif;
+  --font-body: var(--font-inter), var(--font-arabic, system-ui), system-ui, sans-serif;
+  --stretch-display: 100%;
   --stretch-body: 100%;
 
   --text-xs: 0.75rem;
@@ -57,15 +62,19 @@
   --space-2xl: 3rem;
   --space-3xl: 4rem;
 
-  /* Radius: controls small, panels medium, pills only for tiny tags */
-  --radius-sm: 4px;
-  --radius-md: 6px;
-  --radius-lg: 10px;
-  --radius-xl: 12px;
+  /* Radius */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 22px;
   --radius-full: 9999px;
 
-  /* Elevation: only overlays (menus) get a shadow */
-  --shadow-overlay: 0 12px 32px rgba(0, 0, 0, 0.45);
+  /* Elevation and brand depth */
+  --shadow-overlay: 0 18px 48px rgba(0, 0, 0, 0.55);
+  --shadow-card: 0 12px 28px rgba(0, 0, 0, 0.28);
+  --shadow-glow: 0 12px 34px rgba(225, 6, 0, 0.24);
+  --gradient-racing: linear-gradient(135deg, #e10600 0%, #b80500 100%);
+  --gradient-carbon: linear-gradient(140deg, #1c1c1c 0%, #111111 100%);
 
   /* Motion: short, ease-out, never decorative */
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
@@ -74,11 +83,6 @@
 
   --header-height: 56px;
   --container: 1280px;
-}
-
-/* Arabic pages: Arabic glyphs from IBM Plex Sans Arabic, Latin names and digits from Archivo. */
-html[lang='ar'] {
-  --font-sans: var(--font-archivo), var(--font-arabic), system-ui, sans-serif;
 }
 
 
@@ -290,6 +294,130 @@ time,
 .btn-secondary:hover:not(:disabled) {
   background: var(--surface-2);
   color: var(--text-1);
+}
+
+.btn-outline {
+  background: transparent;
+  color: var(--text-1);
+  border-color: var(--border-strong);
+}
+
+.btn-outline:hover:not(:disabled) {
+  background: var(--surface-2);
+  border-color: var(--text-2);
+  color: var(--text-1);
+}
+
+.btn-support {
+  background: rgba(255, 215, 0, 0.1);
+  color: var(--gold);
+  border-color: rgba(255, 215, 0, 0.42);
+}
+
+.btn-support:hover:not(:disabled) {
+  background: rgba(255, 215, 0, 0.18);
+  border-color: var(--gold);
+  color: #ffe766;
+}
+
+/* Shared visual utilities for all Wave 7 page slices. */
+.page-hero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  padding: clamp(3.25rem, 8vw, 6.75rem) var(--space-lg) clamp(2.5rem, 5vw, 4rem);
+  text-align: center;
+  background:
+    radial-gradient(ellipse at 50% 5%, rgba(225, 6, 0, 0.2), transparent 58%),
+    var(--bg);
+}
+
+.page-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.026) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.026) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: linear-gradient(to bottom, #000 0%, rgba(0, 0, 0, 0.5) 68%, transparent 100%);
+}
+
+.page-hero__content {
+  width: min(100%, 900px);
+  margin-inline: auto;
+}
+
+.page-hero__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  margin-block-end: var(--space-lg);
+  padding: 0.38rem 0.85rem;
+  border: 1px solid rgba(255, 59, 48, 0.52);
+  border-radius: var(--radius-full);
+  background: rgba(225, 6, 0, 0.16);
+  color: #ff7169;
+  font-size: var(--text-xs);
+  font-weight: 700;
+  letter-spacing: 0.075em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.page-hero__title {
+  margin: 0;
+  font-size: clamp(2.6rem, 7.4vw, 6rem);
+  font-weight: 900;
+  letter-spacing: -0.045em;
+  line-height: 0.98;
+}
+
+.page-hero__accent {
+  color: #f52b25;
+}
+
+.page-hero__subline {
+  max-width: 58ch;
+  margin: var(--space-lg) auto 0;
+  color: var(--text-2);
+  font-size: clamp(1rem, 1.2vw, 1.125rem);
+  line-height: 1.65;
+}
+
+.rich-card {
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(145deg, rgba(36, 36, 36, 0.92), rgba(21, 21, 21, 0.98));
+  box-shadow: var(--shadow-card);
+}
+
+.stat-number {
+  display: block;
+  color: #ff3b30;
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 3.4vw, 2.75rem);
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.035em;
+  line-height: 1;
+}
+
+.stat-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--text-2);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+}
+
+.team-accent {
+  border-block-end: 3px solid var(--team-color, var(--accent));
 }
 
 /* Forms */

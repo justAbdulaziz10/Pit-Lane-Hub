@@ -33,8 +33,8 @@ export default function DriversGrid({ drivers, initialQuery = '' }) {
     const groups = useMemo(() => (view === 'team' ? groupByTeam(visible) : []), [visible, view]);
 
     return (
-        <div>
-            <div className={styles.toolbar}>
+        <div className={styles.gridShell}>
+            <div className={`${styles.toolbar} rich-card`}>
                 <label className={styles.field}>
                     <span className={styles.label}>{t.search}</span>
                     <input
@@ -78,7 +78,7 @@ export default function DriversGrid({ drivers, initialQuery = '' }) {
             ) : view === 'team' ? (
                 groups.map((group) => (
                     <section key={group.team} className={styles.group} style={{ '--team-color': group.colour }}>
-                        <h2 className={styles.groupTitle}>{group.team === 'Unknown team' ? t.unknownTeam : group.team}</h2>
+                        <h2 className={`team-accent ${styles.groupTitle}`}>{group.team === 'Unknown team' ? t.unknownTeam : group.team}</h2>
                         <div className={styles.grid}>
                             {group.drivers.map((driver) => <DriverCard key={driver.key} driver={driver} headingLevel={3} />)}
                         </div>

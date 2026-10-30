@@ -6,22 +6,26 @@ import { LocaleProvider } from '@/lib/i18n/LocaleProvider';
 import { pick } from '@/lib/i18n/messages';
 import common from '@/lib/i18n/messages/common';
 import { jsonLdScript } from '@/lib/jsonld';
-import { Archivo, IBM_Plex_Sans_Arabic } from 'next/font/google';
+import { Inter, IBM_Plex_Sans_Arabic, Outfit } from 'next/font/google';
 import { notFound } from 'next/navigation';
 import { SITE_NAME, SITE_URL } from '@/lib/site';
 import './globals.css';
 
-// One self-hosted family; the width axis gives condensed display type and normal-width body text.
-// Only Latin is preloaded (it covers Pérez, Hülkenberg, Räikkönen); latin-ext still loads on
-// demand through its unicode-range when a page needs it.
-const archivo = Archivo({
+const outfit = Outfit({
   subsets: ['latin'],
-  axes: ['wdth'],
+  weight: ['400', '500', '600', '700', '800', '900'],
   display: 'swap',
-  variable: '--font-archivo',
+  variable: '--font-outfit',
 });
 
-// Arabic text; Latin names inside Arabic pages keep Archivo (see globals.css).
+const inter = Inter({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  display: 'swap',
+  variable: '--font-inter',
+});
+
+// Arabic text; Latin names inside Arabic pages keep the Outfit and Inter faces above.
 const plexArabic = IBM_Plex_Sans_Arabic({
   subsets: ['arabic'],
   weight: ['400', '500', '600', '700'],
@@ -73,7 +77,7 @@ export async function generateMetadata({ params }) {
 export const viewport = {
   width: 'device-width',
   initialScale: 1,
-  themeColor: '#101218',
+  themeColor: '#0d0d0d',
 };
 
 
@@ -89,7 +93,9 @@ export default async function RootLayout({ children, params }) {
     description: t.siteDescription,
     inLanguage: lang,
   };
-  const fonts = lang === 'ar' ? `${archivo.variable} ${plexArabic.variable}` : archivo.variable;
+  const fonts = lang === 'ar'
+    ? `${outfit.variable} ${inter.variable} ${plexArabic.variable}`
+    : `${outfit.variable} ${inter.variable}`;
 
   return (
     <html lang={lang} dir={localeDir(lang)} className={fonts}>

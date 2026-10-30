@@ -265,7 +265,8 @@ const DRIVES = {
     async 'calendar-race'(page, steps, base) {
         await page.goto(base + '/schedule');
         expectEq(steps, 'h1 "<year> F1 Calendar" visible', await visibleSoon(page.getByRole('heading', { level: 1, name: /F1 Calendar/ })), true);
-        expectEq(steps, 'calendar subscribe link offered', await page.locator('main a[href^="webcal://"]').count() > 0, true);
+        // The loading skeleton shares the h1, so wait for the streamed calendar itself.
+        expectEq(steps, 'calendar subscribe link offered', await visibleSoon(page.locator('main a[href^="webcal://"]').first()), true);
         const race = page.locator('main a[href^="/race/"]').first();
         await race.waitFor();
         const href = await race.getAttribute('href');
@@ -354,9 +355,9 @@ const DRIVES = {
     // Render-only: submitting needs Postgres, Resend, and Polar (see SKILL.md Unproven).
     async 'auth-pages'(page, steps, base) {
         await page.goto(base + '/');
-        await page.locator('header').getByRole('link', { name: 'Sign in' }).first().click();
+        await page.locator('header').getByRole('link', { name: 'Log in' }).first().click();
         await page.waitForURL(/\/login$/);
-        expectEq(steps, 'header "Sign in" lands on /login', new URL(page.url()).pathname, '/login');
+        expectEq(steps, 'header "Log in" lands on /login', new URL(page.url()).pathname, '/login');
         expectEq(steps, 'h1 "Sign in" visible', await page.getByRole('heading', { level: 1, name: 'Sign in' }).isVisible(), true);
         await page.goto(base + '/signup');
         expectEq(steps, 'h1 "Create account" visible', await page.getByRole('heading', { level: 1, name: 'Create account' }).isVisible(), true);

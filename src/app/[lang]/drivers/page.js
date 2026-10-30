@@ -7,6 +7,7 @@ import { getSeasonYear } from '@/lib/f1/year';
 import { ensureTeamColorContrast } from '@/lib/f1/team-utils';
 import { getHighQualityPhoto } from '@/lib/photos';
 import { nationalityName } from '@/lib/i18n/f1-names';
+import { formatNumber } from '@/lib/i18n/format';
 import { pick } from '@/lib/i18n/messages';
 import driverMessages from '@/lib/i18n/messages/drivers';
 import styles from './page.module.css';
@@ -39,6 +40,7 @@ export default async function DriversPage({ params, searchParams }) {
     await connection();
     const { lang } = await params;
     const t = pick(driverMessages, lang);
+    const year = getSeasonYear();
     const { q } = await searchParams;
     const [gridResult, standingsResult] = await Promise.allSettled([getGrid(), getDriverStandings(getSeasonYear())]);
     if (gridResult.status === 'rejected') throw gridResult.reason;
@@ -61,11 +63,16 @@ export default async function DriversPage({ params, searchParams }) {
 
     return (
         <div className={styles.drivers}>
-            <div className={styles.header}>
-                <div className="container">
-                    <h1>{t.pageTitle}</h1>
+            <section className={`page-hero ${styles.header}`} aria-labelledby="drivers-heading">
+                <div className="page-hero__content">
+                    <p className="page-hero__badge"><span aria-hidden="true">🏁</span>{t.liveData}</p>
+                    <h1 id="drivers-heading" className="page-hero__title">
+                        <bdi dir="ltr">{formatNumber(lang, year, { useGrouping: false })}</bdi>{' '}
+                        <span className="page-hero__accent">{t.pageTitle}</span>
+                    </h1>
+                    <p className="page-hero__subline">{t.currentSeasonOverview}</p>
                 </div>
-            </div>
+            </section>
             <div className={styles.content}>
                 <div className="container">
                     {drivers.length > 0 ? (

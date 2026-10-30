@@ -48,9 +48,12 @@ export default function Footer({ lang = 'en' }) {
         <footer className={styles.footer}>
             <div className={styles.container}>
                 <div className={styles.top}>
-                    <Link href={localePath(lang, '/')} className={styles.brand} aria-label={t.homeLabel}>
-                        <Wordmark />
-                    </Link>
+                    <div className={styles.brandBlock}>
+                        <Link href={localePath(lang, '/')} className={styles.brand} aria-label={t.homeLabel}>
+                            <Wordmark />
+                        </Link>
+                        <p className={styles.tagline}>{t.footerTagline}</p>
+                    </div>
 
                     <nav className={styles.columns} aria-label={t.footerNav}>
                         {COLUMNS.map((column) => (

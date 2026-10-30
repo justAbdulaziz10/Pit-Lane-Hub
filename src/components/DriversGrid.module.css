@@ -1,97 +1,132 @@
+.gridShell { padding-block: var(--space-lg) var(--space-3xl); }
+
 .toolbar {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: flex-end;
+    display: grid;
+    grid-template-columns: minmax(230px, 1.2fr) minmax(180px, 0.72fr) auto;
+    align-items: end;
     gap: var(--space-md);
-    margin-bottom: var(--space-md);
+    margin-block-end: var(--space-md);
+    padding: var(--space-md);
 }
 
 .field {
     display: flex;
+    min-width: 0;
     flex-direction: column;
-    gap: var(--space-xs);
-}
-
-.field:first-child {
-    flex: 1 1 260px;
+    gap: 0.38rem;
 }
 
 .label {
-    font-size: 0.75rem;
-    font-weight: 600;
     color: var(--text-2);
+    font-size: var(--text-xs);
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
 }
 
 .input {
-    min-height: 44px;
-    padding: 0 var(--space-md);
-    background: var(--surface-1);
-    border: 1px solid var(--border);
+    min-width: 0;
+    min-height: 46px;
+    padding-inline: var(--space-md);
+    border: 1px solid #464646;
     border-radius: var(--radius-md);
+    background: #111;
     color: var(--text-1);
     font: inherit;
 }
 
 .input:focus-visible,
 .segmented button:focus-visible {
-    outline: 2px solid var(--text-1);
+    outline: 2px solid #ff5a50;
     outline-offset: 2px;
 }
 
 .segmented {
     display: flex;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-md);
+    min-width: 0;
     overflow: hidden;
+    border: 1px solid #484848;
+    border-radius: var(--radius-md);
+    background: #111;
 }
 
 .segmented button {
-    min-height: 44px;
-    padding: 0 var(--space-md);
-    background: var(--surface-1);
+    min-height: 46px;
+    padding-inline: 0.8rem;
     border: 0;
-    color: var(--text-2);
+    background: transparent;
+    color: #c8c8c8;
     font: inherit;
+    font-size: var(--text-xs);
+    font-weight: 700;
+    white-space: nowrap;
     cursor: pointer;
+    transition: background-color var(--transition-fast), color var(--transition-fast);
 }
 
+.segmented button:hover { background: #252525; color: #fff; }
+
 .segmented button[aria-pressed='true'] {
-    background: #c00500;
-    color: #ffffff;
-    font-weight: 600;
+    background: var(--accent);
+    color: #fff;
 }
 
 .count {
-    margin-bottom: var(--space-lg);
-    font-size: 0.85rem;
-    color: var(--text-2);
+    width: fit-content;
+    margin-block-end: var(--space-lg);
+    padding: 0.35rem 0.7rem;
+    border: 1px solid #363636;
+    border-radius: var(--radius-full);
+    background: #191919;
+    color: #d0d0d0;
+    font-size: var(--text-xs);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
 }
 
 .empty {
-    padding: var(--space-2xl) 0;
-    text-align: center;
+    padding: var(--space-2xl) var(--space-md);
+    border: 1px dashed var(--border-strong);
+    border-radius: var(--radius-lg);
+    background: var(--surface-1);
     color: var(--text-2);
+    text-align: center;
 }
 
 .grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-    gap: var(--space-lg);
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--space-md);
 }
 
-.group + .group {
-    margin-top: var(--space-2xl);
-}
+.group + .group { margin-block-start: var(--space-2xl); }
 
 .groupTitle {
-    margin-bottom: var(--space-md);
-    padding-inline-start: var(--space-md);
-    border-inline-start: 4px solid var(--team-color, var(--accent));
-    font-size: 1.25rem;
+    width: fit-content;
+    max-width: 100%;
+    margin-block-end: var(--space-md);
+    padding-block-end: var(--space-xs);
+    color: #f4f4f4;
+    font-family: var(--font-display);
+    font-size: clamp(1.25rem, 2vw, 1.6rem);
+    font-weight: 800;
 }
 
-@media (max-width: 768px) {
-    .grid {
-        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    }
+@media (max-width: 1120px) {
+    .toolbar { grid-template-columns: minmax(200px, 1fr) minmax(160px, 0.7fr); }
+    .field:last-child { grid-column: 1 / -1; }
+    .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (max-width: 760px) {
+    .toolbar { grid-template-columns: minmax(0, 1fr); }
+    .field:last-child { grid-column: auto; }
+    .segmented { width: 100%; }
+    .segmented button { flex: 1; padding-inline: 0.4rem; }
+    .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-sm); }
+}
+
+@media (max-width: 350px) {
+    .toolbar { padding: 0.7rem; }
+    .segmented button { font-size: 0.68rem; }
 }

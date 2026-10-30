@@ -11,6 +11,7 @@ import LanguageSwitch from './LanguageSwitch';
 import styles from './Header.module.css';
 
 const NAV_LINKS = [
+    { href: '/', key: 'home' },
     { href: '/schedule', key: 'calendar' },
     { href: '/standings', key: 'standings' },
     { href: '/live', key: 'live' },
@@ -27,15 +28,20 @@ function isCurrent(pathname, link) {
     return (link.match || []).some((prefix) => pathname.startsWith(prefix));
 }
 
-/** Text wordmark with a slanted timing-tower bar; stays legible down to 320px. */
+/** Car mark and two-line wordmark from the original Pit Lane Hub identity. */
 export function Wordmark({ className = '' }) {
     return (
         <span className={`${styles.wordmark} ${className}`}>
-            <svg className={styles.mark} viewBox="0 0 10 24" aria-hidden="true" focusable="false">
-                <path d="M4 0h6L6 24H0z" />
+            <svg className={styles.mark} viewBox="0 0 72 34" aria-hidden="true" focusable="false">
+                <path d="M5 22.5h8.2l7-8.8c1.2-1.5 2.7-2.3 4.6-2.3h17.8c2.8 0 4.9.8 6.8 2.4l5.8 5h8.9c2 0 3.2 1.1 3.2 3v3.1H5z" />
+                <path d="M25.4 13.4h14.2l5.1 5.4H21.2z" fill="#0d0d0d" />
+                <circle cx="19" cy="25.6" r="4.4" />
+                <circle cx="56.7" cy="25.6" r="4.4" />
+                <path d="M4 28.5h64" stroke="currentColor" strokeWidth="1.6" />
             </svg>
             <span className={styles.wordmarkText}>
-                Pit Lane <span className={styles.wordmarkHub}>Hub</span>
+                <span>Pit Lane</span>
+                <span className={styles.wordmarkHub}>Hub</span>
             </span>
         </span>
     );
@@ -113,6 +119,7 @@ export default function Header() {
                                     className={styles.navLink}
                                     aria-current={isCurrent(pathname, link) ? 'page' : undefined}
                                 >
+                                    {link.key === 'live' && <span className={styles.liveDot} aria-hidden="true" />}
                                     {t[link.key]}
                                 </Link>
                             </li>
@@ -141,6 +148,25 @@ export default function Header() {
                         </Link>
                     )}
 
+                    <div className={styles.desktopActions}>
+                        <Link
+                            href="/support"
+                            className={`${styles.supportButton} btn btn-support`}
+                            aria-current={pathname === '/support' ? 'page' : undefined}
+                        >
+                            {t.support}
+                        </Link>
+                        {!user && (
+                            <Link
+                                href="/signup"
+                                className={`${styles.signUpButton} btn btn-primary`}
+                                aria-current={pathname === '/signup' ? 'page' : undefined}
+                            >
+                                {t.signUp}
+                            </Link>
+                        )}
+                    </div>
+
                     <LanguageSwitch className={styles.signIn} label={t.switchLanguage} title={t.switchLanguageLabel} />
 
                     <button
@@ -166,11 +192,6 @@ export default function Header() {
                     }}
                 >
                     <ul className={styles.menuList}>
-                        <li>
-                            <Link href="/" className={styles.menuLink} aria-current={pathname === '/' ? 'page' : undefined}>
-                                {t.home}
-                            </Link>
-                        </li>
                         {NAV_LINKS.map((link) => (
                             <li key={link.href}>
                                 <Link
@@ -178,6 +199,7 @@ export default function Header() {
                                     className={styles.menuLink}
                                     aria-current={isCurrent(pathname, link) ? 'page' : undefined}
                                 >
+                                    {link.key === 'live' && <span className={styles.liveDot} aria-hidden="true" />}
                                     {t[link.key]}
                                 </Link>
                             </li>
@@ -185,13 +207,26 @@ export default function Header() {
                     </ul>
                     <ul className={styles.menuSecondary}>
                         <li>
-                            <Link href={user ? '/profile' : '/login'} className={styles.menuSmall}>
+                            <Link
+                                href={user ? '/profile' : '/login'}
+                                className={styles.menuSmall}
+                                aria-current={pathname === (user ? '/profile' : '/login') ? 'page' : undefined}
+                            >
                                 {user ? t.account : t.signIn}
                             </Link>
                         </li>
                         <li>
-                            <Link href="/support" className={styles.menuSmall}>{t.support}</Link>
+                            <Link href="/support" className={`${styles.menuAction} btn btn-support`} aria-current={pathname === '/support' ? 'page' : undefined}>
+                                {t.support}
+                            </Link>
                         </li>
+                        {!user && (
+                            <li>
+                                <Link href="/signup" className={`${styles.menuAction} btn btn-primary`} aria-current={pathname === '/signup' ? 'page' : undefined}>
+                                    {t.signUp}
+                                </Link>
+                            </li>
+                        )}
                     </ul>
                 </nav>
             </div>
