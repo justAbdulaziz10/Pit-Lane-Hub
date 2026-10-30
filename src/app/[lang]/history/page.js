@@ -89,7 +89,7 @@ async function RacesView({ year, lookups, lang, t }) {
     for (const row of summary.constructorStandings) if (row.team?.id) teamNames.set(row.team.id, row.team.name);
 
     return (
-        <div className={standingsStyles.tableWrap}>
+        <div className={`${standingsStyles.tableWrap} rich-card`}>
             <table className={standingsStyles.table}>
                 <caption>{fill(t.raceWinners, { year: formatNumber(lang, year, { useGrouping: false }) })}</caption>
                 <thead>
@@ -106,8 +106,9 @@ async function RacesView({ year, lookups, lang, t }) {
                         const date = dates.get(race.round) || race.date?.slice(0, 10) || null;
                         const winner = race.winner;
                         const teamId = winner?.constructorId;
+                        const teamColor = teamId ? lookups.colorById.get(teamId) : null;
                         return (
-                            <tr key={race.round}>
+                            <tr key={race.round} style={teamColor ? { '--team-color': teamColor } : undefined}>
                                 <td className={standingsStyles.pos}><bdi dir="ltr">{formatNumber(lang, race.round)}</bdi></td>
                                 <th scope="row">{raceName(race.raceName, lang)}</th>
                                 <td className={`${standingsStyles.muted} ${standingsStyles.hideSmall}`}>
@@ -177,11 +178,11 @@ async function ConstructorsView({ year, lookups, lang, t }) {
     );
 }
 
-function ChampionsTable({ champions, lang, t }) {
+function ChampionsTable({ champions, colorById, lang, t }) {
     const constructorsByYear = new Map(champions.constructors.map((item) => [Number(item.year), item]));
     const rows = [...champions.drivers].sort((a, b) => b.year - a.year);
     return (
-        <div className={standingsStyles.tableWrap}>
+        <div className={`${standingsStyles.tableWrap} rich-card`}>
             <table className={standingsStyles.table}>
                 <caption>{t.worldChampions}</caption>
                 <thead>
@@ -194,8 +195,9 @@ function ChampionsTable({ champions, lang, t }) {
                 <tbody>
                     {rows.map((driver) => {
                         const constructor = constructorsByYear.get(Number(driver.year));
+                        const teamColor = constructor ? colorById.get(constructor.constructorId) : null;
                         return (
-                            <tr key={driver.year}>
+                            <tr key={driver.year} style={teamColor ? { '--team-color': teamColor } : undefined}>
                                 <th scope="row" className={standingsStyles.pos}>
                                     <Link href={viewHref(driver.year, DEFAULT_VIEW, lang)}><bdi dir="ltr">{formatNumber(lang, driver.year, { useGrouping: false })}</bdi></Link>
                                 </th>
@@ -228,7 +230,7 @@ function AllTimeRecords({ records, lang, t }) {
                         [t.mostDriverTitles, records.drivers],
                         [t.mostConstructorTitles, records.constructors],
                     ].map(([label, leaders]) => (
-                        <div key={label} className={styles.recordGroup}>
+                        <div key={label} className={`${styles.recordGroup} rich-card`}>
                             <dt>{label}</dt>
                             {leaders.length ? leaders.map((record) => (
                                 <dd key={record.id} className={styles.record}>
@@ -254,14 +256,23 @@ export default async function HistoryPage({ params, searchParams }) {
         explicitYear ? loadCurrentSeasonLookups(current) : Promise.resolve(EMPTY_LOOKUPS),
     ]);
     const records = allTimeRecords(champions);
-    const lookups = explicitYear ? lookupsForSeason(allLookups, year, current) : EMPTY_LOOKUPS;
+    const seasonLookups = explicitYear ? lookupsForSeason(allLookups, year, current) : EMPTY_LOOKUPS;
+    const lookups = explicitYear
+        ? { ...seasonLookups, colorById: allLookups.colorById }
+        : EMPTY_LOOKUPS;
     const SeasonView = view === 'drivers' ? DriversView : view === 'constructors' ? ConstructorsView : RacesView;
 
     return (
         <div className={styles.history}>
-            <header className={styles.header}>
+            <header className={`page-hero ${styles.header}`}>
+                <div className="page-hero__content container">
+                    <p className="page-hero__badge"><span aria-hidden="true">🏁</span>{t.allTimeRecords}</p>
+                    <h1 className="page-hero__title">{t.pageTitle}</h1>
+                </div>
+            </header>
+
+            <div className={styles.filters}>
                 <div className="container">
-                    <h1>{t.pageTitle}</h1>
                     <YearPicker
                         action="/history"
                         year={year}
@@ -272,7 +283,7 @@ export default async function HistoryPage({ params, searchParams }) {
                         lang={lang}
                     />
                 </div>
-            </header>
+            </div>
 
             {!explicitYear ? <AllTimeRecords records={records} lang={lang} t={t} /> : (
                 <section className={styles.content} aria-labelledby="season-heading">
@@ -297,7 +308,7 @@ export default async function HistoryPage({ params, searchParams }) {
 
             <section className={styles.content} aria-label={t.worldChampions}>
                 <div className="container">
-                    <ChampionsTable champions={champions} lang={lang} t={t} />
+                    <ChampionsTable champions={champions} colorById={allLookups.colorById} lang={lang} t={t} />
                 </div>
             </section>
         </div>

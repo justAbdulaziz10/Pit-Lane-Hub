@@ -82,6 +82,8 @@ export default async function TeamDetailPage({ params }) {
         ? (standing.position == null ? standing.positionText : formatNumber(lang, standing.position))
         : null;
     const drivers = current?.drivers || [];
+    const nameSpace = name.lastIndexOf(' ');
+    const nameSplit = nameSpace > 0 ? nameSpace : Math.ceil(name.length / 2);
 
     const teamJsonLd = {
         '@context': 'https://schema.org',
@@ -104,39 +106,41 @@ export default async function TeamDetailPage({ params }) {
         <div className={styles.teamDetail} style={current ? { '--team-color': current.color } : undefined}>
             <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdScript(teamJsonLd) }} />
 
-            <div className={styles.hero}>
+            <div className={`${styles.hero} page-hero`}>
                 <div className={styles.heroBackground} aria-hidden="true"></div>
                 <div className={styles.heroContent}>
                     <Link href={localePath(lang, '/teams')} className={styles.backLink}>{t.allTeams}</Link>
                     <span className={styles.colorStripe} aria-hidden="true"></span>
-                    <h1><bdi dir="auto">{name}</bdi></h1>
+                    <h1 className="page-hero__title">
+                        <bdi dir="auto">
+                            <span>{name.slice(0, nameSplit)}</span>
+                            <span className={styles.heroNameAccent}>{name.slice(nameSplit)}</span>
+                        </bdi>
+                    </h1>
                     {info.nationality && <p className={styles.nationality}>{nationalityName(info.nationality, lang)}</p>}
+                    {standing && (
+                        <section className={styles.statsSection} aria-labelledby="season-heading">
+                            <h2 id="season-heading" className={styles.sectionTitle}>
+                                <Link href={localePath(lang, '/standings')}>{fill(t.season, { year: formatNumber(lang, year, { useGrouping: false }) })}</Link>
+                            </h2>
+                            <dl className={styles.statsGrid}>
+                                <div className={`${styles.statCard} rich-card team-accent`}>
+                                    <dt className={styles.statLabel}><span aria-hidden="true">🏎️</span>{t.position}</dt>
+                                    <dd className={`${styles.statValue} stat-number`}><bdi dir="ltr">P{position}</bdi></dd>
+                                </div>
+                                <div className={`${styles.statCard} rich-card team-accent`}>
+                                    <dt className={styles.statLabel}><span aria-hidden="true">🏆</span>{t.statPoints}</dt>
+                                    <dd className={`${styles.statValue} stat-number`}><bdi dir="ltr">{formatNumber(lang, standing.points)}</bdi></dd>
+                                </div>
+                                <div className={`${styles.statCard} rich-card team-accent`}>
+                                    <dt className={styles.statLabel}><span aria-hidden="true">🏁</span>{t.statWins}</dt>
+                                    <dd className={`${styles.statValue} stat-number`}><bdi dir="ltr">{formatNumber(lang, standing.wins)}</bdi></dd>
+                                </div>
+                            </dl>
+                        </section>
+                    )}
                 </div>
             </div>
-
-            {standing && (
-                <section className={styles.statsSection} aria-labelledby="season-heading">
-                    <div className="container">
-                        <h2 id="season-heading" className={styles.sectionTitle}>
-                            <Link href={localePath(lang, '/standings')}>{fill(t.season, { year: formatNumber(lang, year, { useGrouping: false }) })}</Link>
-                        </h2>
-                        <dl className={styles.statsGrid}>
-                            <div className={styles.statCard}>
-                                <dt className={styles.statLabel}>{t.position}</dt>
-                                <dd className={styles.statValue}><bdi dir="ltr">P{position}</bdi></dd>
-                            </div>
-                            <div className={styles.statCard}>
-                                <dt className={styles.statLabel}>{t.statPoints}</dt>
-                                <dd className={styles.statValue}><bdi dir="ltr">{formatNumber(lang, standing.points)}</bdi></dd>
-                            </div>
-                            <div className={styles.statCard}>
-                                <dt className={styles.statLabel}>{t.statWins}</dt>
-                                <dd className={styles.statValue}><bdi dir="ltr">{formatNumber(lang, standing.wins)}</bdi></dd>
-                            </div>
-                        </dl>
-                    </div>
-                </section>
-            )}
 
             {drivers.length > 0 && (
                 <section className={styles.section} aria-labelledby="drivers-heading">
@@ -149,8 +153,8 @@ export default async function TeamDetailPage({ params }) {
                                 const content = (
                                     <>
                                         <DriverPortrait
-                                            src={getHighQualityPhoto(driver.headshot)}
-                                            alt={driver.fullName || `${driver.firstName} ${driver.lastName}`.trim()}
+                                            src={getHighQualityPhoto(driver.headshot) || driver.headshot}
+                                            alt=""
                                             width={80}
                                             height={80}
                                             className={styles.driverPortrait}
@@ -158,7 +162,9 @@ export default async function TeamDetailPage({ params }) {
                                             fallbackClassName={styles.driverFallback}
                                             loading="lazy"
                                         >
-                                            <bdi dir="ltr">{(driver.code || `${driver.firstName?.[0] || ''}${driver.lastName?.[0] || ''}`).toUpperCase()}</bdi>
+                                            <bdi dir="ltr" aria-hidden="true">
+                                                {(driver.code || `${driver.firstName?.[0] || ''}${driver.lastName?.[0] || ''}`).toUpperCase()}
+                                            </bdi>
                                         </DriverPortrait>
                                         <span className={styles.driverNumber}><bdi dir="ltr">{number == null ? '' : formatNumber(lang, number)}</bdi></span>
                                         <bdi dir="ltr" className={styles.driverName}>
@@ -169,8 +175,8 @@ export default async function TeamDetailPage({ params }) {
                                 return (
                                     <li key={driver.driverId || number}>
                                         {href
-                                            ? <Link href={localePath(lang, href)} className={styles.driverCard}>{content}</Link>
-                                            : <span className={styles.driverCard}>{content}</span>}
+                                            ? <Link href={localePath(lang, href)} className={`${styles.driverCard} rich-card team-accent`}>{content}</Link>
+                                            : <span className={`${styles.driverCard} rich-card team-accent`}>{content}</span>}
                                     </li>
                                 );
                             })}
@@ -183,21 +189,21 @@ export default async function TeamDetailPage({ params }) {
                 <div className="container">
                     <h2 id="history-heading" className={styles.sectionTitle}>{t.allTimeRecord}</h2>
                     <dl className={styles.statsGrid}>
-                        <div className={styles.statCard}>
-                            <dt className={styles.statLabel}>{t.constructorTitles}</dt>
-                            <dd className={styles.statValue}><bdi dir="ltr">{stat(champions ? titleYears.length : null)}</bdi></dd>
+                        <div className={`${styles.statCard} rich-card team-accent`}>
+                            <dt className={styles.statLabel}><span aria-hidden="true">🏆</span>{t.constructorTitles}</dt>
+                            <dd className={`${styles.statValue} stat-number`}><bdi dir="ltr">{stat(champions ? titleYears.length : null)}</bdi></dd>
                         </div>
-                        <div className={styles.statCard}>
-                            <dt className={styles.statLabel}>{t.raceWins}</dt>
-                            <dd className={styles.statValue}><bdi dir="ltr">{stat(record?.wins)}</bdi></dd>
+                        <div className={`${styles.statCard} rich-card team-accent`}>
+                            <dt className={styles.statLabel}><span aria-hidden="true">🏁</span>{t.raceWins}</dt>
+                            <dd className={`${styles.statValue} stat-number`}><bdi dir="ltr">{stat(record?.wins)}</bdi></dd>
                         </div>
-                        <div className={styles.statCard}>
-                            <dt className={styles.statLabel}>{t.grandsPrix}</dt>
-                            <dd className={styles.statValue}><bdi dir="ltr">{stat(record?.races)}</bdi></dd>
+                        <div className={`${styles.statCard} rich-card team-accent`}>
+                            <dt className={styles.statLabel}><span aria-hidden="true">📍</span>{t.grandsPrix}</dt>
+                            <dd className={`${styles.statValue} stat-number`}><bdi dir="ltr">{stat(record?.races)}</bdi></dd>
                         </div>
-                        <div className={styles.statCard}>
-                            <dt className={styles.statLabel}>{t.statSeasons}</dt>
-                            <dd className={styles.statValue}><bdi dir="ltr">{stat(record?.seasons)}</bdi></dd>
+                        <div className={`${styles.statCard} rich-card team-accent`}>
+                            <dt className={styles.statLabel}><span aria-hidden="true">📅</span>{t.statSeasons}</dt>
+                            <dd className={`${styles.statValue} stat-number`}><bdi dir="ltr">{stat(record?.seasons)}</bdi></dd>
                         </div>
                     </dl>
                     {titleYears.length > 0 && (

@@ -6,6 +6,7 @@ import { getGrid } from '@/lib/f1/drivers';
 import { getSeasonSummary } from '@/lib/f1/history';
 import { getClientIp, rateLimit } from '@/lib/rate-limit';
 import { localeAlternates, localePath } from '@/lib/i18n/config';
+import { getHighQualityPhoto } from '@/lib/photos';
 import { pick } from '@/lib/i18n/messages';
 import compareMessages from '@/lib/i18n/messages/compare';
 import styles from './page.module.css';
@@ -83,18 +84,29 @@ export default async function ComparePage({ params, searchParams }) {
         error = 'unavailable';
     }
 
+    const currentGrid = await getGrid().catch(() => []);
+    const driverProfiles = Object.fromEntries(currentGrid
+        .filter((driver) => driver.driverId)
+        .map((driver) => [driver.driverId, {
+            photo: getHighQualityPhoto(driver.headshot),
+            headshot: driver.headshot || null,
+            color: driver.teamColour || null,
+        }]));
+
     return (
         <div className={styles.compare}>
-            <div className={styles.header}>
-                <div className="container">
-                    <h1>{t.pageTitle}</h1>
+            <header className={`page-hero ${styles.header}`}>
+                <div className="page-hero__content container">
+                    <p className="page-hero__badge"><span aria-hidden="true">🏁</span>{t.headToHead}</p>
+                    <h1 className="page-hero__title">{t.pageTitle}</h1>
                 </div>
-            </div>
+            </header>
             <CompareContent
                 key={`${a}:${b}`}
                 initialIds={[isValidDriverId(a) ? a : '', isValidDriverId(b) ? b : '']}
                 initialComparison={comparison}
                 initialError={error}
+                driverProfiles={driverProfiles}
             />
         </div>
     );

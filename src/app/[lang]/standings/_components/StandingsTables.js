@@ -39,7 +39,7 @@ export function DriverStandingsTable({ standings, caption, lookups = EMPTY_LOOKU
     const t = pick(standingsMessages, lang);
     const leaderPoints = standings[0]?.points ?? null;
     return (
-        <div className={styles.tableWrap}>
+        <div className={`${styles.tableWrap} rich-card`}>
             <table className={styles.table}>
                 <caption>{caption}</caption>
                 <thead>
@@ -85,7 +85,7 @@ export function ConstructorStandingsTable({ standings, caption, lookups = EMPTY_
         .filter((row, index) => standings.some((other, otherIndex) => otherIndex !== index && other.points === row.points))
         .map((row) => row.team.id));
     return (
-        <div className={styles.tableWrap}>
+        <div className={`${styles.tableWrap} rich-card`}>
             <table className={styles.table}>
                 <caption>{caption}</caption>
                 <thead>
