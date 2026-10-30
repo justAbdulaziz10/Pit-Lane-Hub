@@ -51,6 +51,25 @@ const TEAM_NAMES_BY_CONSTRUCTOR_ID = Object.freeze({
     cadillac: 'Cadillac',
 });
 
+// Current-season livery colours (OpenF1, 2026), used when OpenF1 is throttled and the grid has none.
+const TEAM_COLOURS = Object.freeze({
+    Alpine: '#00A1E8',
+    'Aston Martin': '#229971',
+    Audi: '#F50537',
+    Cadillac: '#909090',
+    Ferrari: '#ED1131',
+    Haas: '#9C9FA2',
+    McLaren: '#F47600',
+    Mercedes: '#00D7B6',
+    'Racing Bulls': '#6C98FF',
+    'Red Bull Racing': '#4781D7',
+    Williams: '#1868DB',
+});
+
+export function fallbackTeamColour(canonicalName) {
+    return TEAM_COLOURS[canonicalName] || null;
+}
+
 function keyFor(name) {
     return String(name || '')
         .normalize('NFKD')

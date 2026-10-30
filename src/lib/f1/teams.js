@@ -5,7 +5,7 @@ import {
 } from './http';
 import { getGrid, getSeasonDriverList } from './drivers';
 import { latestList } from './history';
-import { canonicalTeamNameForId, ensureTeamColorContrast } from './team-utils';
+import { canonicalTeamNameForId, ensureTeamColorContrast, fallbackTeamColour } from './team-utils';
 import { getSeasonYear } from './year';
 
 function rows(mrData) {
@@ -75,7 +75,7 @@ async function loadTeams(year) {
             name: canonicalName,
             displayName: canonicalName,
             nationality: constructor.nationality || null,
-            color: ensureTeamColorContrast(observedColor || '#FFFFFF'),
+            color: ensureTeamColorContrast(observedColor || (year >= getSeasonYear() && fallbackTeamColour(canonicalName)) || '#FFFFFF'),
             drivers,
         };
     });

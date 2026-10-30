@@ -430,6 +430,28 @@ describe('teams and career/history data', () => {
         expect(teamColorContrastRatio(adjustedColor, '#0D0D0D')).toBeGreaterThanOrEqual(3);
     });
 
+    it('falls back to the season livery colour when OpenF1 gives the grid no team colours', async () => {
+        vi.setSystemTime(new Date('2026-10-27T00:00:00Z'));
+        const constructors = [{ constructorId: 'ferrari', name: 'Ferrari' }];
+        const hamilton = driver('hamilton', 'HAM', 44, 'Lewis', 'Hamilton', 'British');
+        installFetch((url) => {
+            if (url.hostname === 'api.openf1.org') return [];
+            if (url.hostname === 'api.jolpi.ca' && url.pathname.endsWith('/2026/races.json')) return mrData(0, { RaceTable: { Races: [] } });
+            if (url.hostname === 'api.jolpi.ca' && url.pathname.endsWith('/2026/constructors.json')) return mrData(1, { ConstructorTable: { Constructors: constructors } });
+            if (url.hostname === 'api.jolpi.ca' && url.pathname.endsWith('/2026/drivers.json')) return mrData(1, { DriverTable: { Drivers: [hamilton] } });
+            if (url.hostname === 'api.jolpi.ca' && url.pathname.endsWith('/2026/driverstandings.json')) {
+                return mrData(1, { StandingsTable: { StandingsLists: [{ season: '2026', round: '18', DriverStandings: [
+                    { Driver: hamilton, Constructors: constructors },
+                ] }] } });
+            }
+            throw new Error(`Unexpected test request: ${url}`);
+        });
+
+        const [ferrari] = await getTeams(2026);
+
+        expect(ferrari.color).toBe(ensureTeamColorContrast('#ED1131'));
+    });
+
     it('derives career totals from the result rows and titles from the champions list', async () => {
         const race = (season, round, position, grid, fastest) => ({
             season: String(season),
