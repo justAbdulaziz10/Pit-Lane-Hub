@@ -73,7 +73,7 @@ describe('segment metadata', () => {
     });
   });
 
-  it('localizes owned route metadata and emits matching canonical and language alternates', async () => {
+    it('emits English metadata with canonical URLs and no language alternates', async () => {
     const paths = ['/login', '/signup', '/profile', '/support', '/verify-email', '/nope'];
 
     for (const path of paths) {
@@ -85,17 +85,17 @@ describe('segment metadata', () => {
       const descriptionKey = path === '/login' ? 'loginDescription' : path === '/signup' ? 'signupDescription'
         : path === '/profile' ? 'metadataDescription' : path === '/support' ? 'metadataDescription'
             : path === '/verify-email' ? 'verifyDescription' : 'notFoundDescription';
-      const metadata = localizedPageMetadata('ar', path, {
-        title: segment.ar[titleKey],
-        description: segment.ar[descriptionKey],
+        const metadata = localizedPageMetadata('en', path, {
+            title: segment.en[titleKey],
+            description: segment.en[descriptionKey],
       });
-      expect(metadata.title).toMatch(/[\u0600-\u06ff]/);
-      expect(metadata.description).toMatch(/[\u0600-\u06ff]/);
-      expect(metadata.alternates.canonical).toBe(`/ar${path}`);
-      expect(metadata.alternates.languages.en).toBe(path);
-      expect(metadata.alternates.languages.ar).toBe(`/ar${path}`);
-      expect(metadata.openGraph.url).toBe(`/ar${path}`);
-      expect(metadata.openGraph.locale).toBe('ar_SA');
+        expect(metadata.title).toBe(segment.en[titleKey]);
+        expect(metadata.description).toBe(segment.en[descriptionKey]);
+        expect(metadata.alternates).toEqual({ canonical: path });
+        expect(metadata.alternates).not.toHaveProperty('languages');
+        expect(metadata.openGraph.url).toBe(path);
+        expect(metadata.openGraph.locale).toBe('en_US');
+        expect(JSON.stringify(metadata)).not.toContain('/ar');
     }
   });
 });

@@ -24,31 +24,6 @@ const time = {
             race: 'Race',
         },
     },
-    ar: {
-        utc: 'UTC',
-        localTime: 'بالتوقيت المحلي',
-        today: 'اليوم',
-        tomorrow: 'غدًا',
-        yesterday: 'أمس',
-        justNow: 'الآن',
-        toGo: 'متبقية',
-        remaining: 'متبقية',
-        tbc: 'لم يُحدد بعد',
-        started: 'بدأ',
-        day: { zero: 'أيام', one: 'يوم', two: 'يومان', few: 'أيام', many: 'يومًا', other: 'يوم' },
-        hour: { zero: 'ساعات', one: 'ساعة', two: 'ساعتان', few: 'ساعات', many: 'ساعة', other: 'ساعة' },
-        minute: { zero: 'دقائق', one: 'دقيقة', two: 'دقيقتان', few: 'دقائق', many: 'دقيقة', other: 'دقيقة' },
-        second: { zero: 'ثوانٍ', one: 'ثانية', two: 'ثانيتان', few: 'ثوانٍ', many: 'ثانية', other: 'ثانية' },
-        sessions: {
-            fp1: 'التجارب الحرة 1',
-            fp2: 'التجارب الحرة 2',
-            fp3: 'التجارب الحرة 3',
-            sprintQualifying: 'تصفيات السباق السريع',
-            sprint: 'السباق السريع',
-            qualifying: 'التصفيات',
-            race: 'السباق',
-        },
-    },
 };
 
 const SESSION_ALIASES = new Map([

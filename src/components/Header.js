@@ -7,7 +7,6 @@ import { splitLocale } from '@/lib/i18n/config';
 import { Link, useLocale } from '@/lib/i18n/LocaleProvider';
 import { pick } from '@/lib/i18n/messages';
 import common from '@/lib/i18n/messages/common';
-import LanguageSwitch from './LanguageSwitch';
 import styles from './Header.module.css';
 
 const NAV_LINKS = [
@@ -62,7 +61,7 @@ function MenuIcon({ open }) {
 export default function Header() {
     const { data: session } = useSession();
     const t = pick(common, useLocale());
-    // Active-link matching works on the app path, without the /ar prefix.
+    // Active-link matching uses the path visible to visitors.
     const pathname = splitLocale(usePathname() || '/').path;
     const [menuOpen, setMenuOpen] = useState(false);
     const [menuPath, setMenuPath] = useState(pathname);
@@ -166,8 +165,6 @@ export default function Header() {
                             </Link>
                         )}
                     </div>
-
-                    <LanguageSwitch className={styles.signIn} label={t.switchLanguage} title={t.switchLanguageLabel} />
 
                     <button
                         ref={buttonRef}

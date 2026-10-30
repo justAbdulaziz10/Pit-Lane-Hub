@@ -3,7 +3,7 @@
  * Reuse these tokens/classes across restored pages:
  *   --bg / --surface-1 / --surface-2 / --surface-3 / --border: carbon layers
  *   --accent / --accent-text / --gold / --gradient-racing / --shadow-glow: race accents
- *   --font-display (Outfit) / --font-body (Inter); Arabic pages add IBM Plex Sans Arabic for glyph coverage
+ *   --font-display (Outfit) / --font-body (Inter)
  *   .page-hero + .page-hero__badge / __title / __accent / __subline: grid-and-glow hero
  *   .rich-card: elevated content panel; .stat-number / .stat-label: icon-led data figures
  *   .team-accent: set --team-color on the element for a logical team-colour edge
@@ -39,9 +39,9 @@
   --caution: #ffd93d;
 
   /* Type */
-  --font-sans: var(--font-inter), var(--font-arabic, system-ui), system-ui, sans-serif;
-  --font-display: var(--font-outfit), var(--font-arabic, system-ui), system-ui, sans-serif;
-  --font-body: var(--font-inter), var(--font-arabic, system-ui), system-ui, sans-serif;
+  --font-sans: var(--font-inter), system-ui, sans-serif;
+  --font-display: var(--font-outfit), system-ui, sans-serif;
+  --font-body: var(--font-inter), system-ui, sans-serif;
   --stretch-display: 100%;
   --stretch-body: 100%;
 

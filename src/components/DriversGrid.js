@@ -10,10 +10,8 @@ import DriverCard from '@/components/DriverCard';
 import { useFavorites } from '@/lib/useFavorites';
 import styles from './DriversGrid.module.css';
 
-function noDriversMatch(query, t, locale) {
-    if (locale !== 'ar') return fill(t.noDriversMatch, { query });
-    const [prefix, suffix] = t.noDriversMatch.split('{query}');
-    return <>{prefix}<bdi>{query}</bdi>{suffix}</>;
+function noDriversMatch(query, t) {
+    return fill(t.noDriversMatch, { query });
 }
 
 export default function DriversGrid({ drivers, initialQuery = '' }) {
@@ -65,16 +63,12 @@ export default function DriversGrid({ drivers, initialQuery = '' }) {
 
             <p className={styles.count} aria-live="polite">
                 {visible.length === drivers.length
-                    ? (locale === 'ar'
-                        ? <>{t.driverCountLabel} <bdi dir="ltr">{formatNumber(locale, drivers.length)}</bdi></>
-                        : fill(t.driverCount, { count: formatNumber(locale, drivers.length) }))
-                    : (locale === 'ar'
-                        ? <>{t.driverCountFilteredLabel} <bdi dir="ltr">{formatNumber(locale, visible.length)}</bdi> {t.driverCountOf} <bdi dir="ltr">{formatNumber(locale, drivers.length)}</bdi></>
-                        : fill(t.driverCountFiltered, { shown: formatNumber(locale, visible.length), total: formatNumber(locale, drivers.length) }))}
+                    ? fill(t.driverCount, { count: formatNumber(locale, drivers.length) })
+                    : fill(t.driverCountFiltered, { shown: formatNumber(locale, visible.length), total: formatNumber(locale, drivers.length) })}
             </p>
 
             {visible.length === 0 ? (
-                <p className={styles.empty}>{noDriversMatch(query, t, locale)}</p>
+                <p className={styles.empty}>{noDriversMatch(query, t)}</p>
             ) : view === 'team' ? (
                 groups.map((group) => (
                     <section key={group.team} className={styles.group} style={{ '--team-color': group.colour }}>

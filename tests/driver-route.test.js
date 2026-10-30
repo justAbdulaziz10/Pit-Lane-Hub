@@ -95,12 +95,6 @@ describe('finishLabel', () => {
         expect(finishLabel({ positionText: 'W' })).toBe('WD');
     });
 
-    it('localizes non-finish statuses for Arabic driver results', () => {
-        expect(finishLabel({ positionText: 'R', status: 'Engine' }, 'ar')).toBe('انسحب');
-        expect(finishLabel({ positionText: 'D' }, 'ar')).toBe('استُبعد');
-        expect(finishLabel({ positionText: 'W' }, 'ar')).toBe('انسحب');
-        expect(finishLabel({ positionText: '1' }, 'ar')).toBe('P1');
-    });
 });
 
 describe('drivers list filters', () => {
@@ -116,11 +110,6 @@ describe('drivers list filters', () => {
         expect(filterDrivers(drivers, { query: 'nor' }).map((d) => d.code)).toEqual(['NOR']);
         expect(filterDrivers(drivers, { query: '44' }).map((d) => d.code)).toEqual(['HAM']);
         expect(filterDrivers(drivers, { query: 'british' })).toHaveLength(2);
-        const arabicNationalities = drivers.map((driver) => ({
-            ...driver,
-            nationality: driver.nationality === 'British' ? 'بريطاني' : driver.nationality,
-        }));
-        expect(filterDrivers(arabicNationalities, { query: 'بريطاني' }).map((driver) => driver.code)).toEqual(['NOR', 'HAM']);
         expect(filterDrivers(drivers, { team: 'Ferrari' }).map((d) => d.code)).toEqual(['LEC', 'HAM']);
         expect(filterDrivers(drivers, { query: 'ham', team: 'McLaren' })).toEqual([]);
     });

@@ -2,7 +2,7 @@ import { formatNumber } from '@/lib/i18n/format';
 import { pick } from '@/lib/i18n/messages';
 import tracksMessages from '@/lib/i18n/messages/tracks';
 
-/** "5.419 km" → localized number and unit ("5.419 كم"); unknown formats pass through. */
+/** Format a circuit length with English number formatting; unknown formats pass through. */
 export function circuitLength(length, lang) {
     const kilometres = Number.parseFloat(length);
     if (!Number.isFinite(kilometres)) return length;

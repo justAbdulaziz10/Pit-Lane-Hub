@@ -73,9 +73,8 @@ describe('calendar status and local session times', () => {
         ]).upcoming[0].status).toBe('next');
     });
 
-    it('labels the two preseason tests in English and Arabic', () => {
+    it('labels the two preseason tests in English', () => {
         expect([testingLabel(0, 'en'), testingLabel(1, 'en')]).toEqual(['Test 1', 'Test 2']);
-        expect([testingLabel(0, 'ar'), testingLabel(1, 'ar')]).toEqual(['التجربة 1', 'التجربة 2']);
     });
 
     it('exposes qualifying and sprint ISO times to LocalTime and formats the browser-local value', () => {

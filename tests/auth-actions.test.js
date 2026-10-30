@@ -22,12 +22,11 @@ vi.mock('next/headers', () => ({ headers: mocks.headers }));
 
 import { registerUser, resendVerificationEmail } from '@/app/actions/auth';
 
-function makeFormData(lang = 'en', overrides = {}) {
+function makeFormData(overrides = {}) {
     return new Map(Object.entries({
         name: 'Racer',
         email: '  RACER@Example.com ',
         password: 'racecar123',
-        lang,
         ...overrides,
     }));
 }
@@ -84,13 +83,13 @@ describe('registerUser', () => {
         mocks.findUnique.mockResolvedValueOnce(null);
 
         const before = Date.now();
-        await registerUser(makeFormData('ar'));
+        await registerUser(makeFormData());
 
         const text = JSON.parse(fetch.mock.calls[0][1].body).text;
         const link = new URL(text.match(/https:\/\/\S+/)[0]);
-        expect(link.origin + link.pathname).toBe('https://pitlane.example/ar/verify-email');
-        expect(JSON.parse(fetch.mock.calls[0][1].body).subject).toBe('أكّد حسابك في Pit Lane Hub');
-        expect(text).toContain('أكّد عنوان بريدك الإلكتروني خلال 24 ساعة:');
+        expect(link.origin + link.pathname).toBe('https://pitlane.example/verify-email');
+        expect(JSON.parse(fetch.mock.calls[0][1].body).subject).toBe('Verify your Pit Lane Hub account');
+        expect(text).toContain('Confirm your email address within 24 hours:');
         const rawToken = link.searchParams.get('token');
         expect(rawToken).toMatch(/^[a-f0-9]{64}$/);
 
@@ -111,7 +110,7 @@ describe('registerUser', () => {
         mocks.findUnique.mockResolvedValueOnce(pending);
         const attackerPassword = 'attacker999';
 
-        const response = await registerUser(makeFormData('en', { password: attackerPassword }));
+        const response = await registerUser(makeFormData({ password: attackerPassword }));
 
         expect(response).toEqual({
             success: true,
@@ -157,24 +156,24 @@ describe('registerUser', () => {
         expect(mocks.findUnique).not.toHaveBeenCalled();
     });
 
-    it('returns Arabic validation messages for invalid signup input', async () => {
-        const invalidEmail = await registerUser(makeFormData('ar', { email: 'not-an-email' }));
-        expect(invalidEmail).toEqual({ error: 'أدخل عنوان بريد إلكتروني صالحًا.' });
+    it('returns English validation messages for invalid signup input', async () => {
+        const invalidEmail = await registerUser(makeFormData({ email: 'not-an-email' }));
+        expect(invalidEmail).toEqual({ error: 'Please enter a valid email address' });
 
-        const weakPassword = await registerUser(makeFormData('ar', { password: 'abc' }));
-        expect(weakPassword).toEqual({ error: 'يجب أن تتكوّن كلمة المرور من 8 أحرف على الأقل.' });
+        const weakPassword = await registerUser(makeFormData({ password: 'abc' }));
+        expect(weakPassword).toEqual({ error: 'Password must be at least 8 characters long' });
         expect(mocks.findUnique).not.toHaveBeenCalled();
         expect(mocks.create).not.toHaveBeenCalled();
     });
 
-    it('localizes generic resend responses and defaults invalid locale values to English', async () => {
-        const arabicResponse = await resendVerificationEmail(makeFormData('ar', { email: 'invalid' }));
-        expect(arabicResponse).toEqual({
+    it('returns the English generic resend response for invalid addresses', async () => {
+        const resendResponse = await resendVerificationEmail(makeFormData({ email: 'invalid' }));
+        expect(resendResponse).toEqual({
             success: true,
-            message: 'إذا كان هذا العنوان مرتبطًا بحساب لم يتم التحقق منه، فسيتم إرسال رابط تحقق جديد.',
+            message: 'If an unverified account uses this address, a new verification link will be sent.',
         });
 
-        const fallbackResponse = await registerUser(makeFormData('fr', { email: 'invalid' }));
-        expect(fallbackResponse).toEqual({ error: 'Please enter a valid email address' });
+        const signupResponse = await registerUser(makeFormData({ email: 'invalid' }));
+        expect(signupResponse).toEqual({ error: 'Please enter a valid email address' });
     });
 });

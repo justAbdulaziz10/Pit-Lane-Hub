@@ -1,12 +1,12 @@
 import Footer from '@/components/Footer';
 import Header from '@/components/Header';
 import Providers from '@/components/Providers';
-import { isLocale, localeAlternates, localeDir, LOCALES } from '@/lib/i18n/config';
+import { isLocale, localeAlternates, LOCALES } from '@/lib/i18n/config';
 import { LocaleProvider } from '@/lib/i18n/LocaleProvider';
 import { pick } from '@/lib/i18n/messages';
 import common from '@/lib/i18n/messages/common';
 import { jsonLdScript } from '@/lib/jsonld';
-import { Inter, IBM_Plex_Sans_Arabic, Outfit } from 'next/font/google';
+import { Inter, Outfit } from 'next/font/google';
 import { notFound } from 'next/navigation';
 import { SITE_NAME, SITE_URL } from '@/lib/site';
 import './globals.css';
@@ -25,15 +25,6 @@ const inter = Inter({
   variable: '--font-inter',
 });
 
-// Arabic text; Latin names inside Arabic pages keep the Outfit and Inter faces above.
-const plexArabic = IBM_Plex_Sans_Arabic({
-  subsets: ['arabic'],
-  weight: ['400', '500', '600', '700'],
-  display: 'swap',
-  variable: '--font-arabic',
-  preload: false,
-});
-
 export function generateStaticParams() {
   return LOCALES.map((lang) => ({ lang }));
 }
@@ -48,14 +39,13 @@ export async function generateMetadata({ params }) {
       template: '%s | Pit Lane Hub',
     },
     description: t.siteDescription,
-    keywords: ['F1', 'Formula 1', 'F1 standings', 'F1 live timing', 'F1 drivers', 'F1 schedule', 'فورمولا 1', 'ترتيب الفورمولا 1', 'جدول الفورمولا 1'],
+    keywords: ['F1', 'Formula 1', 'F1 standings', 'F1 live timing', 'F1 drivers', 'F1 schedule'],
     authors: [{ name: 'Abdulaziz', url: 'https://github.com/justAbdulaziz10' }],
     creator: 'Abdulaziz',
     alternates: localeAlternates(lang, '/'),
     openGraph: {
       type: 'website',
-      locale: lang === 'ar' ? 'ar_SA' : 'en_US',
-      alternateLocale: lang === 'ar' ? ['en_US'] : ['ar_SA'],
+      locale: 'en_US',
       url: SITE_URL,
       siteName: SITE_NAME,
       title: t.siteTitle,
@@ -91,14 +81,12 @@ export default async function RootLayout({ children, params }) {
     name: SITE_NAME,
     url: SITE_URL,
     description: t.siteDescription,
-    inLanguage: lang,
+    inLanguage: 'en',
   };
-  const fonts = lang === 'ar'
-    ? `${outfit.variable} ${inter.variable} ${plexArabic.variable}`
-    : `${outfit.variable} ${inter.variable}`;
+  const fonts = `${outfit.variable} ${inter.variable}`;
 
   return (
-    <html lang={lang} dir={localeDir(lang)} className={fonts}>
+    <html lang="en" dir="ltr" className={fonts}>
       <body>
         <script
           type="application/ld+json"

@@ -5,8 +5,6 @@ import { gridFinishDelta } from '../src/app/[lang]/driver/[number]/driver-data';
 describe('history presentation helpers', () => {
     it('builds every season and view URL through one localized helper', () => {
         expect(viewHref(2021, 'races', 'en')).toBe('/history?year=2021');
-        expect(viewHref(2021, 'drivers', 'ar')).toBe('/ar/history?year=2021&view=drivers');
-        expect(viewHref(null, 'races', 'ar')).toBe('/ar/history');
     });
 
     it('ranks all-time driver and constructor title records from champion fixtures', () => {

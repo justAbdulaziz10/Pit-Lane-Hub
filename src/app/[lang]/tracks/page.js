@@ -45,7 +45,7 @@ export default async function TracksPage({ params }) {
                             <span className={styles.name}><bdi dir="ltr">{event.circuit.name}</bdi></span>
                             <span className={styles.meta}>
                                 {event.circuit.locality && <bdi dir="ltr">{event.circuit.locality}</bdi>}
-                                {event.circuit.locality && event.circuit.country ? (lang === 'ar' ? '، ' : ', ') : ''}
+                                {event.circuit.locality && event.circuit.country ? (', ') : ''}
                                 {countryName(event.circuit.country, lang)}
                             </span>
                             {view?.length && (

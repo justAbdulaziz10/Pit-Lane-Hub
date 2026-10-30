@@ -25,13 +25,7 @@ export function formatInstant(iso, format = 'datetime', { local = false, locale 
             ...options,
             ...(hasTime(options) ? { timeZoneName: 'short' } : {}),
         }).formatToParts(date);
-        // After Arabic letters the bidi algorithm treats "+3" as an Arabic number and shows
-        // "3+"; a left-to-right isolate around just the offset keeps its sign in front.
-        return parts.map(({ type, value }) => (
-            type === 'timeZoneName' && locale === 'ar'
-                ? value.replace(/([+\-\u2212]\d[\d:]*)$/, '\u2066$1\u2069')
-                : value
-        )).join('');
+        return parts.map(({ value }) => value).join('');
     }
     const text = new Intl.DateTimeFormat(intlLocale(locale), { ...options, timeZone: 'UTC' }).format(date);
     return hasTime(options) ? `${text} ${pick(timeMessages, locale).utc}` : text;
@@ -43,7 +37,7 @@ export function hasTimeFormat(format = 'datetime') {
 
 export function countdownUnitLabel(locale, unit, count) {
     const messages = pick(timeMessages, locale);
-    const category = new Intl.PluralRules(locale === 'ar' ? 'ar' : 'en').select(count);
+    const category = new Intl.PluralRules('en').select(count);
     return messages[unit]?.[category] || messages[unit]?.other || unit;
 }
 
@@ -55,9 +49,8 @@ export function countdownAnnouncement(locale, parts) {
         ['minute', parts.minutes],
     ];
     const phrase = values.map(([unit, value]) => {
-        if (locale === 'ar' && new Intl.PluralRules('ar').select(value) === 'two') return messages[unit].two;
         return `${formatNumber(locale, value)} ${countdownUnitLabel(locale, unit, value)}`;
-    }).join(locale === 'ar' ? '، ' : ', ');
+    }).join(', ');
     return `${phrase} ${messages.toGo}`;
 }
 

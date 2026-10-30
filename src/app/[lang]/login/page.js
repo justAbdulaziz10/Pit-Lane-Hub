@@ -14,5 +14,5 @@ export async function generateMetadata({ params }) {
 
 export default async function LoginPage({ params, searchParams }) {
     const [{ lang }, query] = await Promise.all([params, searchParams]);
-    return <LoginForm lang={lang} searchParams={query || {}} />;
+    return <LoginForm searchParams={query || {}} />;
 }

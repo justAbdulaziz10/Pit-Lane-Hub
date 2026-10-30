@@ -1,18 +1,13 @@
-export const LOCALES = Object.freeze(['en', 'ar']);
+export const LOCALES = Object.freeze(['en']);
 export const DEFAULT_LOCALE = 'en';
-export const LOCALE_COOKIE = 'plh-locale';
 
 export function isLocale(value) {
     return LOCALES.includes(value);
 }
 
-export function localeDir(locale) {
-    return locale === 'ar' ? 'rtl' : 'ltr';
-}
-
 /**
- * Public URL of an app path in a locale. English keeps the unprefixed URLs the
- * site has always had; Arabic lives under /ar. Query strings and hashes are kept.
+ * Public URL of an app path. English keeps the unprefixed URLs the site has
+ * always had; query strings and hashes are kept.
  */
 export function localePath(locale, path = '/') {
     const value = String(path || '/');
@@ -32,14 +27,7 @@ export function splitLocale(pathname) {
     return { locale: DEFAULT_LOCALE, path: value || '/', prefixed: false };
 }
 
-/** Metadata `alternates` for a page: canonical in this locale plus hreflang links. */
+/** Metadata `alternates` for a page: its canonical English URL. */
 export function localeAlternates(locale, path) {
-    return {
-        canonical: localePath(locale, path),
-        languages: {
-            en: localePath('en', path),
-            ar: localePath('ar', path),
-            'x-default': localePath(DEFAULT_LOCALE, path),
-        },
-    };
+    return { canonical: localePath(locale, path) };
 }

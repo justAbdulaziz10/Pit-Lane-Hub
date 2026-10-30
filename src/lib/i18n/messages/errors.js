@@ -10,17 +10,6 @@ const errors = {
         invalidRequestOrigin: 'Invalid request origin.',
         tooManyVerificationAttempts: 'Too many verification attempts.',
     },
-    ar: {
-        notFoundMetadataTitle: 'الصفحة غير موجودة',
-        notFoundDescription: 'تعذّر العثور على هذه الصفحة في Pit Lane Hub.',
-        notFoundTitle: 'الصفحة غير موجودة',
-        notFoundMessage: 'لا توجد صفحة على هذا العنوان. ربما نُقلت الصفحة أو كُتب الرابط بطريقة غير صحيحة.',
-        loadTitle: 'تعذّر تحميل الصفحة',
-        loadMessage: 'لم تستجب جهة البيانات في الوقت المحدد. حاول مرة أخرى أو عُد إلى الصفحة الرئيسية.',
-        tryAgain: 'حاول مرة أخرى',
-        invalidRequestOrigin: 'مصدر الطلب غير صالح.',
-        tooManyVerificationAttempts: 'تجاوزت عدد محاولات التحقق. حاول لاحقًا.',
-    },
 };
 
 export default errors;

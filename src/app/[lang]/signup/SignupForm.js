@@ -48,7 +48,6 @@ export default function SignupForm() {
                 {error && <p className={styles.error} role="alert">{error}</p>}
 
                 <form onSubmit={handleSubmit} className={styles.form}>
-                    <input type="hidden" name="lang" value={locale} />
                     <div className={styles.field}>
                         <label htmlFor="signup-name" className={styles.label}>{t.name}</label>
                         <input id="signup-name" type="text" name="name" autoComplete="name" required />
