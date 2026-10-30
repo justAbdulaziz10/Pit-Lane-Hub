@@ -92,6 +92,7 @@ import DriverPage, { generateMetadata as driverMetadata } from '@/app/[lang]/dri
 import TeamDetailPage from '@/app/[lang]/team/[id]/page';
 import LivePage from '@/app/[lang]/live/page';
 import TracksPage from '@/app/[lang]/tracks/page';
+import TeamsPage from '@/app/[lang]/teams/page';
 import { loadEvent } from '@/app/[lang]/race/[key]/event';
 
 const driver = {
@@ -189,6 +190,22 @@ describe('optional route data', () => {
         reviewMocks.getLastRace.mockRejectedValue(new Error('calendar 429'));
 
         await expect(LivePage({ params: Promise.resolve({ lang: 'en' }) })).resolves.toBeTruthy();
+    });
+
+    it('renders the live notice instead of a 500 when the OpenF1 snapshot rejects', async () => {
+        reviewMocks.getCachedLiveSnapshot.mockRejectedValue(new Error('openf1 429'));
+
+        await expect(LivePage({ params: Promise.resolve({ lang: 'en' }) })).resolves.toBeTruthy();
+    });
+
+    it('keeps the teams list available when standings and grid enrichment reject', async () => {
+        reviewMocks.getTeams.mockResolvedValue([{ constructorId: 'test_team', id: 'test_team', name: 'Test Team', drivers: [] }]);
+        reviewMocks.getConstructorStandings.mockRejectedValue(new Error('standings 429'));
+        reviewMocks.getGrid.mockRejectedValue(new Error('grid 429'));
+
+        const page = await TeamsPage({ params: Promise.resolve({ lang: 'en' }) });
+
+        expect(renderToStaticMarkup(page)).toContain('Test Team');
     });
 
     it('does not link a calendar circuit without a circuit view', async () => {

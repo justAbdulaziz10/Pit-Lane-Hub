@@ -20,7 +20,14 @@ export async function resolveDriverRoute(segment) {
     const value = decodeURIComponent(String(segment || '')).trim();
     if (!value || value.length > 40) return null;
 
-    const current = await resolveDriver(value);
+    const id = value.toLowerCase();
+    let current = null;
+    try {
+        current = await resolveDriver(value);
+    } catch (error) {
+        // A driverId still resolves from the all-time snapshot; a racing number needs the season list.
+        if (/^\d+$/.test(id)) throw error;
+    }
     if (current) {
         const driver = {
             ...current,
@@ -31,7 +38,6 @@ export async function resolveDriverRoute(segment) {
         return { driver, path: driverPath(driver) };
     }
 
-    const id = value.toLowerCase();
     let driverId = id;
     let seasonEntry = null;
     if (/^\d+$/.test(id)) {

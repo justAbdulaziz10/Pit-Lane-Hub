@@ -59,7 +59,8 @@ export default async function CircuitPage({ params }) {
     const circuit = loadCircuit(circuitId);
     if (!circuit) notFound();
     const [calendar, history] = await Promise.all([
-        getCalendar(),
+        // The geometry is local; the calendar only adds location and this season's rounds.
+        getCalendar().catch(() => ({ rounds: [] })),
         getCircuitHistory(circuit.circuitId),
     ]);
     const events = calendar.rounds.filter((event) => event.circuit?.id === circuit.circuitId);

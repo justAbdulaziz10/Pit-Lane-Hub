@@ -248,15 +248,17 @@ export default async function Home({ params }) {
     await connection();
     const now = requestTime();
     const year = getSeasonYear();
-    const [nextRace, currentLastRace, summary, numbers, calendar, driverStandings] = await Promise.all([
-        getNextRace(year, now),
-        getLastRace(year, now),
-        getSeasonSummary(year),
+    // Each card degrades on its own: one throttled upstream must not take the home page down.
+    const [nextRace, currentLastRace, seasonSummary, numbers, calendar, driverStandings] = await Promise.all([
+        getNextRace(year, now).catch(() => null),
+        getLastRace(year, now).catch(() => null),
+        getSeasonSummary(year).catch(() => null),
         getDriverNumbers(year).catch(() => ({})),
-        getCalendar(year, now),
+        getCalendar(year, now).catch(() => null),
         // Only the settled round is needed; without it every scheduled round counts as remaining.
         getDriverStandings(year).catch(() => null),
     ]);
+    const summary = seasonSummary || { year, driverStandings: [], constructorStandings: [] };
     const lastRace = currentLastRace || (year > 1950 ? await getLastRace(year - 1, now).catch(() => null) : null);
     const [lastResults, teamRows] = await Promise.all([
         lastRace
@@ -267,10 +269,11 @@ export default async function Home({ params }) {
     const teamsById = new Map(teamRows.map((team) => [team.id, team]));
     const currentTeams = !lastRace || lastRace.year === year ? teamRows : await getTeams(year).catch(() => []);
     for (const team of currentTeams) teamsById.set(team.id, team);
+    // Without the calendar the remaining count would read 0 and crown the leader early.
     const titleMath = calculateTitleMath({
-        standings: summary.driverStandings,
-        remainingRaces: countRemainingRaces(calendar.rounds, driverStandings?.round),
-        remainingSprints: countRemainingSprints(calendar.rounds, driverStandings?.round),
+        standings: calendar ? summary.driverStandings : [],
+        remainingRaces: countRemainingRaces(calendar?.rounds, driverStandings?.round),
+        remainingSprints: countRemainingSprints(calendar?.rounds, driverStandings?.round),
     });
     const serverNow = Math.floor(now / 1000) * 1000;
     const yearText = String(summary.year);

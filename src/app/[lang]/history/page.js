@@ -80,7 +80,7 @@ function MaybeLink({ href, children, lang }) {
 }
 
 async function RacesView({ year, lookups, lang, t }) {
-    const [summary, dates] = await Promise.all([getSeasonSummary(year), getRaceDates(year)]);
+    const [summary, dates] = await Promise.all([getSeasonSummary(year), getRaceDates(year).catch(() => new Map())]);
     if (summary.races.length === 0) {
         return <div className={standingsStyles.empty}><h3>{fill(t.noRaces, { year: formatNumber(lang, year, { useGrouping: false }) })}</h3></div>;
     }

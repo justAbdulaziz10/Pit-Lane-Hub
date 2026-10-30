@@ -158,12 +158,16 @@ const visibleSoon = (locator, timeout = 40_000) =>
 
 const DRIVES = {
     async home(page, steps, base) {
-        await page.goto(base + '/');
-        expectEq(steps, 'hero "Command Center" visible', await page.getByText('Command Center').first().isVisible(), true);
-        expectEq(steps, 'heading "Explore the Paddock" visible',
-            await page.getByRole('heading', { name: 'Explore the Paddock' }).isVisible(), true);
-        expectEq(steps, 'skip link attached', await page.getByRole('link', { name: 'Skip to main content' }).count() > 0, true);
-        await page.getByRole('link', { name: 'Standings' }).first().click();
+        const res = await page.goto(base + '/');
+        expectEq(steps, 'HTTP 200', res.status(), 200);
+        expectEq(steps, 'one page h1', await page.getByRole('heading', { level: 1 }).count(), 1);
+        for (const name of ['Next race', 'Last race']) {
+            expectEq(steps, `card "${name}" visible`, await page.getByRole('heading', { level: 2, name: new RegExp(`^${name}`) }).first().isVisible(), true);
+        }
+        expectEq(steps, 'drivers standings card visible',
+            await page.getByRole('heading', { level: 2, name: /^\d{4} drivers$/ }).isVisible(), true);
+        expectEq(steps, 'skip link attached', await page.getByRole('link', { name: /Skip to/ }).count() > 0, true);
+        await page.locator('header').getByRole('link', { name: 'Standings', exact: true }).first().click();
         await page.waitForURL(/\/standings$/);
         expectEq(steps, 'nav "Standings" lands on /standings', new URL(page.url()).pathname, '/standings');
     },
@@ -172,15 +176,23 @@ const DRIVES = {
         await page.goto(base + '/drivers');
         await page.evaluate(() => localStorage.removeItem('plh:favoriteDrivers'));
         await page.reload();
-        const cards = page.locator('main a[href^="/driver/"]');
-        await cards.first().waitFor();
-        const count = await cards.count();
-        steps.push({ info: 'driver cards', count });
-        if (count < 2) throw new CheckError(`need >=2 driver cards to prove reordering, got ${count} (live data unavailable?)`);
-        const last = cards.nth(count - 1);
-        const href = await last.getAttribute('href');
-        const number = Number(href.split('/').pop());
-        const star = () => page.locator(`main a[href="${href}"]`).getByRole('button', { name: /favorites/ });
+        const stars = page.locator('main button[aria-pressed][aria-label^="Favourite"]');
+        // Favourites lead only the "By number" view; championship order is never reshuffled.
+        const byNumber = async () => {
+            await stars.first().waitFor();
+            await expectSoon(steps, '"By number" view selected', async () => {
+                const button = page.getByRole('button', { name: 'By number', exact: true });
+                if ((await button.getAttribute('aria-pressed')) !== 'true') await button.click();
+                await page.waitForTimeout(250);
+                return button.getAttribute('aria-pressed');
+            }, 'true', 15000);
+        };
+        await byNumber();
+        const count = await stars.count();
+        steps.push({ info: 'favourite buttons', count });
+        if (count < 2) throw new CheckError(`need >=2 drivers to prove reordering, got ${count} (live data unavailable?)`);
+        const label = await stars.nth(count - 1).getAttribute('aria-label');
+        const star = () => page.getByRole('button', { name: label, exact: true });
         const stored = async () => JSON.parse((await page.evaluate(() => localStorage.getItem('plh:favoriteDrivers'))) || '[]');
         // Retry the click until hydrated: a click before hydration is a no-op.
         await expectSoon(steps, 'star is pressed after click', async () => {
@@ -189,166 +201,176 @@ const DRIVES = {
             return star().getAttribute('aria-pressed');
         }, 'true', 15000);
         expectEq(steps, 'URL unchanged (star does not follow card link)', new URL(page.url()).pathname, '/drivers');
-        expectEq(steps, 'localStorage holds favorite', await stored(), [number]);
+        expectEq(steps, 'localStorage holds one favourite', (await stored()).length, 1);
         await page.reload();
-        await cards.first().waitFor();
-        await expectSoon(steps, 'favorite pulled to front after reload', () => cards.first().getAttribute('href'), href);
+        await byNumber();
+        await expectSoon(steps, 'favourite pulled to front after reload', () => stars.first().getAttribute('aria-label'), label);
         await expectSoon(steps, 'star still pressed after reload', () => star().getAttribute('aria-pressed'), 'true');
         await star().click();
-        await expectSoon(steps, 'unfavorite clears storage', stored, []);
-        await expectSoon(steps, 'star released after unfavorite', () => star().getAttribute('aria-pressed'), 'false');
+        await expectSoon(steps, 'unfavourite clears storage', stored, []);
+        await expectSoon(steps, 'star released after unfavourite', () => star().getAttribute('aria-pressed'), 'false');
     },
 
     async standings(page, steps, base) {
         await page.goto(base + '/standings');
-        expectEq(steps, 'h1 "F1 Standings" visible', await page.getByRole('heading', { level: 1, name: 'F1 Standings' }).isVisible(), true);
-        expectEq(steps, 'constructor standings heading visible',
-            await page.getByRole('heading', { name: /Constructor Standings/ }).isVisible(), true);
+        expectEq(steps, 'h1 "<year> Standings" visible', await page.getByRole('heading', { level: 1, name: /^\d{4} Standings$/ }).isVisible(), true);
+        expectEq(steps, 'standings table has driver links', await page.locator('main a[href^="/driver/"]').count() > 0, true);
+        expectEq(steps, 'standings table has team links', await page.locator('main a[href^="/team/"]').count() > 0, true);
     },
 
     async live(page, steps, base) {
-        await page.goto(base + '/live');
-        expectEq(steps, 'heading "Live Timing" visible', await page.getByRole('heading', { name: 'Live Timing' }).isVisible(), true);
-        expectEq(steps, 'positions or honest entry list shown',
-            await page.getByRole('heading', { name: /Live Positions|Entry List/ }).first().isVisible(), true);
+        const res = await page.goto(base + '/live');
+        expectEq(steps, 'HTTP 200', res.status(), 200);
+        expectEq(steps, 'h1 "Live timing" visible', await page.getByRole('heading', { level: 1, name: 'Live timing' }).isVisible(), true);
+        // Without OpenF1 credentials or a session the page states why instead of showing empty panels.
+        expectEq(steps, 'positions or an honest status shown',
+            await visibleSoon(page.locator('main').getByRole('heading', { level: 2 }).or(page.locator('main table')).first(), 20_000), true);
     },
 
     async 'driver-detail'(page, steps, base) {
         await page.goto(base + '/drivers');
         const card = page.locator('main a[href^="/driver/"]').first();
         const href = await card.getAttribute('href');
-        await card.locator('h3, h2, img').first().click();
-        await page.waitForURL((u) => u.pathname === href);
+        await card.click();
+        await page.waitForURL((u) => u.pathname === href, { timeout: 40_000 });
         expectEq(steps, 'card click lands on driver page', new URL(page.url()).pathname, href);
         expectEq(steps, 'driver name h1 visible', await visibleSoon(page.getByRole('heading', { level: 1 }).first()), true);
-        expectEq(steps, '"Career Statistics" section visible',
-            await page.getByRole('heading', { name: 'Career Statistics' }).first().isVisible(), true);
-        await page.getByRole('link', { name: /Back to Drivers/ }).click();
-        await page.waitForURL(/\/drivers$/);
-        expectEq(steps, 'back link returns to /drivers', new URL(page.url()).pathname, '/drivers');
-        await page.goto(base + '/driver/999');
-        expectEq(steps, 'unknown number shows "Driver Not Found"',
-            await visibleSoon(page.getByRole('heading', { name: 'Driver Not Found' })), true);
+        expectEq(steps, '"Career" section visible', await visibleSoon(page.getByRole('heading', { level: 2, name: 'Career' })), true);
+        await page.goto(base + '/driver/44');
+        expectEq(steps, 'legacy number URL redirects to driverId URL', new URL(page.url()).pathname, '/driver/hamilton');
+        const missing = await page.goto(base + '/driver/999');
+        expectEq(steps, 'unknown driver is HTTP 404', missing.status(), 404);
+        expectEq(steps, 'unknown driver shows "Page not found"', await visibleSoon(page.getByRole('heading', { name: 'Page not found' })), true);
     },
 
     async 'teams-detail'(page, steps, base) {
         await page.goto(base + '/teams');
-        expectEq(steps, 'h1 "<year> Team Standings" visible',
-            await page.getByRole('heading', { level: 1, name: /Team Standings/ }).isVisible(), true);
+        expectEq(steps, 'h1 "<year> Teams" visible', await page.getByRole('heading', { level: 1, name: /^\d{4} Teams$/ }).isVisible(), true);
         const team = page.locator('main a[href^="/team/"]').first();
         await team.waitFor();
         const href = await team.getAttribute('href');
         await team.click();
-        await page.waitForURL((u) => u.pathname === href);
+        await page.waitForURL((u) => u.pathname === href, { timeout: 40_000 });
         expectEq(steps, 'team card lands on team page', new URL(page.url()).pathname, href);
-        expectEq(steps, '"Drivers" section visible', await visibleSoon(page.getByRole('heading', { name: 'Drivers', exact: true })), true);
+        expectEq(steps, '"<year> drivers" section visible', await visibleSoon(page.getByRole('heading', { level: 2, name: /^\d{4} drivers$/ })), true);
         const driver = page.locator('main a[href^="/driver/"]').first();
         const dHref = await driver.getAttribute('href');
         await driver.click();
-        await page.waitForURL((u) => u.pathname === dHref);
-        expectEq(steps, 'team driver card lands on driver page', new URL(page.url()).pathname, dHref);
-        await page.goto(base + '/team/not-a-team');
-        expectEq(steps, 'unknown id shows "Team Not Found"',
-            await visibleSoon(page.getByRole('heading', { name: 'Team Not Found' })), true);
+        await page.waitForURL((u) => u.pathname === dHref, { timeout: 40_000 });
+        expectEq(steps, 'team driver link lands on driver page', new URL(page.url()).pathname, dHref);
+        const missing = await page.goto(base + '/team/not-a-team');
+        expectEq(steps, 'unknown team is HTTP 404', missing.status(), 404);
     },
 
     async 'calendar-race'(page, steps, base) {
         await page.goto(base + '/schedule');
-        expectEq(steps, 'h1 "<year> Schedule" visible', await visibleSoon(page.getByRole('heading', { level: 1, name: /Schedule/ })), true);
+        expectEq(steps, 'h1 "<year> F1 Calendar" visible', await visibleSoon(page.getByRole('heading', { level: 1, name: /F1 Calendar/ })), true);
+        expectEq(steps, 'calendar subscribe link offered', await page.locator('main a[href^="webcal://"]').count() > 0, true);
         const race = page.locator('main a[href^="/race/"]').first();
         await race.waitFor();
         const href = await race.getAttribute('href');
+        expectEq(steps, 'race link uses year-round key', /^\/race\/\d{4}-\d{1,2}$/.test(href), true);
         await race.click();
         await page.waitForURL((u) => u.pathname === href, { timeout: 40_000 });
         expectEq(steps, 'race card lands on race page', new URL(page.url()).pathname, href);
         expectEq(steps, 'race h1 visible', await visibleSoon(page.getByRole('heading', { level: 1 }).first()), true);
-        expectEq(steps, '"Race Weekend Schedule" section visible',
-            await page.getByRole('heading', { name: /Race Weekend Schedule/ }).isVisible(), true);
-        expectEq(steps, '"Back to Calendar" link visible', await page.getByRole('link', { name: /Back to Calendar/ }).isVisible(), true);
+        expectEq(steps, '"Weekend schedule" section visible', await visibleSoon(page.getByRole('heading', { level: 2, name: 'Weekend schedule' })), true);
+        const missing = await page.goto(base + '/race/1949-1');
+        expectEq(steps, 'pre-1950 race key is HTTP 404', missing.status(), 404);
     },
 
     async compare(page, steps, base) {
         await page.goto(base + '/compare');
-        expectEq(steps, 'h1 "Driver Comparison" visible', await page.getByRole('heading', { name: 'Driver Comparison' }).isVisible(), true);
-        const second = page.getByRole('combobox').nth(1);
-        const options = await second.locator('option').evaluateAll((os) => os.map((o) => ({ value: o.value, text: o.textContent.trim() })));
-        steps.push({ info: 'driver options', count: options.length });
-        if (options.length < 3) throw new CheckError(`need >=3 drivers to change selection, got ${options.length}`);
-        const pick = options[options.length - 1];
-        // Retry until hydrated: a change before hydration is reverted by React.
-        await expectSoon(steps, 'driver 2 select holds picked driver', async () => {
-            if ((await second.inputValue()) !== pick.value) await second.selectOption(pick.value);
-            await page.waitForTimeout(250);
-            return second.inputValue();
-        }, pick.value, 15000);
-        const lastName = pick.text.split(/\s+/).pop();
-        await expectSoon(steps, `profile heading shows "${lastName}"`,
-            () => page.getByRole('heading', { level: 2, name: new RegExp(lastName, 'i') }).first().isVisible(), true, 20000);
+        expectEq(steps, 'h1 "Compare drivers" visible', await page.getByRole('heading', { level: 1, name: 'Compare drivers' }).isVisible(), true);
+        const second = page.getByRole('combobox', { name: 'Search any driver since 1950' }).nth(1);
+        const option = page.getByRole('option', { name: /Ayrton Senna/ }).first();
+        // Retry until hydrated: typing before hydration is reverted by React.
+        await expectSoon(steps, 'search lists Ayrton Senna', async () => {
+            if (!(await option.isVisible())) {
+                await second.fill('');
+                await second.pressSequentially('Senna', { delay: 30 });
+            }
+            await page.waitForTimeout(500);
+            return option.isVisible();
+        }, true, 30000);
+        await option.click();
+        await expectSoon(steps, 'profile heading shows Ayrton Senna',
+            () => page.getByRole('heading', { level: 2, name: 'Ayrton Senna' }).isVisible(), true, 30000);
     },
 
     async history(page, steps, base) {
         await page.goto(base + '/history');
-        expectEq(steps, 'h1 "Historical Data" visible', await page.getByRole('heading', { level: 1, name: 'Historical Data' }).isVisible(), true);
-        const years = page.locator('main button').filter({ hasText: /^\d{4}$/ });
-        const count = await years.count();
-        steps.push({ info: 'season buttons', count });
-        if (count < 2) throw new CheckError(`need >=2 season buttons, got ${count}`);
-        const year = (await years.nth(1).textContent()).trim();
-        const race = page.getByRole('heading', { level: 3 }).first();
-        await expectSoon(steps, `season ${year} shows race cards`, async () => {
-            await years.nth(1).click();
-            await page.getByText(/Loading .* data/).waitFor({ state: 'hidden', timeout: 20_000 }).catch(() => {});
-            return (await race.isVisible()) && (await race.textContent()) !== 'No data available';
+        expectEq(steps, 'h1 "F1 History" visible', await page.getByRole('heading', { level: 1, name: 'F1 History' }).isVisible(), true);
+        const select = page.locator('main select[name="year"]');
+        await expectSoon(steps, 'picking 1988 opens that season', async () => {
+            if (!new URL(page.url()).search.includes('year=1988')) await select.selectOption('1988');
+            await page.waitForTimeout(500);
+            return page.getByRole('heading', { level: 2, name: '1988 season' }).isVisible();
         }, true, 30000);
-        await page.getByRole('button', { name: /Drivers/ }).click();
-        await page.getByText(/Loading .* data/).waitFor({ state: 'hidden', timeout: 20_000 }).catch(() => {});
-        await expectSoon(steps, 'drivers view lists drivers', () => page.getByRole('heading', { level: 4 }).count().then((n) => n > 0), true, 20000);
+        await page.locator('main').getByRole('link', { name: 'Drivers', exact: true }).click();
+        await expectSoon(steps, 'drivers view is current', () => page.locator('main a[aria-current="page"]').first().textContent().then((text) => text.trim()), 'Drivers', 30000);
+        expectEq(steps, 'drivers view links drivers', await page.locator('main a[href^="/driver/"]').count() > 0, true);
     },
 
     async tracks(page, steps, base) {
         await page.goto(base + '/tracks');
-        expectEq(steps, 'h1 "F1 Circuits 3D" visible', await page.getByRole('heading', { name: 'F1 Circuits 3D' }).isVisible(), true);
-        const card = page.getByRole('heading', { level: 3 }).first();
-        const title = (await card.textContent()).trim();
-        const modalTitle = page.getByRole('heading', { level: 2, name: title, exact: true });
-        await expectSoon(steps, `track modal opens with "${title}"`, async () => {
-            if (!(await modalTitle.isVisible())) await card.click();
+        expectEq(steps, 'h1 "<year> circuits" visible', await page.getByRole('heading', { level: 1, name: /circuits$/ }).isVisible(), true);
+        const circuit = page.locator('main a[href^="/tracks/"]').first();
+        const href = await circuit.getAttribute('href');
+        await circuit.click();
+        await page.waitForURL((u) => u.pathname === href, { timeout: 40_000 });
+        expectEq(steps, 'circuit card lands on circuit page', new URL(page.url()).pathname, href);
+        expectEq(steps, 'circuit h1 visible', await visibleSoon(page.getByRole('heading', { level: 1 })), true);
+        const tab = (name) => page.getByRole('tab', { name, exact: true }).first();
+        expectEq(steps, '"Layout" tab selected by default', await visibleSoon(tab('Layout'), 20_000) && await tab('Layout').getAttribute('aria-selected'), 'true');
+        expectEq(steps, 'layout outline drawn', await page.getByRole('tabpanel').getByRole('img').first().isVisible(), true);
+        // Retry until hydrated: a click before hydration is a no-op.
+        await expectSoon(steps, '"Map" tab selected after click', async () => {
+            if ((await tab('Map').getAttribute('aria-selected')) !== 'true') await tab('Map').click();
             await page.waitForTimeout(250);
-            return modalTitle.isVisible();
-        }, true, 15000);
-        await page.getByRole('button', { name: /Map/ }).click();
-        await page.getByRole('button', { name: '×' }).click();
-        await expectSoon(steps, 'close button dismisses modal', () => modalTitle.isVisible(), false);
+            return tab('Map').getAttribute('aria-selected');
+        }, 'true', 15000);
     },
 
     async junior(page, steps, base) {
-        await page.goto(base + '/junior');
-        expectEq(steps, 'h1 "F2 & F3 Racing" visible', await page.getByRole('heading', { level: 1, name: 'F2 & F3 Racing' }).isVisible(), true);
-        for (const h of ['Formula 2', 'Formula 3']) {
-            expectEq(steps, `"${h}" section visible`, await page.getByRole('heading', { name: h, exact: true }).first().isVisible(), true);
-        }
+        // F2/F3 coverage was removed; old links must land somewhere useful, not 404.
+        const res = await page.goto(base + '/junior');
+        expectEq(steps, 'HTTP 200 after redirect', res.status(), 200);
+        expectEq(steps, '/junior redirects to /standings', new URL(page.url()).pathname, '/standings');
     },
 
-    // Render-only: submitting needs Postgres, AUTH_SECRET, Resend, and Polar (see SKILL.md Unproven).
+    async arabic(page, steps, base) {
+        await page.goto(base + '/');
+        await page.locator('header').getByRole('link', { name: 'العربية' }).first().click();
+        await page.waitForURL(/\/ar$/);
+        expectEq(steps, 'language switch lands on /ar', new URL(page.url()).pathname, '/ar');
+        expectEq(steps, 'document is rtl', await page.locator('html').getAttribute('dir'), 'rtl');
+        expectEq(steps, 'document lang is ar', await page.locator('html').getAttribute('lang'), 'ar');
+        expectEq(steps, 'Arabic "Next race" card visible',
+            await page.getByRole('heading', { level: 2, name: /^السباق القادم/ }).isVisible(), true);
+        expectEq(steps, 'internal links stay in Arabic', await page.locator('main a[href^="/driver/"]').count(), 0);
+    },
+
+    // Render-only: submitting needs Postgres, Resend, and Polar (see SKILL.md Unproven).
     async 'auth-pages'(page, steps, base) {
         await page.goto(base + '/');
-        await page.getByRole('link', { name: 'Log In' }).first().click();
+        await page.locator('header').getByRole('link', { name: 'Sign in' }).first().click();
         await page.waitForURL(/\/login$/);
-        expectEq(steps, 'header "Log In" lands on /login', new URL(page.url()).pathname, '/login');
-        expectEq(steps, 'h1 "Welcome Back" visible', await page.getByRole('heading', { name: 'Welcome Back' }).isVisible(), true);
+        expectEq(steps, 'header "Sign in" lands on /login', new URL(page.url()).pathname, '/login');
+        expectEq(steps, 'h1 "Sign in" visible', await page.getByRole('heading', { level: 1, name: 'Sign in' }).isVisible(), true);
         await page.goto(base + '/signup');
-        expectEq(steps, 'h1 "Create Account" visible', await page.getByRole('heading', { name: 'Create Account' }).isVisible(), true);
+        expectEq(steps, 'h1 "Create account" visible', await page.getByRole('heading', { level: 1, name: 'Create account' }).isVisible(), true);
         await page.goto(base + '/support');
-        expectEq(steps, 'h1 "Support Pit Lane Hub" visible', await page.getByRole('heading', { name: 'Support Pit Lane Hub' }).isVisible(), true);
+        expectEq(steps, 'h1 "Support Pit Lane Hub" visible', await page.getByRole('heading', { level: 1, name: 'Support Pit Lane Hub' }).isVisible(), true);
         await page.goto(base + '/profile');
-        await page.waitForURL(/\/login$/, { timeout: 20_000 }).catch(() => {});
+        await page.waitForURL(/\/login(\?|$)/, { timeout: 20_000 }).catch(() => {});
         expectEq(steps, 'signed-out /profile redirects to /login', new URL(page.url()).pathname, '/login');
     },
 
     async 'not-found'(page, steps, base) {
         const res = await page.goto(base + '/this-route-does-not-exist');
         expectEq(steps, 'HTTP 404', res.status(), 404);
-        expectEq(steps, 'custom 404 copy visible', await page.getByText('Lost in the gravel trap').isVisible(), true);
+        expectEq(steps, '404 heading visible', await page.getByRole('heading', { level: 1, name: 'Page not found' }).isVisible(), true);
     },
 };
 

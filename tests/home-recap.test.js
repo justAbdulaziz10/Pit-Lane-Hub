@@ -115,3 +115,31 @@ describe('home recap', () => {
         await expect(renderHome()).resolves.toContain('Regression Grand Prix');
     });
 });
+
+describe('home upstream failures', () => {
+    it('renders with empty cards when every core season call rejects', async () => {
+        const throttled = () => Promise.reject(new Error('jolpica 429'));
+        homeMocks.getNextRace.mockImplementation(throttled);
+        homeMocks.getLastRace.mockImplementation(throttled);
+        homeMocks.getSeasonSummary.mockImplementation(throttled);
+        homeMocks.getCalendar.mockImplementation(throttled);
+        homeMocks.getDriverStandings.mockImplementation(throttled);
+
+        await expect(renderHome()).resolves.toContain('Next race');
+    });
+
+    it('does not crown the leader when the calendar is unavailable', async () => {
+        homeMocks.getSeasonSummary.mockResolvedValue({
+            year: 2026,
+            races: [],
+            driverStandings: [
+                { position: 1, points: 300, driver: { id: 'lead', firstName: 'Test', lastName: 'Leader' }, team: { id: 'test_team', name: 'Test Team' } },
+                { position: 2, points: 100, driver: { id: 'chase', firstName: 'Test', lastName: 'Chaser' }, team: { id: 'test_team', name: 'Test Team' } },
+            ],
+            constructorStandings: [],
+        });
+        homeMocks.getCalendar.mockRejectedValue(new Error('jolpica 429'));
+
+        expect(await renderHome()).not.toContain('title-fight-heading');
+    });
+});

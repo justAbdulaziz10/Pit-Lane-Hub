@@ -57,8 +57,8 @@ export default async function TeamsPage({ params }) {
     const year = getSeasonYear();
     const [teams, constructorStandings, grid] = await Promise.all([
         getTeams(year),
-        getConstructorStandings(year),
-        getGrid(year),
+        getConstructorStandings(year).catch(() => ({ standings: [], round: null })),
+        getGrid(year).catch(() => []),
     ]);
     const standingById = new Map(constructorStandings.standings.map((row) => [row.team.id, row]));
     const ordered = [...teams].sort((a, b) => {

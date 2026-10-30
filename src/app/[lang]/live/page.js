@@ -10,6 +10,11 @@ import { pick } from '@/lib/i18n/messages';
 import { nextWeekendSession } from '../_home/weekend';
 import LiveTiming from './LiveTiming';
 
+// Same shape /api/live reports when OpenF1 is throttled or down, so the page renders its notice instead of a 500.
+const UNAVAILABLE_SNAPSHOT = Object.freeze({
+    unavailable: 'upstream', session: null, isLive: false, isRace: false, positions: [], weather: null, raceControl: [],
+});
+
 export default async function LivePage({ params }) {
     const { lang } = await params;
     const labels = pick(liveMessages, lang);
@@ -17,7 +22,7 @@ export default async function LivePage({ params }) {
     const now = requestTime();
     const year = getSeasonYear();
     const [snapshot, nextRace, lastRace] = await Promise.all([
-        getCachedLiveSnapshot(),
+        getCachedLiveSnapshot().catch(() => UNAVAILABLE_SNAPSHOT),
         getNextRace(year, now).catch(() => null),
         getLastRace(year, now).catch(() => null),
     ]);
