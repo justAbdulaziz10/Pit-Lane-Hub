@@ -15,7 +15,7 @@ The user-facing features of the public site and how to drive each one through `s
 | History archive | [history.md](history.md) | `drive history` |
 | Tracks (circuits) | [tracks.md](tracks.md) | `drive tracks` |
 | Removed F2/F3 page redirects | [junior.md](junior.md) | `drive junior` |
-| Arabic (RTL) site | [arabic.md](arabic.md) | `drive arabic` |
+| Legacy `/ar` URLs redirect to English | [arabic-redirect.md](arabic-redirect.md) | `drive arabic-redirect` |
 | Account and support pages (render only) | [auth-pages.md](auth-pages.md) | `drive auth-pages` |
 | Custom 404 | [not-found.md](not-found.md) | `drive not-found` |
 
@@ -30,7 +30,7 @@ The user-facing features of the public site and how to drive each one through `s
 - Select by accessible role and name or by route href (`main a[href^="/driver/"]`), never by CSS class or coordinates. CSS-module class names are hashed.
 - Poll for state after SSR because client components hydrate late. A click before hydration does nothing.
 - `/schedule` streams behind `loading.js`, and detail pages (`/driver/*`, `/team/*`, `/race/*`, `/tracks/*`) fetch live data. Use `visibleSoon` (40 s) for their first content check.
-- English has no URL prefix. Arabic is under `/ar`. Routes live in `src/app/[lang]/`.
+- The site is English-only with no URL prefix (rewritten internally to `src/app/[lang]/` with lang=en). Old `/ar/...` URLs 308 to English.
 - Every drive states its expected result and fails on a mismatch.
 
 ## Proof rules

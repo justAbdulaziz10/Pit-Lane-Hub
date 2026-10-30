@@ -1,6 +1,6 @@
 ---
 name: verify-pit-lane-hub
-description: Prove Pit Lane Hub (Next.js F1 site) behavior by launching the real dev server and driving it in headless Chromium like a user - home/nav, drivers + favourites, driver/team/race detail, calendar, compare, history, circuits, standings, live timing, Arabic (RTL), account pages (render only), 404, old F2/F3 redirect. Use after any UI, route, or data change, before claiming a feature works.
+description: Prove Pit Lane Hub (Next.js F1 site) behavior by launching the real dev server and driving it in headless Chromium like a user - home/nav, drivers + favourites, driver/team/race detail, calendar, compare, history, circuits, standings, live timing, legacy /ar → English redirect, account pages (render only), 404, old F2/F3 redirect. Use after any UI, route, or data change, before claiming a feature works.
 ---
 
 # verify-pit-lane-hub
@@ -76,6 +76,7 @@ Kills only the process group recorded at launch (never by name), waits for the p
 
 - Drives were rewritten for the redesigned bilingual UI. Routes live under `src/app/[lang]/`. English has no prefix and Arabic is under `/ar`.
 - Added the `arabic` drive: header "العربية" link, `/ar`, `dir=rtl`, `lang=ar`, links stay under `/ar`.
+- 2026-10-30 later: the site became English-only. The `arabic` drive was replaced by `arabic-redirect` (`/ar/drivers` lands on `/drivers`, `lang=en`, no `dir=rtl`). `drive all` passes 14/14.
 - `junior` now checks that `/junior` redirects to `/standings`. The F2/F3 page was removed.
 - `drive all` passes 14/14 live.
 

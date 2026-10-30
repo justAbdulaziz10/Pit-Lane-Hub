@@ -21,4 +21,3 @@ Preconditions: baseline.
 ## Gotchas
 
 - Use a plain path for the global check. Dynamic routes have their own checks above.
-- The h1 text is localized. Under `/ar` it is Arabic. The drive checks English only.
