@@ -1,6 +1,6 @@
 # Teams and team detail
 
-`/teams` lists "<year> Team Standings" with cards linking to `/team/<id>`. A team page shows its h1 name, a "Drivers" section linking to `/driver/<n>`, "Recent Results", and "← Back to Teams". Unknown ids render "Team Not Found". Source: `src/app/teams/page.js`, `src/app/team/[id]/page.js`.
+`/teams` has the h1 "<year> Teams" with cards linking to `/team/<teamId>`. A team page has a "<year> drivers" h2 whose links go to `/driver/<driverId>`. Unknown team keys are HTTP 404. Source: `src/app/[lang]/teams/page.js`, `src/app/[lang]/team/[id]/page.js`.
 
 ## How to get to it (user POV)
 
@@ -8,9 +8,14 @@
 
 ## Driving it with scripts/verify-pit-lane-hub.mjs
 
-`drive teams-detail`. It opens `/teams`, clicks the first team, and checks the URL and "Drivers" heading. It then clicks the first team driver and checks that the `/driver/<n>` URL is reached. Finally `/team/not-a-team` shows "Team Not Found".
+`drive teams-detail`.
+
+- Open `/teams`. Result: the h1 matches `/^\d{4} Teams$/`.
+- Click the first `main a[href^="/team/"]`. Result: the URL equals that href and the h2 "<year> drivers" is visible.
+- Click the first `main a[href^="/driver/"]`. Result: the URL equals that href.
+- Open `/team/not-a-team`. Result: HTTP 404.
 
 ## Gotchas
 
-- `/teams` is a client component and fetches after hydration, so wait for the first `main a[href^="/team/"]`.
-- `/team/[id]` streams behind `loading.js`.
+- Wait for the first team link before reading its href. Cards can load after the heading.
+- Team pages fetch live data. Wait up to 40 s (`visibleSoon`) on a cold compile.

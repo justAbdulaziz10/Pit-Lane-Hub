@@ -1,12 +1,11 @@
 # Home and primary navigation
 
-Landing page with the "Command Center" hero, the "Explore the Paddock" grid, and the global header nav (Home, Drivers, Teams, Standings, Calendar, History, Tracks, F2/F3, Live).
+Landing page at `/`. The one h1 is visually hidden. The visible cards are "Next race", "Last race", and "<year> drivers" (h2). The header nav links to each section. Source: `src/app/[lang]/page.js`, `src/components/Header.js`.
 
 ## Sub-features
 
-- `hero`: "Command Center" hero renders.
-- `explore`: "Explore the Paddock" heading and cards.
-- `skip-link`: "Skip to main content" accessibility link.
+- `cards`: "Next race", "Last race", and "<year> drivers" cards render.
+- `skip-link`: a "Skip to ..." accessibility link is attached.
 - `nav`: header links route to each section.
 
 ## How to get to it (user POV)
@@ -18,10 +17,12 @@ Landing page with the "Command Center" hero, the "Explore the Paddock" grid, and
 
 Preconditions: baseline (see README).
 
-- Open `/` → `drive home`. Result: the text "Command Center" and the heading "Explore the Paddock" are visible, and the link "Skip to main content" is attached.
-- Click "Standings" in the nav (`getByRole('link', {name: 'Standings'}).first()`). Result: URL path is `/standings`.
+- Open `/` → `drive home`. Result: HTTP 200 and exactly one h1. The h2 cards "Next race", "Last race", and "<year> drivers" are visible. A link named /Skip to/ is attached.
+- Click "Standings" in the header (`header` + `getByRole('link', {name: 'Standings', exact: true}).first()`). Result: URL path is `/standings`.
 
 ## Gotchas
 
-- "Standings" appears more than once (header and cards). Use `.first()`.
+- The h1 is visually hidden. Count it with `getByRole('heading', {level: 1})`. Do not wait for it to be visible.
+- "Next race" and "Last race" headings may carry extra text, so match the start of the name.
+- Scope the nav click to `header`. "Standings" also appears in cards.
 - The Next dev overlay badge ("1 Issue") can show in screenshots when an upstream API call errors. It is a dev-only artifact, not a page failure.

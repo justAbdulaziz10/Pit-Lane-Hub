@@ -1,6 +1,6 @@
 ---
 name: verify-pit-lane-hub
-description: Prove Pit Lane Hub (Next.js F1 site) behavior by launching the real dev server and driving it in headless Chromium like a user - home/nav, drivers + favorites, driver/team/race detail, calendar, compare, history, 3D tracks, F2/F3, standings, live timing, account pages (render only), 404. Use after any UI, route, or data change, before claiming a feature works.
+description: Prove Pit Lane Hub (Next.js F1 site) behavior by launching the real dev server and driving it in headless Chromium like a user - home/nav, drivers + favourites, driver/team/race detail, calendar, compare, history, circuits, standings, live timing, Arabic (RTL), account pages (render only), 404, old F2/F3 redirect. Use after any UI, route, or data change, before claiming a feature works.
 ---
 
 # verify-pit-lane-hub
@@ -15,7 +15,7 @@ npm ci                              # postinstall runs prisma generate
 npx playwright install chromium     # must match the repo's @playwright/test version
 ```
 
-No `.env` is needed for public pages. Data comes live from OpenF1 and Jolpica/Ergast, so the machine needs internet access.
+No `.env` file is needed for public pages (but see the `AUTH_SECRET` note under Launch). Data comes live from OpenF1 and Jolpica/Ergast, so the machine needs internet access.
 
 ## Launch
 
@@ -23,6 +23,8 @@ No `.env` is needed for public pages. Data comes live from OpenF1 and Jolpica/Er
 scripts/verify-pit-lane-hub.mjs launch [--port 3117]
 ```
 Starts `next dev -p 3117` in its own process group, writes `artifacts/verify/state.json` (pid, port) and `artifacts/verify/server.log`. Ready signal: `/` answers HTTP 200, after which launch prints `"ok": true` (cold start takes about 10-30 s). It refuses if the port is in use or a previous launch is still alive.
+
+Set `AUTH_SECRET` (any dummy value) in the environment before launch, for example `AUTH_SECRET=dummy scripts/verify-pit-lane-hub.mjs launch`. Without it Auth.js logs `MissingSecret` and client session fetches fail.
 
 ## Doctor (read-only, before the first drive and after anything surprising)
 
@@ -67,11 +69,18 @@ Kills only the process group recorded at launch (never by name), waits for the p
 
 ## Maintenance pass (2026-10-28, macOS, Playwright 1.61.0)
 
-- Source check of every route under `src/app/`. Added drives and feature files for driver-detail, teams-detail, calendar-race, compare, history, tracks, junior, and auth-pages (render only). `drive all` passes 13/13 live.
-- Detail and calendar routes stream behind `loading.js`. Their first check waits with `visibleSoon` (40 s), because an immediate check sees only the spinner.
+- Source check of every route under `src/app/`. Added drives and feature files for driver-detail, teams-detail, calendar-race, compare, history, tracks, junior (F2/F3, since removed), and auth-pages (render only). `drive all` passes 13/13 live.
+- Detail and calendar routes were slow on first load. Their first check waits with `visibleSoon` (40 s), because an immediate check sees only the loading state.
+
+## Redesign pass (2026-10-30, macOS, Playwright 1.61.0)
+
+- Drives were rewritten for the redesigned bilingual UI. Routes live under `src/app/[lang]/`. English has no prefix and Arabic is under `/ar`.
+- Added the `arabic` drive: header "العربية" link, `/ar`, `dir=rtl`, `lang=ar`, links stay under `/ar`.
+- `junior` now checks that `/junior` redirects to `/standings`. The F2/F3 page was removed.
+- `drive all` passes 14/14 live.
 
 ## Unproven / not mapped
 
 - Submitting login, signup, profile, or support/checkout needs Postgres (`POSTGRES_PRISMA_URL`), `AUTH_SECRET`, Resend, and Polar sandbox keys. None of these exist here, so only page render and the signed-out `/profile` redirect are driven.
-- The Tracks 3D canvas (WebGL) is not asserted beyond the modal opening and closing.
+- Tracks 3D canvas content is not asserted beyond the tab switching (Layout selected, then Map).
 - Live Timing with real positions is only observable during a session weekend. Otherwise the page shows the "Entry List" fallback, which the drive accepts.

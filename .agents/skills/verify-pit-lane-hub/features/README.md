@@ -13,8 +13,9 @@ The user-facing features of the public site and how to drive each one through `s
 | Calendar and race weekend | [calendar-race.md](calendar-race.md) | `drive calendar-race` |
 | Compare drivers | [compare.md](compare.md) | `drive compare` |
 | History archive | [history.md](history.md) | `drive history` |
-| Tracks (3D) | [tracks.md](tracks.md) | `drive tracks` |
-| F2 and F3 | [junior.md](junior.md) | `drive junior` |
+| Tracks (circuits) | [tracks.md](tracks.md) | `drive tracks` |
+| Removed F2/F3 page redirects | [junior.md](junior.md) | `drive junior` |
+| Arabic (RTL) site | [arabic.md](arabic.md) | `drive arabic` |
 | Account and support pages (render only) | [auth-pages.md](auth-pages.md) | `drive auth-pages` |
 | Custom 404 | [not-found.md](not-found.md) | `drive not-found` |
 
@@ -28,7 +29,8 @@ The user-facing features of the public site and how to drive each one through `s
 
 - Select by accessible role and name or by route href (`main a[href^="/driver/"]`), never by CSS class or coordinates. CSS-module class names are hashed.
 - Poll for state after SSR because client components hydrate late. A click before hydration does nothing.
-- `/schedule`, `/driver/*`, `/team/*`, and `/race/*` stream behind `loading.js`. Use `visibleSoon` (40 s) for their first content check.
+- `/schedule` streams behind `loading.js`, and detail pages (`/driver/*`, `/team/*`, `/race/*`, `/tracks/*`) fetch live data. Use `visibleSoon` (40 s) for their first content check.
+- English has no URL prefix. Arabic is under `/ar`. Routes live in `src/app/[lang]/`.
 - Every drive states its expected result and fails on a mismatch.
 
 ## Proof rules

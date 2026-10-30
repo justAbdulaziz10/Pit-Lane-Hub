@@ -1,22 +1,23 @@
 # Live Timing
 
-`/live` shows live session positions from OpenF1 during a session. Outside a session it shows an honest "Entry List" instead of a made-up grid.
+`/live` has the h1 "Live timing". During a session it shows positions from OpenF1. Otherwise it shows an honest status heading instead of an invented grid. Locally there are no OpenF1 credentials, so the page shows "Live timing unavailable". Source: `src/app/[lang]/live/page.js`.
 
 ## Sub-features
 
 - `live-positions`: real positions while a session is running.
-- `entry-list`: fallback list when no session is live.
+- `status`: a status h2 when positions are unavailable (no session, no credentials, upstream error).
 
 ## How to get to it (user POV)
 
-- Header "Live" link (red dot), or open `/live`.
+- Header "Live" link, or open `/live`.
 
 ## Driving it with scripts/verify-pit-lane-hub.mjs
 
 Preconditions: baseline.
 
-- Open `/live` → `drive live`. Result: the heading "Live Timing" and a heading matching /Live Positions|Entry List/ are visible.
+- Open `/live` → `drive live`. Result: HTTP 200, the h1 "Live timing" is visible, and within 20 s either a `main` h2 (status) or a `main table` (positions) is visible.
 
 ## Gotchas
 
-- Outside a race weekend only `entry-list` can be observed. The `live-positions` path stays unproven until a session is running.
+- Without OpenF1 credentials only the status heading can be observed. The `live-positions` path stays unproven until a session runs with credentials.
+- The drive accepts any h2 in `main`. It does not check the status text.
